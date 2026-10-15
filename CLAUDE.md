@@ -38,3 +38,4 @@ Tests: unit tests are `*.spec.ts` (Node), component tests `*.svelte.spec.ts` (Vi
 - **Responsive (F6):** keep content components separate from layout containers; state lives in the URL; no hard-coded phone pixel widths; branch on input capability (`hover`, `pointer`) rather than width where it's about interaction. Breakpoint 860px, content max-width 1440px.
 - **Data loading is server-only** (`+page.server.ts` / `+layout.server.ts`, FE-2). The browser never calls the Go API directly.
 - Self-hosted fonts only; no request may go to a third-party origin.
+- **Clean code** (root `CLAUDE.md`): ESLint enforces `max-lines-per-function` 30 (off in test files, where case tables live), `max-params` 4 and `max-depth` 2. Keep Svelte components small and presentational; put logic in `.ts` modules.

@@ -174,19 +174,6 @@ test.describe('self-hosted fonts', () => {
 			}))
 		);
 
-		// Parse a unicode-range descriptor (any browser's serialisation).
-		const covers = (range: string, cp: number) =>
-			range.split(',').some((part) => {
-				const m = /U\+([0-9A-F?]+)(?:-([0-9A-F]+))?/i.exec(part.trim());
-				if (!m) return false;
-				const lo = parseInt(m[1].replace(/\?/g, '0'), 16);
-				const hi = m[2] ? parseInt(m[2], 16) : parseInt(m[1].replace(/\?/g, 'F'), 16);
-				return cp >= lo && cp <= hi;
-			});
-		const A = 0x41; // latin
-		const A_MACRON = 0x100; // latin-ext
-		const CYR_A = 0x410; // cyrillic
-
 		const families = [...new Set(faces.map((f) => f.family))].sort();
 		expect(families, `got families ${JSON.stringify(families)}`).toEqual([
 			'Archivo',
@@ -213,27 +200,43 @@ test.describe('self-hosted fonts', () => {
 			for (const weight of w.weights) {
 				const set = ofFamily.filter((f) => f.weight === weight).map((f) => f.unicodeRange);
 				const label = `${w.family} ${weight} unicode-ranges ${JSON.stringify(set)}`;
-				if (w.subsets === 'latin') {
-					// latin + latin-ext, nothing else
-					expect(set.length, `got ${label}, want exactly latin + latin-ext`).toBe(2);
-					expect(
-						set.some((r) => covers(r, A)),
-						`got ${label}, want latin`
-					).toBe(true);
-					expect(
-						set.some((r) => covers(r, A_MACRON)),
-						`got ${label}, want latin-ext`
-					).toBe(true);
-					expect(
-						set.some((r) => covers(r, CYR_A)),
-						`got ${label}, want no cyrillic`
-					).toBe(false);
-				} else {
-					// cyrillic only
-					expect(set.length, `got ${label}, want exactly the cyrillic subset`).toBe(1);
-					expect(covers(set[0], CYR_A), `got ${label}, want cyrillic`).toBe(true);
-				}
+				expectSubsets(set, w.subsets, label);
 			}
 		}
 	});
 });
+
+// Latin faces ship latin + latin-ext only; Cyrillic fallbacks ship cyrillic only.
+function expectSubsets(set: string[], subsets: 'latin' | 'cyrillic', label: string) {
+	if (subsets === 'cyrillic') {
+		expect(set.length, `got ${label}, want exactly the cyrillic subset`).toBe(1);
+		expect(covers(set[0], CYR_A), `got ${label}, want cyrillic`).toBe(true);
+		return;
+	}
+	expect(set.length, `got ${label}, want exactly latin + latin-ext`).toBe(2);
+	expect(
+		set.some((r) => covers(r, A)),
+		`got ${label}, want latin`
+	).toBe(true);
+	expect(
+		set.some((r) => covers(r, A_MACRON)),
+		`got ${label}, want latin-ext`
+	).toBe(true);
+	expect(
+		set.some((r) => covers(r, CYR_A)),
+		`got ${label}, want no cyrillic`
+	).toBe(false);
+}
+
+// Parse a unicode-range descriptor (any browser's serialisation).
+const covers = (range: string, cp: number) =>
+	range.split(',').some((part) => {
+		const m = /U\+([0-9A-F?]+)(?:-([0-9A-F]+))?/i.exec(part.trim());
+		if (!m) return false;
+		const lo = parseInt(m[1].replace(/\?/g, '0'), 16);
+		const hi = m[2] ? parseInt(m[2], 16) : parseInt(m[1].replace(/\?/g, 'F'), 16);
+		return cp >= lo && cp <= hi;
+	});
+const A = 0x41; // latin
+const A_MACRON = 0x100; // latin-ext
+const CYR_A = 0x410; // cyrillic
