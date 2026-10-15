@@ -34,8 +34,43 @@ export default defineConfig(
 		}
 	},
 	{
-		// Override or add rule settings here, such as:
-		// 'svelte/button-has-type': 'error'
-		rules: {}
+		// X6: the only cookie is `lang`, set server-side by /set-lang; no
+		// client-side storage at all.
+		rules: {
+			'no-restricted-globals': [
+				'error',
+				{ name: 'localStorage', message: 'No client-side storage (stack.md X6).' },
+				{ name: 'sessionStorage', message: 'No client-side storage (stack.md X6).' },
+				{ name: 'indexedDB', message: 'No client-side storage (stack.md X6).' }
+			],
+			'no-restricted-properties': [
+				'error',
+				{
+					object: 'document',
+					property: 'cookie',
+					message: 'Cookies are set server-side only (stack.md X6).'
+				},
+				{
+					object: 'window',
+					property: 'localStorage',
+					message: 'No client-side storage (stack.md X6).'
+				},
+				{
+					object: 'window',
+					property: 'sessionStorage',
+					message: 'No client-side storage (stack.md X6).'
+				},
+				{
+					object: 'globalThis',
+					property: 'localStorage',
+					message: 'No client-side storage (stack.md X6).'
+				},
+				{
+					object: 'globalThis',
+					property: 'sessionStorage',
+					message: 'No client-side storage (stack.md X6).'
+				}
+			]
+		}
 	}
 );
