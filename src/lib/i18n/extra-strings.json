@@ -1,0 +1,26 @@
+{
+	"_note": "UI copy the design strings.json does not have yet. Same shape: <section>.<locale>.<key>. scripts/import-strings.ts merges it into messages/*.json; a key here must not also exist in strings.json.",
+	"errors": {
+		"en": {
+			"notFoundTitle": "Page not found",
+			"notFoundBody": "We couldn't find that page.",
+			"serverErrorTitle": "Something went wrong",
+			"serverErrorBody": "Please try again in a moment.",
+			"backHome": "Back to the map"
+		},
+		"es": {
+			"notFoundTitle": "Página no encontrada",
+			"notFoundBody": "No hemos encontrado esa página.",
+			"serverErrorTitle": "Algo salió mal",
+			"serverErrorBody": "Inténtalo de nuevo en un momento.",
+			"backHome": "Volver al mapa"
+		},
+		"ru": {
+			"notFoundTitle": "Страница не найдена",
+			"notFoundBody": "Мы не нашли эту страницу.",
+			"serverErrorTitle": "Что-то пошло не так",
+			"serverErrorBody": "Попробуйте ещё раз чуть позже.",
+			"backHome": "Вернуться к карте"
+		}
+	}
+}

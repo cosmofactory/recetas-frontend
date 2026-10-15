@@ -43,6 +43,9 @@ export default defineConfig(
 			],
 			'max-params': ['error', 4],
 			'max-depth': ['error', 2],
+			// Internal links go through localizedHref(), enforced by
+			// `pnpm check:strings`; the app has no paths.base to resolve().
+			'svelte/no-navigation-without-resolve': ['error', { ignoreLinks: true }],
 			'no-restricted-globals': [
 				'error',
 				{ name: 'localStorage', message: 'No client-side storage (stack.md X6).' },

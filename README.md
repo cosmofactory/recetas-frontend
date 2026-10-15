@@ -19,4 +19,15 @@ pnpm test:e2e:install   # once: Playwright browsers
 pnpm test:e2e
 ```
 
+## Run the production build
+
+```bash
+pnpm build
+PUBLIC_ORIGIN=http://localhost:3000 pnpm start   # PUBLIC_ORIGIN is required (src/env.ts)
+```
+
+## UI strings
+
+Pages live under `/en/`, `/es/` and `/ru/`. UI copy is compiled by Paraglide JS from `messages/{en,es,ru}.json`, which `pnpm strings:import` generates from the design `strings.json` plus `src/lib/i18n/extra-strings.json`. Don't edit `messages/` by hand.
+
 See `CLAUDE.md` for conventions and `../specs/` for the roadmap.
