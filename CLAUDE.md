@@ -23,6 +23,7 @@ Node 24 (`.nvmrc`) and pnpm (pinned via `packageManager`; `corepack enable` once
 | Build / run the production server          | `pnpm build` / `ORIGIN=http://localhost:3000 pnpm start`                                 |
 | E2E (builds, starts `node build` on :4173) | `pnpm test:e2e` (first time: `pnpm test:e2e:install`)                                    |
 | One E2E project                            | `pnpm test:e2e --project chromium-mobile-390`                                            |
+| Token drift vs design (local only)         | `pnpm tokens:check` (the design bundle is outside this repo)                             |
 
 CI (`.github/workflows/ci.yml`) runs lint → check → test → build, then the Playwright smoke on every project. A change is done when `pnpm lint && pnpm check && pnpm test && pnpm build` pass.
 

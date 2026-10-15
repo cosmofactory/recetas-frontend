@@ -1,0 +1,71 @@
+/* Asadorov tokens as CSS custom properties. Mirrors tokens.json exactly. */
+
+:root {
+  --bg-page: #F6EFE3;
+  --bg-surface: #FBF7EC;
+  --bg-surface-muted: #F3EBDA;
+  --bg-segment-track: rgba(43,30,22,.09);
+
+  --ink: #2B1E16;
+  --ink-2: rgba(43,30,22,.60);
+  --ink-3: rgba(43,30,22,.50);
+  --ink-4: rgba(43,30,22,.45);
+  --ink-placeholder: rgba(43,30,22,.40);
+  --on-accent: #F8F1E4;
+
+  --accent: #C4552E;
+  --accent-hover: #B44B27;
+  --accent-tag-border: rgba(196,85,46,.40);
+
+  --border-hairline: rgba(43,30,22,.08);
+  --border-card: rgba(43,30,22,.10);
+  --border-field: rgba(43,30,22,.18);
+  --border-chip: rgba(43,30,22,.22);
+
+  --region-olive: #9A9A5E;
+  --region-clay: #C97B4A;
+  --region-terracotta: #C4552E;
+  --region-ochre: #D9A441;
+  --region-sand: #C3A574;
+  --region-brown: #A8632F;
+  --region-tan: #B98A5E;
+  --region-selected: #2B1E16;
+  --map-label-bg: rgba(251,247,236,.82);
+
+  --placeholder-a: #E4D8BF;
+  --placeholder-b: #EFE6D2;
+  --placeholder: repeating-linear-gradient(45deg, var(--placeholder-a) 0 6px, var(--placeholder-b) 6px 12px);
+
+  --scrim: rgba(30,20,12,.50);
+  --scrim-filter: rgba(30,20,12,.45);
+
+  --font-display: 'Instrument Serif', 'Cormorant Garamond', serif;
+  --font-text: 'Archivo', 'Golos Text', system-ui, sans-serif;
+
+  --radius-map-cell: 4px;
+  --radius-thumb: 10px;
+  --radius-segment: 9px;
+  --radius-segment-track: 12px;
+  --radius-button: 14px;
+  --radius-card: 16px;
+  --radius-sheet: 26px;
+  --radius-pill: 999px;
+
+  --shadow-sheet: 0 -12px 40px rgba(43,30,22,.25);
+  --shadow-panel: 0 -8px 26px rgba(43,30,22,.08);
+  --shadow-filter-sheet: 0 -14px 44px rgba(43,30,22,.28);
+  --shadow-segment-active: 0 1px 3px rgba(43,30,22,.20);
+  --shadow-page-push: -12px 0 30px rgba(43,30,22,.18);
+
+  --gutter: 20px;
+  --map-gap: 3px;
+  --chip-gap: 7px;
+
+  --ease: cubic-bezier(.32,.72,.28,1);
+  --dur-sheet: 450ms;
+  --dur-panel: 380ms;
+  --dur-page: 420ms;
+  --dur-filter: 400ms;
+  --dur-search: 350ms;
+  --dur-colour: 200ms;
+}

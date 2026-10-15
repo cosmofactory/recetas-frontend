@@ -14,6 +14,10 @@ export default defineConfig({
 			adapter: adapter()
 		})
 	],
+	build: {
+		// Fonts are always separate files (preloaded, cached); never data: URLs.
+		assetsInlineLimit: (filePath) => (/\.woff2?$/.test(filePath) ? false : undefined)
+	},
 	test: {
 		expect: { requireAssertions: true },
 		projects: [
@@ -36,7 +40,7 @@ export default defineConfig({
 				test: {
 					name: 'server',
 					environment: 'node',
-					include: ['src/**/*.{test,spec}.{js,ts}'],
+					include: ['src/**/*.{test,spec}.{js,ts}', 'scripts/**/*.{test,spec}.{js,ts}'],
 					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
 				}
 			}
