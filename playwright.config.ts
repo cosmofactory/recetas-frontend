@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { PUBLIC_ORIGIN } from './src/testutil/e2e-origin';
 
 const PORT = 4173;
 
@@ -26,7 +27,12 @@ export default defineConfig({
 		// The production server (adapter-node), not the Vite preview.
 		command: 'pnpm build && node build',
 		url: `http://127.0.0.1:${PORT}/healthz`,
-		env: { PORT: String(PORT), HOST: '127.0.0.1', ORIGIN: `http://127.0.0.1:${PORT}` },
+		env: {
+			PORT: String(PORT),
+			HOST: '127.0.0.1',
+			// Canonical and hreflang URLs are built from this, not the request host.
+			PUBLIC_ORIGIN
+		},
 		reuseExistingServer: !process.env.CI,
 		timeout: 120_000
 	},

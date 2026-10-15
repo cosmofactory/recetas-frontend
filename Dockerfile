@@ -19,6 +19,11 @@ FROM node:24-alpine AS runtime
 
 LABEL org.opencontainers.image.source="https://github.com/cosmofactory/recetas-frontend"
 
+# Runtime configuration (compose):
+#   PUBLIC_ORIGIN  required, e.g. https://demo.asadorov.es. Canonical and
+#                  hreflang URLs are built from it (src/env.ts); the server
+#                  refuses to start without it. adapter-node 6 no longer reads
+#                  ORIGIN; the request origin comes from the Host header.
 ARG VERSION=dev
 ENV NODE_ENV=production \
     PORT=3000 \
