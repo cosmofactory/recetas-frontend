@@ -35,8 +35,14 @@ export default defineConfig(
 	},
 	{
 		// X6: the only cookie is `lang`, set server-side by /set-lang; no
-		// client-side storage at all.
+		// client-side storage at all. Clean-code limits: root CLAUDE.md.
 		rules: {
+			'max-lines-per-function': [
+				'error',
+				{ max: 30, skipBlankLines: true, skipComments: true, IIFEs: true }
+			],
+			'max-params': ['error', 4],
+			'max-depth': ['error', 2],
 			'no-restricted-globals': [
 				'error',
 				{ name: 'localStorage', message: 'No client-side storage (stack.md X6).' },
@@ -72,5 +78,11 @@ export default defineConfig(
 				}
 			]
 		}
+	},
+	{
+		// Test bodies hold long case tables and describe blocks; reviewers
+		// check their logic.
+		files: ['**/*.spec.ts', '**/*.test.ts', '**/*.e2e.ts', 'playwright.config.ts'],
+		rules: { 'max-lines-per-function': 'off' }
 	}
 );
