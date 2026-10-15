@@ -25,7 +25,7 @@ Node 24 (`.nvmrc`) and pnpm (pinned via `packageManager`; `corepack enable` once
 | One E2E project                            | `pnpm test:e2e --project chromium-mobile-390`                                            |
 | Token drift vs design (local only)         | `pnpm tokens:check` (the design bundle is outside this repo)                             |
 
-CI (`.github/workflows/ci.yml`) runs lint → check → test → build, then the Playwright smoke on every project. A change is done when `pnpm lint && pnpm check && pnpm test && pnpm build` pass.
+CI (`.github/workflows/ci.yml`) runs lint → check → test → build, then the Playwright smoke on every project. On pushes to `main` (and `v*` tags) it then pushes `ghcr.io/cosmofactory/recetas-frontend:sha-<7>` (plus `:vX.Y.Z`); no `:latest`. The deploy trigger arrives with INF-2. A change is done when `pnpm lint && pnpm check && pnpm test && pnpm build` pass.
 
 Tests: unit tests are `*.spec.ts` (Node), component tests `*.svelte.spec.ts` (Vitest browser mode, Chromium), E2E `*.e2e.ts` (Playwright). Playwright projects cover mobile 390/360/430 and desktop 860/1280/1440 on Chromium, plus WebKit (iPhone, desktop 1440) and Firefox (1280).
 
