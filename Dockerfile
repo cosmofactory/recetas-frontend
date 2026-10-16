@@ -24,6 +24,9 @@ LABEL org.opencontainers.image.source="https://github.com/cosmofactory/recetas-f
 #                  hreflang URLs are built from it (src/env.ts); the server
 #                  refuses to start without it. adapter-node 6 no longer reads
 #                  ORIGIN; the request origin comes from the Host header.
+#   BACKEND_API_BASE_URL  required, the internal API origin, e.g.
+#                  http://backend:8080 (never public, stack.md X4).
+#   DATA_SOURCE    optional, `api` (default) or `mock` (tests only).
 ARG VERSION=dev
 ENV NODE_ENV=production \
     PORT=3000 \

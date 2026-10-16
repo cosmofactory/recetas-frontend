@@ -1,6 +1,8 @@
 <script lang="ts">
-	import { m } from '#lib/paraglide/messages.js';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
 </script>
 
-<!-- FE-1 stub; the region screen arrives with FE-4. -->
-<h1>{m.search_groups_2()}</h1>
+<!-- FE-2 stub; the region screen arrives with FE-4. -->
+<h1>{data.region.name}</h1>

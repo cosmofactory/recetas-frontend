@@ -1,7 +1,6 @@
 import { m } from '#lib/paraglide/messages.js';
+import { NOT_FOUND } from '#lib/http-status.ts';
 import type { Locale } from './locales.ts';
-
-const NOT_FOUND = 404;
 
 // The error page's text. The locale is passed explicitly because an error
 // page may sit under a path with no locale prefix (/fr/).

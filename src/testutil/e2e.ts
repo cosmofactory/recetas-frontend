@@ -5,9 +5,9 @@ import { expect, type APIRequestContext, type APIResponse } from '@playwright/te
 export const LOCALES = ['en', 'es', 'ru'] as const;
 export type Locale = (typeof LOCALES)[number];
 
-// The FE-1 stub pages and the translated <h1> each one renders (strings.json).
-// home: desktop.aboutTitle; region: search.groups[2]; dish: search.groups[1];
-// recipe: recipe.ingredients.
+// The stub pages and the <h1> each one renders. home: desktop.aboutTitle
+// (strings.json); region, dish and recipe: the localised region, dish and
+// variation name from the catalog (DATA_SOURCE=mock serves the bundle).
 export const PAGES: { name: string; path: string; h1: Record<Locale, string> }[] = [
 	{
 		name: 'home',
@@ -21,17 +21,21 @@ export const PAGES: { name: string; path: string; h1: Record<Locale, string> }[]
 	{
 		name: 'region',
 		path: '/regions/gal',
-		h1: { en: 'Regions', es: 'Regiones', ru: 'Регионы' }
+		h1: { en: 'Galicia', es: 'Galicia', ru: 'Галисия' }
 	},
 	{
 		name: 'dish',
 		path: '/dishes/tortilla',
-		h1: { en: 'Variations', es: 'Variantes', ru: 'Варианты' }
+		h1: { en: 'Tortilla de patatas', es: 'Tortilla de patatas', ru: 'Тортилья' }
 	},
 	{
 		name: 'recipe',
 		path: '/dishes/tortilla/gal',
-		h1: { en: 'Ingredients', es: 'Ingredientes', ru: 'Ингредиенты' }
+		h1: {
+			en: 'Betanzos-style runny',
+			es: 'Estilo Betanzos, jugosa',
+			ru: 'По-бетансосски, жидкая внутри'
+		}
 	}
 ];
 
