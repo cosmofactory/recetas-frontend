@@ -25,7 +25,10 @@ type CheckBackendReady = (options: {
 }) => Promise<boolean>;
 type Outcome = { state: 'resolved'; value: unknown } | { state: 'rejected'; error: unknown };
 
-const TIMEOUT_MS = 100;
+// Long enough that a one-off stall of the test process before the request is
+// written can't fire the timeout first (no request at the backend), and still
+// far below the deadline.
+const TIMEOUT_MS = 400;
 // Generous for CI; a collected timeout signal never settles at all.
 const DEADLINE_MS = 1_500;
 const GC_EVERY_MS = 5;

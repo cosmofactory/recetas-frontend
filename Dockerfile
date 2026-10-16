@@ -13,6 +13,18 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
 COPY . .
 RUN pnpm build
 
+# Runtime node_modules: only `dependencies` (@opentelemetry/api, which Kit
+# keeps external so the app and src/instrumentation.server.ts share one
+# global tracer provider).
+FROM node:24-alpine AS deps
+
+RUN corepack enable
+WORKDIR /src
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
+    pnpm install --prod --frozen-lockfile --ignore-scripts
+
 
 # ---------- Runtime ----------
 FROM node:24-alpine AS runtime
@@ -30,6 +42,13 @@ LABEL org.opencontainers.image.source="https://github.com/cosmofactory/recetas-f
 #   MEDIA_BASE_URL optional until INF-4, the CloudFront base photos are
 #                  built against (https, optional path, stack.md X3). Unset:
 #                  every photo renders as the placeholder.
+#   LOGFIRE_TOKEN  optional, the Logfire write token (INF-3). Unset: server
+#                  telemetry is off. Set: OTEL_EXPORTER_OTLP_ENDPOINT (https,
+#                  the Logfire regional base URL) and APP_ENV (local, demo or
+#                  prod) are required too; the server refuses to start
+#                  without them (stack.md B7).
+#   OTEL_SERVICE_NAME optional, default recetas-frontend.
+#   APP_VERSION    baked in from the VERSION build arg (service.version).
 ARG VERSION=dev
 ENV NODE_ENV=production \
     PORT=3000 \
@@ -37,9 +56,10 @@ ENV NODE_ENV=production \
 
 WORKDIR /app
 
-# adapter-node bundles everything not listed in `dependencies`, and there are
-# none, so the runtime needs only the build output and package.json ("type").
+# adapter-node bundles everything not listed in `dependencies`, so the runtime
+# needs the build output, package.json ("type") and the production deps.
 COPY --from=build --chown=node:node /src/package.json ./package.json
+COPY --from=deps --chown=node:node /src/node_modules ./node_modules
 COPY --from=build --chown=node:node /src/build ./build
 
 USER node

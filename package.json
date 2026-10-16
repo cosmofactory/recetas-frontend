@@ -36,6 +36,10 @@
 		"@fontsource/instrument-serif": "~5.3.0",
 		"@inlang/paraglide-js": "2.25.4",
 		"@inlang/plugin-message-format": "4.5.4",
+		"@opentelemetry/exporter-trace-otlp-proto": "~0.223.0",
+		"@opentelemetry/resources": "~2.12.0",
+		"@opentelemetry/sdk-trace-node": "~2.12.0",
+		"@opentelemetry/semantic-conventions": "~1.43.0",
 		"@playwright/test": "^1.60.0",
 		"@sveltejs/adapter-node": "^6.0.0",
 		"@sveltejs/kit": "^3.0.0",
@@ -62,5 +66,8 @@
 	"imports": {
 		"#lib": "./src/lib/index.js",
 		"#lib/*": "./src/lib/*"
+	},
+	"dependencies": {
+		"@opentelemetry/api": "~1.9.1"
 	}
 }
