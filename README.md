@@ -28,11 +28,12 @@ PUBLIC_ORIGIN=http://localhost:3000 BACKEND_API_BASE_URL=http://localhost:8080 p
 PUBLIC_ORIGIN=http://localhost:3000 DATA_SOURCE=mock pnpm start   # no backend: the vendored content bundle
 ```
 
-| Variable               | Required                 | Notes                                                                   |
-| ---------------------- | ------------------------ | ----------------------------------------------------------------------- |
-| `PUBLIC_ORIGIN`        | yes (outside `vite dev`) | canonical and hreflang URLs, e.g. `https://demo.asadorov.es`            |
-| `DATA_SOURCE`          | no                       | `api` (default) or `mock` (local dev and tests only)                    |
-| `BACKEND_API_BASE_URL` | when `DATA_SOURCE=api`   | internal Go API origin, e.g. `http://backend:8080`; dev default `:8080` |
+| Variable               | Required                 | Notes                                                                        |
+| ---------------------- | ------------------------ | ---------------------------------------------------------------------------- |
+| `PUBLIC_ORIGIN`        | yes (outside `vite dev`) | canonical and hreflang URLs, e.g. `https://demo.asadorov.es`                 |
+| `DATA_SOURCE`          | no                       | `api` (default) or `mock` (local dev and tests only)                         |
+| `BACKEND_API_BASE_URL` | when `DATA_SOURCE=api`   | internal Go API origin, e.g. `http://backend:8080`; dev default `:8080`      |
+| `MEDIA_BASE_URL`       | no (until INF-4)         | CloudFront base for photos, https with an optional path; unset: placeholders |
 
 ## API contract
 

@@ -1,6 +1,7 @@
 import { dev, building } from '$app/env';
 import { defineEnvVars } from '@sveltejs/kit/env';
 import { selectSource } from '#lib/server/data-source.ts';
+import { parseMediaBaseUrl } from '#lib/media.ts';
 
 const DEV_ORIGIN = 'http://localhost:5173';
 // Where `make -C ../recetas-backend docker-up` serves the API.
@@ -48,5 +49,11 @@ export const variables = defineEnvVars({
 				'BACKEND_API_BASE_URL is not set (e.g. BACKEND_API_BASE_URL=http://backend:8080)'
 			);
 		}
+	},
+	MEDIA_BASE_URL: {
+		public: true,
+		description:
+			'CloudFront base URL that photo URLs are built against (stack.md X3, INF-4): https, optionally with a path, e.g. https://d1abc.cloudfront.net/media. Unset means every photo renders as the striped placeholder.',
+		schema: parseMediaBaseUrl
 	}
 });

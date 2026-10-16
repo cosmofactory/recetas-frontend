@@ -27,6 +27,9 @@ LABEL org.opencontainers.image.source="https://github.com/cosmofactory/recetas-f
 #   BACKEND_API_BASE_URL  required, the internal API origin, e.g.
 #                  http://backend:8080 (never public, stack.md X4).
 #   DATA_SOURCE    optional, `api` (default) or `mock` (tests only).
+#   MEDIA_BASE_URL optional until INF-4, the CloudFront base photos are
+#                  built against (https, optional path, stack.md X3). Unset:
+#                  every photo renders as the placeholder.
 ARG VERSION=dev
 ENV NODE_ENV=production \
     PORT=3000 \
