@@ -24,7 +24,9 @@
 		"tokens:check": "node scripts/check-tokens.ts",
 		"strings:import": "node scripts/import-strings.ts ../design/design_handoff_asadorov_desktop/strings.json src/lib/i18n/extra-strings.json messages && prettier --write messages",
 		"i18n:compile": "paraglide-js compile --project ./project.inlang --silent",
-		"check:strings": "node scripts/check-strings.ts"
+		"check:strings": "node scripts/check-strings.ts",
+		"api:sync": "node scripts/api-sync.ts",
+		"api:check": "node scripts/api-check.ts"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
@@ -44,6 +46,8 @@
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.19.0",
 		"globals": "^17.6.0",
+		"openapi-fetch": "~0.17.0",
+		"openapi-typescript": "~7.13.0",
 		"playwright": "^1.60.0",
 		"prettier": "^3.8.3",
 		"prettier-plugin-svelte": "^4.1.0",

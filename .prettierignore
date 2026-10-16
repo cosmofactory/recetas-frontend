@@ -16,3 +16,9 @@ bun.lockb
 /project.inlang/*
 !/project.inlang/settings.json
 !/project.inlang/paraglide.config.ts
+
+# Vendored from recetas-backend and generated from it (pnpm api:sync, D-FE2-1);
+# must stay byte-identical to the backend's copies.
+/src/lib/api/openapi.yaml
+/src/lib/api/schema.d.ts
+/src/lib/server/mock/content.bundle.json

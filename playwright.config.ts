@@ -31,7 +31,9 @@ export default defineConfig({
 			PORT: String(PORT),
 			HOST: '127.0.0.1',
 			// Canonical and hreflang URLs are built from this, not the request host.
-			PUBLIC_ORIGIN
+			PUBLIC_ORIGIN,
+			// The vendored content bundle: E2E runs (and CI) need no backend.
+			DATA_SOURCE: 'mock'
 		},
 		reuseExistingServer: !process.env.CI,
 		timeout: 120_000

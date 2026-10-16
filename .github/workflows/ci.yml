@@ -23,6 +23,7 @@ jobs:
   quality:
     name: Lint, Check, Test, Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Check out repository
@@ -46,6 +47,11 @@ jobs:
       - name: Type check
         run: pnpm check
 
+      # D-FE2-1: the vendored spec and mock bundle must match the backend's
+      # main, and schema.d.ts must be generated from the spec.
+      - name: API contract drift
+        run: pnpm api:check
+
       # Vitest's browser project runs component tests in Chromium.
       - name: Install Chromium for component tests
         run: pnpm exec playwright install --with-deps chromium
@@ -59,6 +65,7 @@ jobs:
   e2e:
     name: E2E Smoke
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: quality
 
     steps:
@@ -94,6 +101,7 @@ jobs:
   build-and-push-image:
     name: Build And Push Image
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs:
       - quality
       - e2e

@@ -1,6 +1,8 @@
 <script lang="ts">
-	import { m } from '#lib/paraglide/messages.js';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
 </script>
 
-<!-- FE-1 stub; the Variations screen arrives with FE-6. -->
-<h1>{m.search_groups_1()}</h1>
+<!-- FE-2 stub; the Variations screen arrives with FE-6. -->
+<h1>{data.dish.name}</h1>
