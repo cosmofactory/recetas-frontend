@@ -7,9 +7,11 @@ import type { LayoutServerLoad } from './$types';
 // The whole catalog for the page's locale (stack.md X1): search, filters and
 // the home screens work over these two lists. `mediaBaseUrl` is what <Photo>
 // builds image URLs against (undefined: every photo is the placeholder).
-export const load: LayoutServerLoad = async ({ params }) => {
+export const load: LayoutServerLoad = async (event) => {
+	const { lang } = event.params;
 	const [regions, dishes] = await orHttpError(
-		Promise.all([catalog().listRegions(params.lang), catalog().listDishes(params.lang)])
+		Promise.all([catalog().listRegions(lang), catalog().listDishes(lang)]),
+		event
 	);
 	return { origin: PUBLIC_ORIGIN, mediaBaseUrl: MEDIA_BASE_URL, regions, dishes };
 };

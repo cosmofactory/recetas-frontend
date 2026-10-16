@@ -5,10 +5,13 @@ import { createListCache, type ListFetchResult } from './catalog-cache.ts';
 import type { CatalogSource, Lang } from './catalog-source.ts';
 import { FIRST_SERVER_ERROR, NOT_FOUND, NOT_MODIFIED, OK } from '#lib/http-status.ts';
 import { resilientFetch } from './resilient-fetch.ts';
+import { tracingMiddleware } from './api-tracing.ts';
 
 // The CatalogSource backed by the Go API (api/openapi.yaml), reached over the
 // internal network (stack.md X4). The /v1/regions and /v1/dishes lists go
-// through the per-locale list cache; detail calls always hit the API.
+// through the per-locale list cache; detail calls always hit the API. Each
+// call is one CLIENT span (api-tracing.ts), retry included: the middleware
+// wraps resilientFetch.
 
 export const DEFAULT_LIST_TTL_MS = 60_000;
 
@@ -28,6 +31,7 @@ export function createApiSource(options: ApiSourceOptions): CatalogSource {
 		baseUrl: options.baseUrl,
 		fetch: resilientFetch(options.fetch, options.timeoutMs)
 	});
+	client.use(tracingMiddleware());
 	const cache = { ttlMs: options.listTtlMs ?? DEFAULT_LIST_TTL_MS, now: options.now ?? Date.now };
 	const regions = createListCache({ fetchList: listRegions(client), ...cache });
 	const dishes = createListCache({ fetchList: listDishes(client), ...cache });

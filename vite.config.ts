@@ -14,7 +14,10 @@ export default defineConfig({
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
-			adapter: adapter()
+			adapter: adapter(),
+			// Request, handle and load spans (stack.md B7); they go nowhere until
+			// src/instrumentation.server.ts registers a provider (LOGFIRE_TOKEN).
+			tracing: { server: true }
 		})
 	],
 	build: {
