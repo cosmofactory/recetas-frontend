@@ -22,6 +22,8 @@
 		"test:e2e": "playwright test",
 		"test:e2e:install": "playwright install --with-deps chromium webkit firefox",
 		"tokens:check": "node scripts/check-tokens.ts",
+		"map-grid:check": "node scripts/check-map-grid.ts",
+		"map-grid:sync": "node scripts/check-map-grid.ts --sync",
 		"strings:import": "node scripts/import-strings.ts ../design/design_handoff_asadorov_desktop/strings.json src/lib/i18n/extra-strings.json messages && prettier --write messages",
 		"i18n:compile": "paraglide-js compile --project ./project.inlang --silent",
 		"check:strings": "node scripts/check-strings.ts",

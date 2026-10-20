@@ -6,8 +6,10 @@ import type { components } from '#lib/api/schema.d.ts';
 
 type Schemas = components['schemas'];
 export type Lang = Schemas['Locale'];
-export type Region = Schemas['Region'];
-export type RegionDetail = Schemas['RegionDetail'];
+// tileColor is null when the API sent anything but #RRGGBB (region-colour.ts).
+type ValidatedColour<T> = Omit<T, 'tileColor'> & { tileColor: string | null };
+export type Region = ValidatedColour<Schemas['Region']>;
+export type RegionDetail = ValidatedColour<Schemas['RegionDetail']>;
 export type Dish = Schemas['Dish'];
 export type Recipe = Schemas['Recipe'];
 export type Photos = Schemas['Photos'];

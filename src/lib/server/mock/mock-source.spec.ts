@@ -22,6 +22,7 @@ import type { createMockSource as CreateMockSourceImpl } from './mock-source.ts'
 
 type Schemas = components['schemas'];
 type CreateMockSource = (input: typeof bundle) => CatalogSource;
+type Validated<T> = Omit<T, 'tileColor'> & { tileColor: string | null };
 
 const REGION_KEYS = [
 	'gal',
@@ -325,12 +326,19 @@ describe('mock contract', () => {
 		type Impl = ReturnType<typeof CreateMockSourceImpl>;
 		expectTypeOf<typeof CreateMockSourceImpl>().toBeCallableWith(bundle);
 		expectTypeOf<Impl>().toExtend<CatalogSource>();
+		// Regions are the schema types with tileColor nullable (region-colour.ts).
 		expectTypeOf<CatalogSource['listRegions']>().returns.resolves.toEqualTypeOf<
-			Schemas['Region'][]
+			Validated<Schemas['Region']>[]
 		>();
+		expectTypeOf<Region['tileColor']>().toEqualTypeOf<string | null>();
+		expectTypeOf<Omit<Region, 'tileColor'>>().toEqualTypeOf<Omit<Schemas['Region'], 'tileColor'>>();
 		expectTypeOf<CatalogSource['listDishes']>().returns.resolves.toEqualTypeOf<Schemas['Dish'][]>();
 		expectTypeOf<CatalogSource['getRegion']>().returns.resolves.toEqualTypeOf<
-			Schemas['RegionDetail']
+			Validated<Schemas['RegionDetail']>
+		>();
+		expectTypeOf<RegionDetail['tileColor']>().toEqualTypeOf<string | null>();
+		expectTypeOf<Omit<RegionDetail, 'tileColor'>>().toEqualTypeOf<
+			Omit<Schemas['RegionDetail'], 'tileColor'>
 		>();
 		expectTypeOf<CatalogSource['getDish']>().returns.resolves.toEqualTypeOf<Schemas['Dish']>();
 		expectTypeOf<CatalogSource['getRecipe']>().returns.resolves.toEqualTypeOf<Schemas['Recipe']>();

@@ -1,0 +1,54 @@
+{
+  "columns": 14,
+  "rows": 11,
+  "aspectRatio": "14 / 11",
+  "legend": {
+    "G": "gal",
+    "A": "ast",
+    "B": "bas",
+    "T": "cat",
+    "Y": "cyl",
+    "M": "mad",
+    "R": "ara",
+    "V": "val",
+    "E": "ext",
+    "L": "clm",
+    "D": "and",
+    "U": "mur",
+    "P": "bal",
+    "Q": "can"
+  },
+  "emptyCell": ".",
+  "grid": [
+    ".GGAABB.......",
+    "GGGAABBRRTTTT.",
+    "GGYYYYRRRRTTTT",
+    "..YYYYYRRRTTT.",
+    "..YYYMMRRVV.PP",
+    "..EYMMMLLVV.PP",
+    "..EELLLLLVV...",
+    "..EELLLLUUV...",
+    ".DDDDDLUUU....",
+    ".DDDDDDUU.....",
+    "QQQQ.........."
+  ],
+  "labelNudges": {
+    "ast": [
+      -0.6,
+      0.5
+    ],
+    "bas": [
+      0.3,
+      -0.2
+    ],
+    "gal": [
+      -0.2,
+      -0.5
+    ],
+    "mad": [
+      0,
+      0.3
+    ]
+  },
+  "labelNudgeUnit": "grid cells, added to the centroid of the region cells (x, y)"
+}

@@ -8,6 +8,7 @@ import type {
 	ContentBundle
 } from './bundle.ts';
 import { parseCourse, parseSeason, parseUnit } from './enums.ts';
+import { withValidTileColor } from '../region-colour.ts';
 
 // Maps the import bundle into the API's response bodies for one locale, the
 // way the backend does after `make seed`: order is bundle order (1-based),
@@ -71,7 +72,7 @@ function lookup<T>(map: Map<string, T>, key: string, what: string): T {
 }
 
 function toRegion(region: BundleRegion, index: number, lang: Lang): Region {
-	return {
+	return withValidTileColor({
 		key: region.key,
 		order: index + 1,
 		name: region.name[lang],
@@ -80,7 +81,7 @@ function toRegion(region: BundleRegion, index: number, lang: Lang): Region {
 		tileColor: region.tileColor,
 		description: region.description[lang],
 		regionalDishes: region.regionalDishes
-	};
+	});
 }
 
 function byRegionOrder(variations: BundleVariation[], ctx: Context): BundleVariation[] {

@@ -2,10 +2,11 @@ import createClient from 'openapi-fetch';
 import type { paths } from '#lib/api/schema.d.ts';
 import { NotFoundError, UnavailableError } from './api-errors.ts';
 import { createListCache, type ListFetchResult } from './catalog-cache.ts';
-import type { CatalogSource, Lang } from './catalog-source.ts';
+import type { CatalogSource, Lang, Region } from './catalog-source.ts';
 import { FIRST_SERVER_ERROR, NOT_FOUND, NOT_MODIFIED, OK } from '#lib/http-status.ts';
 import { resilientFetch } from './resilient-fetch.ts';
 import { tracingMiddleware } from './api-tracing.ts';
+import { withValidTileColor } from './region-colour.ts';
 
 // The CatalogSource backed by the Go API (api/openapi.yaml), reached over the
 // internal network (stack.md X4). The /v1/regions and /v1/dishes lists go
@@ -38,9 +39,13 @@ export function createApiSource(options: ApiSourceOptions): CatalogSource {
 	return {
 		listRegions: (lang) => regions.get(lang),
 		listDishes: (lang) => dishes.get(lang),
-		getRegion: (lang, regionKey) =>
-			one(
-				client.GET('/v1/regions/{regionKey}', { params: { path: { regionKey }, query: { lang } } })
+		getRegion: async (lang, regionKey) =>
+			withValidTileColor(
+				await one(
+					client.GET('/v1/regions/{regionKey}', {
+						params: { path: { regionKey }, query: { lang } }
+					})
+				)
 			),
 		getDish: (lang, dishKey) =>
 			one(client.GET('/v1/dishes/{dishKey}', { params: { path: { dishKey }, query: { lang } } })),
@@ -53,9 +58,15 @@ export function createApiSource(options: ApiSourceOptions): CatalogSource {
 	};
 }
 
+// Colours are checked once per fetched list, not on every cached read.
 function listRegions(client: Client) {
-	return (lang: Lang, etag?: string) =>
-		list(client.GET('/v1/regions', { params: { query: { lang } }, headers: validator(etag) }));
+	return async (lang: Lang, etag?: string): Promise<ListFetchResult<Region[]>> => {
+		const result = await list(
+			client.GET('/v1/regions', { params: { query: { lang } }, headers: validator(etag) })
+		);
+		if (result.status === NOT_MODIFIED) return result;
+		return { ...result, body: result.body.map(withValidTileColor) };
+	};
 }
 
 function listDishes(client: Client) {
