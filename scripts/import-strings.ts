@@ -10,7 +10,11 @@ type Strings = Record<string, unknown>;
 const MESSAGE_SCHEMA = 'https://inlang.com/schema/inlang-message-format';
 
 // strings.json paths whose arrays are plural forms, not lists.
-export const PLURAL_KEYS: ReadonlySet<string> = new Set(['home.variation', 'home.dish']);
+export const PLURAL_KEYS: ReadonlySet<string> = new Set([
+	'home.variation',
+	'home.dish',
+	'home.region'
+]);
 
 // The CLDR category of each strings.json plural form, in array order.
 const PLURAL_FORMS: Record<Locale, readonly string[]> = {

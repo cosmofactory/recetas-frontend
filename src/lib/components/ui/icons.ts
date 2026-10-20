@@ -19,3 +19,7 @@ export type IconName = keyof typeof ICONS;
 
 // Mobile README -> Header: "magnifier icon in ink (use your icon set; 15px)".
 export const ICON_SIZE_PX = 15;
+
+// Both READMEs: the language button's "▾" is 9px text; the chevron needs a
+// little more to read the same.
+export const CARET_ICON_PX = 12;

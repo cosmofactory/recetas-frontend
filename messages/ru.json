@@ -95,11 +95,24 @@
 	"errors_serverErrorTitle": "Что-то пошло не так",
 	"errors_serverErrorBody": "Попробуйте ещё раз чуть позже.",
 	"errors_backHome": "Вернуться к карте",
+	"home_region": [
+		{
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "{count} регион",
+				"countPlural=few": "{count} региона",
+				"countPlural=many": "{count} регионов",
+				"countPlural=other": "{count} региона"
+			}
+		}
+	],
 	"a11y_search": "Поиск",
 	"a11y_back": "Назад",
 	"a11y_close": "Закрыть",
 	"a11y_check": "Отметить",
 	"a11y_sheetHandle": "Развернуть или свернуть",
+	"a11y_homeTabs": "Обзор",
 	"devUi_title": "Элементы интерфейса (только для разработки)",
 	"devUi_iconButtons": "Кнопки-иконки",
 	"devUi_chips": "Чипы",

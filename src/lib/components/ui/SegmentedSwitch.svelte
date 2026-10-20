@@ -2,8 +2,10 @@
 	import { tabIndexForKey } from '#lib/ui/tablist.ts';
 
 	// panelId: the id of the tabpanel the tab controls; the tab is then
-	// `${panelId}-tab`, for the panel's aria-labelledby.
-	type Option = { value: string; label: string; panelId?: string };
+	// `${panelId}-tab`, for the panel's aria-labelledby. href: the tab is a
+	// link to its URL (works without JS); a click is the link's own
+	// navigation, and only arrow keys call onChange.
+	type Option = { value: string; label: string; panelId?: string; href?: string };
 	type Props = {
 		options: Option[];
 		value: string;
@@ -16,7 +18,7 @@
 
 	let { options, value = $bindable(), label, onChange, size = 'regular' }: Props = $props();
 
-	const tabs: HTMLButtonElement[] = $state([]);
+	const tabs: HTMLElement[] = $state([]);
 	const selectedIndex = $derived(options.findIndex((option) => option.value === value));
 	// A value no option has must not take the switch out of the Tab order.
 	const tabStop = $derived(Math.max(selectedIndex, 0));
@@ -25,6 +27,10 @@
 		if (index === selectedIndex) return;
 		value = options[index].value;
 		onChange?.(value);
+	}
+
+	function selectOnClick(index: number) {
+		if (options[index].href === undefined) select(index);
 	}
 
 	// Automatic activation: moving focus selects.
@@ -39,9 +45,13 @@
 
 <div class="track" role="tablist" aria-label={label}>
 	{#each options as option, index (option.value)}
-		<button
+		<!-- A link tab keeps focus on itself when the router navigates. -->
+		<svelte:element
+			this={option.href === undefined ? 'button' : 'a'}
 			bind:this={tabs[index]}
-			type="button"
+			type={option.href === undefined ? 'button' : undefined}
+			href={option.href}
+			data-sveltekit-reset={option.href === undefined ? undefined : 'false'}
 			role="tab"
 			class="segment"
 			class:desktop={size === 'desktop'}
@@ -49,11 +59,11 @@
 			aria-controls={option.panelId}
 			aria-selected={index === selectedIndex}
 			tabindex={index === tabStop ? 0 : -1}
-			onclick={() => select(index)}
-			onkeydown={(event) => moveWithKey(event, index)}
+			onclick={() => selectOnClick(index)}
+			onkeydown={(event: KeyboardEvent) => moveWithKey(event, index)}
 		>
 			{option.label}
-		</button>
+		</svelte:element>
 	{/each}
 </div>
 
@@ -79,6 +89,7 @@
 		color: var(--ink);
 		font: 600 13px var(--font-text);
 		text-align: center;
+		text-decoration: none;
 		white-space: nowrap;
 		cursor: pointer;
 		transition: background-color var(--dur-colour);

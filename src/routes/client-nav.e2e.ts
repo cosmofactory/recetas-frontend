@@ -23,10 +23,12 @@ async function clientNavigate(page: Page, href: string) {
 	expect(kept, `got a full reload navigating to ${href}, want a client-side navigation`).toBe(true);
 }
 
-const navigations: { from: string; to: string; lang: string; h1: string }[] = [
-	{ from: '/en/', to: '/ru/dishes/tortilla', lang: 'ru', h1: PAGES[2].h1.ru },
-	{ from: '/en/', to: '/es/regions/gal', lang: 'es', h1: PAGES[1].h1.es },
-	{ from: '/ru/', to: '/en/dishes/tortilla/gal', lang: 'en', h1: PAGES[3].h1.en }
+// `text`: a localised text the destination shows (PAGES); the region page
+// shows its name on the map (FE-4 PR 2), the others as their <h1>.
+const navigations: { from: string; to: string; lang: string; text: string }[] = [
+	{ from: '/en/', to: '/ru/dishes/tortilla', lang: 'ru', text: PAGES[2].text.ru },
+	{ from: '/en/', to: '/es/regions/gal', lang: 'es', text: PAGES[1].text.es },
+	{ from: '/ru/', to: '/en/dishes/tortilla/gal', lang: 'en', text: PAGES[3].text.en }
 ];
 
 test.describe('<html lang> on client-side navigation', () => {
@@ -34,7 +36,8 @@ test.describe('<html lang> on client-side navigation', () => {
 		test(`${nav.from} -> ${nav.to} sets lang="${nav.lang}"`, async ({ page }) => {
 			await page.goto(nav.from, { waitUntil: 'networkidle' });
 			await clientNavigate(page, nav.to);
-			await expect(page.locator('h1')).toHaveText(nav.h1);
+			const shown = page.getByText(nav.text, { exact: true }).filter({ visible: true });
+			await expect(shown.first(), `got no visible "${nav.text}"`).toBeVisible();
 			await expect.poll(() => page.evaluate(() => document.documentElement.lang)).toBe(nav.lang);
 		});
 	}

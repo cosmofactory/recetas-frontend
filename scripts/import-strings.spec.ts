@@ -93,10 +93,15 @@ const SAMPLE_KEYS = [
 ];
 
 describe('PLURAL_KEYS', () => {
-	it('lists exactly the plural arrays of strings.json: home.variation and home.dish', async () => {
+	// home.region is extra-strings.json's (FE-4 regions eyebrow).
+	it('lists exactly the plural arrays: home.variation, home.dish and home.region', async () => {
 		const keys = await loadExport<Iterable<string>>(SCRIPT, 'PLURAL_KEYS');
 		const got = [...keys].sort();
-		expect(got, `got ${JSON.stringify(got)}`).toEqual(['home.dish', 'home.variation']);
+		expect(got, `got ${JSON.stringify(got)}`).toEqual([
+			'home.dish',
+			'home.region',
+			'home.variation'
+		]);
 	});
 });
 
@@ -240,6 +245,20 @@ describe('src/lib/i18n/extra-strings.json', () => {
 			const got = messageKeys((await loadConvert())({}, extra)[locale]);
 			const missing = EXTRA_MESSAGE_KEYS.filter((k) => !got.includes(k));
 			expect(missing, `got missing keys ${JSON.stringify(missing)}, want none`).toEqual([]);
+		});
+	}
+
+	// FE-4 meta row: "14 REGIONS" counts the API's regions, so it is a plural
+	// (the design's home.regionsCount is the fixed string "14 regions").
+	const regionForms: [Locale, Record<string, string>][] = [
+		['en', { one: 'region', other: 'regions' }],
+		['es', { one: 'región', other: 'regiones' }],
+		['ru', { one: 'регион', few: 'региона', many: 'регионов' }]
+	];
+	for (const [locale, forms] of regionForms) {
+		it(`turns the extra ${locale} home.region into a plural message`, async () => {
+			const got = (await loadConvert())({}, readJson(extraPath))[locale].home_region;
+			expectPluralMessage(got, forms);
 		});
 	}
 });

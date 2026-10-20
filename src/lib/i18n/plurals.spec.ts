@@ -45,8 +45,45 @@ const WANT: Record<string, Record<string, readonly string[]>> = {
 		en: ['0 dishes', '1 dish', '2 dishes', '5 dishes', '11 dishes', '21 dishes', '101 dishes'],
 		es: ['0 platos', '1 plato', '2 platos', '5 platos', '11 platos', '21 platos', '101 platos'],
 		ru: ['0 блюд', '1 блюдо', '2 блюда', '5 блюд', '11 блюд', '21 блюдо', '101 блюдо']
+	},
+	// FE-4 meta row: the regions eyebrow from the API's region count.
+	home_region: {
+		en: [
+			'0 regions',
+			'1 region',
+			'2 regions',
+			'5 regions',
+			'11 regions',
+			'21 regions',
+			'101 regions'
+		],
+		es: [
+			'0 regiones',
+			'1 región',
+			'2 regiones',
+			'5 regiones',
+			'11 regiones',
+			'21 regiones',
+			'101 regiones'
+		],
+		ru: [
+			'0 регионов',
+			'1 регион',
+			'2 региона',
+			'5 регионов',
+			'11 регионов',
+			'21 регион',
+			'101 регион'
+		]
 	}
 };
+
+// The catalog's 14 regions read exactly as the design's home.regionsCount.
+const FOURTEEN_REGIONS: [string, string][] = [
+	['en', '14 regions'],
+	['es', '14 regiones'],
+	['ru', '14 регионов']
+];
 
 // The stage file's own examples: 3 варианта, 13 вариантов, 22 варианта, 111 вариантов.
 const RU_EXTRA: [number, string][] = [
@@ -76,6 +113,15 @@ describe('compiled plural messages', () => {
 			const message = (await loadMessages()).home_variation;
 			expect(message, 'got no compiled message home_variation').toBeTypeOf('function');
 			const got = message({ count }, { locale: 'ru' });
+			expect(got, `got ${got}, want ${want}`).toBe(want);
+		});
+	}
+
+	for (const [locale, want] of FOURTEEN_REGIONS) {
+		it(`home_region in ${locale} for 14 is the design's "${want}"`, async () => {
+			const message = (await loadMessages()).home_region;
+			expect(message, 'got no compiled message home_region').toBeTypeOf('function');
+			const got = message({ count: 14 }, { locale });
 			expect(got, `got ${got}, want ${want}`).toBe(want);
 		});
 	}

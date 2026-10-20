@@ -1,7 +1,15 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { loadExport, repoFile } from '../../testutil/load-export';
-import { navigation, type NavigationSpec, type FakeNavigation } from '../../testutil/navigation';
+import {
+	DISH_ROUTE_ID,
+	HOME_ROUTE_ID,
+	navigation,
+	RECIPE_ROUTE_ID,
+	REGION_ROUTE_ID,
+	type NavigationSpec,
+	type FakeNavigation
+} from '../../testutil/navigation';
 
 // FE-3 PagePush, the direction logic (src/lib/ui/page-push.ts, pure).
 // Mobile README -> Screen 2: the Variations page "pushes in from the right
@@ -217,5 +225,23 @@ describe('PagePush wiring in the root layout', () => {
 			/import\s*\{[^}]*\bpagePush\b[^}]*\}\s*from\s*'#lib\/ui\/page-push\.svelte\.ts'/
 		);
 		expect(source, 'want a pagePush() call').toMatch(/\bpagePush\(\s*\)/);
+	});
+});
+
+// The fake navigations carry the route ids SvelteKit reports, so the depth
+// table is tested against the real routes: FE-4 moved home and the region
+// URL into the (home) route group (one layout keeps the header and map
+// mounted), which changes their ids to /[lang=lang]/(home)….
+describe('route ids the depth table is tested with', () => {
+	for (const id of [HOME_ROUTE_ID, REGION_ROUTE_ID, DISH_ROUTE_ID, RECIPE_ROUTE_ID]) {
+		it(`${id} is a page in src/routes`, () => {
+			const file = `src/routes${id}/+page.svelte`;
+			expect(existsSync(repoFile(file)), `got no ${file}, want the route's page`).toBe(true);
+		});
+	}
+
+	it('the (home) group has the shared layout', () => {
+		const file = `src/routes${HOME_ROUTE_ID}/+layout.svelte`;
+		expect(existsSync(repoFile(file)), `got no ${file}, want the home shell layout`).toBe(true);
 	});
 });
