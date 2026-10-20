@@ -32,7 +32,10 @@ function headHrefs(html: string): string[] {
 	return links.map((l) => /\bhref="([^"]*)"/.exec(l)?.[1] ?? '');
 }
 
-test.describe('stub pages', () => {
+// FE-4 PR 2: home and the region URL render the home shell; the region's
+// own heading arrives with its sheet (PR 3), so the region page is checked
+// for its localised name (on the map), not an <h1>.
+test.describe('pages render server-side', () => {
 	for (const p of PAGES) {
 		for (const locale of LOCALES) {
 			const url = localePath(locale, p.path);
@@ -42,8 +45,10 @@ test.describe('stub pages', () => {
 				const html = await res.text();
 				const lang = htmlLang(html);
 				expect(lang, `got <html lang="${lang}">, want ${locale}`).toBe(locale);
-				expect(html, `got no <h1> "${p.h1[locale]}" in the HTML`).toMatch(
-					new RegExp(`<h1[^>]*>\\s*${p.h1[locale]}\\s*</h1>`)
+				expect(html, `got no "${p.text[locale]}" in the HTML`).toContain(p.text[locale]);
+				if (!p.h1) return;
+				expect(html, `got no <h1> "${p.text[locale]}" in the HTML`).toMatch(
+					new RegExp(`<h1[^>]*>\\s*${p.text[locale]}\\s*</h1>`)
 				);
 			});
 		}
@@ -58,7 +63,7 @@ test.describe('the URL wins over cookie and Accept-Language', () => {
 			expect(res.status(), `got status ${res.status()}, want 200 (no redirect)`).toBe(200);
 			const html = await res.text();
 			expect(htmlLang(html), 'got the wrong <html lang>, want ru').toBe('ru');
-			expect(html, `got no Russian <h1> ${p.h1.ru}`).toContain(p.h1.ru);
+			expect(html, `got no Russian "${p.text.ru}"`).toContain(p.text.ru);
 		});
 	}
 
@@ -70,7 +75,7 @@ test.describe('the URL wins over cookie and Accept-Language', () => {
 		await page.goto('/ru/dishes/tortilla');
 		expect(new URL(page.url()).pathname).toBe('/ru/dishes/tortilla');
 		await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
-		await expect(page.locator('h1')).toHaveText(PAGES[2].h1.ru);
+		await expect(page.locator('h1')).toHaveText(PAGES[2].text.ru);
 	});
 });
 
@@ -200,13 +205,18 @@ test.describe('localised 404', () => {
 	});
 });
 
+// FE-4 PR 2: the home shows one visible <h1>; on desktop it is the "How
+// Spain really cooks" title (home-regional.e2e.ts pins that), on mobile,
+// where that block is hidden, the shell picks its own.
 test.describe('smoke in every locale', () => {
 	for (const locale of LOCALES) {
 		test(`/${locale}/ renders its heading without horizontal scroll`, async ({ page }) => {
 			const res = await page.goto(`/${locale}/`);
 			expect(res?.status(), `got status ${res?.status()}, want 200`).toBe(200);
 			await expect(page.locator('html')).toHaveAttribute('lang', locale);
-			await expect(page.locator('h1')).toHaveText(PAGES[0].h1[locale]);
+			const h1 = page.locator('h1').filter({ visible: true });
+			await expect(h1, 'want exactly one visible <h1>').toHaveCount(1);
+			await expect(h1).not.toHaveText('');
 			await expect(page.getByTestId('app-shell')).toHaveCount(1);
 			const m = await page.evaluate(() => ({
 				scroll: document.documentElement.scrollWidth,

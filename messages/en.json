@@ -91,11 +91,22 @@
 	"errors_serverErrorTitle": "Something went wrong",
 	"errors_serverErrorBody": "Please try again in a moment.",
 	"errors_backHome": "Back to the map",
+	"home_region": [
+		{
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "{count} region",
+				"countPlural=other": "{count} regions"
+			}
+		}
+	],
 	"a11y_search": "Search",
 	"a11y_back": "Back",
 	"a11y_close": "Close",
 	"a11y_check": "Check",
 	"a11y_sheetHandle": "Expand or collapse",
+	"a11y_homeTabs": "Browse",
 	"devUi_title": "UI primitives (dev only)",
 	"devUi_iconButtons": "Icon buttons",
 	"devUi_chips": "Chips",

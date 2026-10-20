@@ -3,7 +3,8 @@ import { expect, test } from '@playwright/test';
 test('home page renders', async ({ page }) => {
 	const response = await page.goto('/');
 	expect(response?.status()).toBe(200);
-	await expect(page.locator('h1')).toBeVisible();
+	// The home renders both layouts; only one <h1> shows at a time (FE-4).
+	await expect(page.locator('h1').filter({ visible: true })).toHaveCount(1);
 });
 
 test('/healthz is ok', async ({ request }) => {

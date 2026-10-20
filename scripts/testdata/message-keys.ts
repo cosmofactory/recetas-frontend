@@ -7,7 +7,9 @@
 // ("With pork" -> "withPork", "Slow-cooked" -> "slowCooked", "L" -> "l").
 // Plain lists become one key per item, suffixed with the index. The top-level
 // "_note" is not a message.
-export const PLURAL_MESSAGE_KEYS = ['home_variation', 'home_dish'] as const;
+// home_region comes from extra-strings.json (FE-4: the regions eyebrow
+// counts the API's regions; the design's "14 regions" is a fixed string).
+export const PLURAL_MESSAGE_KEYS = ['home_variation', 'home_dish', 'home_region'] as const;
 
 const indexed = (prefix: string, n: number) =>
 	Array.from({ length: n }, (_, i) => `${prefix}_${i}`);
@@ -96,7 +98,11 @@ export const EXTRA_MESSAGE_KEYS = [
 	'a11y_search',
 	'a11y_back',
 	'a11y_close',
-	'a11y_check'
+	'a11y_check',
+	// FE-4: the home regions eyebrow (a plural on the API's region count) and
+	// the Regional | Popular tablist's accessible name.
+	'home_region',
+	'a11y_homeTabs'
 ] as const;
 
 // Moved to a11y_* (FE-3 review); the dev gallery block keeps only its own copy.

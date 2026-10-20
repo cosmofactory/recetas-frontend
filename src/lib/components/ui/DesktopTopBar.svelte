@@ -1,19 +1,11 @@
 <script lang="ts">
 	import type { ComponentProps, Snippet } from 'svelte';
+	import LanguageButton from './LanguageButton.svelte';
 	import SegmentedSwitch from './SegmentedSwitch.svelte';
-	import { ICONS } from './icons.ts';
 
-	// The bar sets the switch's size itself.
+	// The bar sets the switch's and the language button's size itself.
 	type Tabs = Omit<ComponentProps<typeof SegmentedSwitch>, 'size'>;
-	// code: the current locale; label: the localized "Language" message.
-	// controls: the id of the language menu (FE-7) the button opens.
-	type Language = {
-		label: string;
-		code: string;
-		expanded: boolean;
-		controls?: string;
-		onclick: (event: MouseEvent) => void;
-	};
+	type Language = Omit<ComponentProps<typeof LanguageButton>, 'size'>;
 	// search: the inline search field (FE-7); languageMenu: the menu,
 	// anchored under the language button.
 	type Props = {
@@ -25,10 +17,6 @@
 	};
 
 	let { homeHref, tabs, language, search, languageMenu }: Props = $props();
-
-	// Desktop prototype: the "▾" is 9px text; the chevron needs a little more to read the same.
-	const CARET_ICON_PX = 12;
-	const Caret = ICONS.caret;
 </script>
 
 <header class="top-bar desktop-only">
@@ -46,17 +34,7 @@
 		<div class="spacer"></div>
 		{@render search?.()}
 		<div class="language">
-			<button
-				type="button"
-				class="language-button"
-				aria-expanded={language.expanded}
-				aria-controls={language.controls}
-				onclick={language.onclick}
-			>
-				<span>{language.code.toUpperCase()}</span>
-				<span class="visually-hidden">{language.label}</span>
-				<span class="caret" aria-hidden="true"><Caret size={CARET_ICON_PX} /></span>
-			</button>
+			<LanguageButton {...language} size="desktop" />
 			{@render languageMenu?.()}
 		</div>
 	</div>
@@ -112,35 +90,5 @@
 	.language {
 		position: relative;
 		flex: none;
-	}
-
-	/* Prototype: "height:44px;padding:0 14px 0 16px;...gap:7px;font-size:12.5px;font-weight:700;letter-spacing:.08em". */
-	.language-button {
-		box-sizing: content-box;
-		position: relative;
-		display: flex;
-		align-items: center;
-		gap: 7px;
-		height: 44px;
-		padding: 0 14px 0 16px;
-		border: 1.5px solid var(--border-language-button);
-		border-radius: var(--radius-pill);
-		background: transparent;
-		color: var(--ink);
-		font: 700 12.5px var(--font-text);
-		letter-spacing: 0.08em;
-		cursor: pointer;
-		transition: background-color var(--dur-colour);
-	}
-
-	.caret {
-		display: flex;
-		opacity: 0.55;
-	}
-
-	@media (hover: hover) {
-		.language-button:hover {
-			background: var(--bg-hover-subtle);
-		}
 	}
 </style>

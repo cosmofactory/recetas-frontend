@@ -114,6 +114,23 @@
 	--dur-map-hover: 150ms;
 
 	/*
+	 * Home Regional (FE-4). Mobile README -> Regional tab: the eyebrow is
+	 * "ink-3 at .55" (prototype rgba(43,30,22,.55), on both layouts). Desktop
+	 * README -> Regional: the map's "max-width max(560px, calc((100vh −
+	 * 360px) × 14/11))" (14/11: the map grid's aspect); the prototype's "How
+	 * Spain really cooks" block gives the rule rgba(43,30,22,.12), the
+	 * paragraph rgba(43,30,22,.64), the title clamp and the column gap.
+	 */
+	--ink-eyebrow: rgba(43, 30, 22, 0.55);
+	--map-max-width-desktop: max(560px, calc((100vh - 360px) * 14 / 11));
+	/* Mobile: the map inside its size-container frame (cq units), "max-height: 100%" at 14/11. */
+	--map-max-width-mobile: min(100cqw, calc(100cqh * 14 / 11));
+	--border-about: rgba(43, 30, 22, 0.12);
+	--ink-about: rgba(43, 30, 22, 0.64);
+	--about-title-size: clamp(28px, 2.6vw, 38px);
+	--about-gap: clamp(20px, 3vw, 40px);
+
+	/*
 	 * The design gives no focus colour; ink is its existing high-contrast UI
 	 * colour (on every page and surface background).
 	 */

@@ -17,8 +17,8 @@ export type PageNavigation = {
 };
 
 const ROUTE_DEPTH: Record<string, number> = {
-	'/[lang=lang]': 0,
-	'/[lang=lang]/regions/[regionKey]': 0,
+	'/[lang=lang]/(home)': 0,
+	'/[lang=lang]/(home)/regions/[regionKey]': 0,
 	'/[lang=lang]/dishes/[dishKey]': 1,
 	'/[lang=lang]/dishes/[dishKey]/[regionKey]': 2
 };

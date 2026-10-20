@@ -5,37 +5,52 @@ import { expect, type APIRequestContext, type APIResponse } from '@playwright/te
 export const LOCALES = ['en', 'es', 'ru'] as const;
 export type Locale = (typeof LOCALES)[number];
 
-// The stub pages and the <h1> each one renders. home: desktop.aboutTitle
-// (strings.json); region, dish and recipe: the localised region, dish and
-// variation name from the catalog (DATA_SOURCE=mock serves the bundle).
-export const PAGES: { name: string; path: string; h1: Record<Locale, string> }[] = [
+// The pages and a localised text each one server-renders. `h1: true` when
+// that text is the page's <h1>. home: desktop.aboutTitle (strings.json), the
+// h1 of the desktop "How Spain really cooks" block (FE-4); region: the
+// localised region name, drawn on the map (FE-4 PR 2 renders the home shell
+// there; its own heading arrives with the region sheet in PR 3); dish and
+// recipe: the dish and variation name from the catalog (DATA_SOURCE=mock
+// serves the bundle).
+export type PageFixture = {
+	name: string;
+	path: string;
+	text: Record<Locale, string>;
+	h1: boolean;
+};
+
+export const PAGES: PageFixture[] = [
 	{
 		name: 'home',
 		path: '/',
-		h1: {
+		text: {
 			en: 'How Spain really cooks',
 			es: 'Así cocina España de verdad',
 			ru: 'Как на самом деле готовит Испания'
-		}
+		},
+		h1: true
 	},
 	{
 		name: 'region',
 		path: '/regions/gal',
-		h1: { en: 'Galicia', es: 'Galicia', ru: 'Галисия' }
+		text: { en: 'Galicia', es: 'Galicia', ru: 'Галисия' },
+		h1: false
 	},
 	{
 		name: 'dish',
 		path: '/dishes/tortilla',
-		h1: { en: 'Tortilla de patatas', es: 'Tortilla de patatas', ru: 'Тортилья' }
+		text: { en: 'Tortilla de patatas', es: 'Tortilla de patatas', ru: 'Тортилья' },
+		h1: true
 	},
 	{
 		name: 'recipe',
 		path: '/dishes/tortilla/gal',
-		h1: {
+		text: {
 			en: 'Betanzos-style runny',
 			es: 'Estilo Betanzos, jugosa',
 			ru: 'По-бетансосски, жидкая внутри'
-		}
+		},
+		h1: true
 	}
 ];
 

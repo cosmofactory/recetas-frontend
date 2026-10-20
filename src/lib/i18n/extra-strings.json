@@ -23,27 +23,41 @@
 			"backHome": "Вернуться к карте"
 		}
 	},
+	"home": {
+		"en": {
+			"region": ["region", "regions"]
+		},
+		"es": {
+			"region": ["región", "regiones"]
+		},
+		"ru": {
+			"region": ["регион", "региона", "регионов"]
+		}
+	},
 	"a11y": {
 		"en": {
 			"search": "Search",
 			"back": "Back",
 			"close": "Close",
 			"check": "Check",
-			"sheetHandle": "Expand or collapse"
+			"sheetHandle": "Expand or collapse",
+			"homeTabs": "Browse"
 		},
 		"es": {
 			"search": "Buscar",
 			"back": "Atrás",
 			"close": "Cerrar",
 			"check": "Marcar",
-			"sheetHandle": "Expandir o contraer"
+			"sheetHandle": "Expandir o contraer",
+			"homeTabs": "Explorar"
 		},
 		"ru": {
 			"search": "Поиск",
 			"back": "Назад",
 			"close": "Закрыть",
 			"check": "Отметить",
-			"sheetHandle": "Развернуть или свернуть"
+			"sheetHandle": "Развернуть или свернуть",
+			"homeTabs": "Обзор"
 		}
 	},
 	"devUi": {

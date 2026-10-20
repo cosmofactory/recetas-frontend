@@ -26,19 +26,23 @@ const ORIGIN = 'http://localhost';
 type Matched = { id: string | null; params: Record<string, string> };
 
 // The app's routes (src/routes/[lang=lang]/...), matched by segment shape.
+// FE-4: home and a region share the (home) route group, so the layout with
+// the header and map stays mounted between them (stage FE-4, Small decisions).
+export const HOME_ROUTE_ID = '/[lang=lang]/(home)';
+export const REGION_ROUTE_ID = '/[lang=lang]/(home)/regions/[regionKey]';
+export const DISH_ROUTE_ID = '/[lang=lang]/dishes/[dishKey]';
+export const RECIPE_ROUTE_ID = '/[lang=lang]/dishes/[dishKey]/[regionKey]';
+
 function matchRoute(lang: string, rest: string[]): Matched {
 	const [section, first, second, ...extra] = rest;
 	if (extra.length > 0) return { id: null, params: {} };
-	if (section === undefined) return { id: '/[lang=lang]', params: { lang } };
+	if (section === undefined) return { id: HOME_ROUTE_ID, params: { lang } };
 	if (section === 'regions' && first && !second)
-		return { id: '/[lang=lang]/regions/[regionKey]', params: { lang, regionKey: first } };
+		return { id: REGION_ROUTE_ID, params: { lang, regionKey: first } };
 	if (section === 'dishes' && first && !second)
-		return { id: '/[lang=lang]/dishes/[dishKey]', params: { lang, dishKey: first } };
+		return { id: DISH_ROUTE_ID, params: { lang, dishKey: first } };
 	if (section === 'dishes' && first && second)
-		return {
-			id: '/[lang=lang]/dishes/[dishKey]/[regionKey]',
-			params: { lang, dishKey: first, regionKey: second }
-		};
+		return { id: RECIPE_ROUTE_ID, params: { lang, dishKey: first, regionKey: second } };
 	if (section === '_dev' && first === 'ui' && !second)
 		return { id: '/[lang=lang]/_dev/ui', params: { lang } };
 	return { id: null, params: {} };

@@ -93,11 +93,23 @@
 	"errors_serverErrorTitle": "Algo salió mal",
 	"errors_serverErrorBody": "Inténtalo de nuevo en un momento.",
 	"errors_backHome": "Volver al mapa",
+	"home_region": [
+		{
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "{count} región",
+				"countPlural=other": "{count} regiones",
+				"countPlural=many": "{count} regiones"
+			}
+		}
+	],
 	"a11y_search": "Buscar",
 	"a11y_back": "Atrás",
 	"a11y_close": "Cerrar",
 	"a11y_check": "Marcar",
 	"a11y_sheetHandle": "Expandir o contraer",
+	"a11y_homeTabs": "Explorar",
 	"devUi_title": "Componentes de interfaz (solo desarrollo)",
 	"devUi_iconButtons": "Botones de icono",
 	"devUi_chips": "Chips",

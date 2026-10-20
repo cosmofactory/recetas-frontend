@@ -1,3 +1,4 @@
+import { POPULAR, TAB_PARAM } from '#lib/ui/home-tab.ts';
 import { baseLocale, locales } from './locales.ts';
 
 export type HeadLinks = {
@@ -7,8 +8,7 @@ export type HeadLinks = {
 
 // The only indexable query param: the home page's Popular tab
 // (/:lang/?tab=popular). Regional is the default and has no param.
-const TAB_PARAM = 'tab';
-const INDEXABLE_TABS = new Set(['popular']);
+const INDEXABLE_TABS: ReadonlySet<string> = new Set([POPULAR]);
 const HOME_PATH = '/';
 
 // URL, or SvelteKit's read-only page.url.

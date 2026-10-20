@@ -1,0 +1,89 @@
+<script lang="ts">
+	import { CARET_ICON_PX, ICONS } from './icons.ts';
+
+	// code: the current locale; label: the localized "Language" message.
+	// expanded / controls / onclick: the language menu (FE-7) it opens.
+	// size: the mobile header's or the desktop top bar's button.
+	type Props = {
+		code: string;
+		label: string;
+		expanded: boolean;
+		controls?: string;
+		onclick?: (event: MouseEvent) => void;
+		size?: 'mobile' | 'desktop';
+	};
+
+	let { code, label, expanded, controls, onclick, size = 'mobile' }: Props = $props();
+
+	const Caret = ICONS.caret;
+</script>
+
+<button
+	type="button"
+	class="language-button"
+	class:desktop={size === 'desktop'}
+	aria-expanded={expanded}
+	aria-controls={controls}
+	{onclick}
+>
+	<span>{code.toUpperCase()}</span>
+	<span class="visually-hidden">{label}</span>
+	<span class="caret" aria-hidden="true"><Caret size={CARET_ICON_PX} /></span>
+</button>
+
+<style>
+	/*
+	 * Mobile README -> Header: "height 40px, padding 0 12px 0 14px, pill,
+	 * 1.5px --border-chip, 12px/700, letter-spacing .08em: current code + small
+	 * ▾ (9px, opacity .55)"; the prototype adds "gap:6px" and the search
+	 * button's hover. 40px is the outer height, like the IconButton beside it.
+	 */
+	.language-button {
+		position: relative;
+		display: flex;
+		flex: none;
+		align-items: center;
+		gap: 6px;
+		height: 40px;
+		padding: 0 12px 0 14px;
+		border: 1.5px solid var(--border-chip);
+		border-radius: var(--radius-pill);
+		background: transparent;
+		color: var(--ink);
+		font: 700 12px var(--font-text);
+		letter-spacing: 0.08em;
+		cursor: pointer;
+		transition: background-color var(--dur-colour);
+	}
+
+	/*
+	 * Desktop prototype top bar: "height:44px;padding:0 14px 0 16px;...
+	 * gap:7px;font-size:12.5px", border rgba(43,30,22,.2). Its boxes are
+	 * content-box, so the button is 44px plus its border (prototype wins).
+	 */
+	.language-button.desktop {
+		box-sizing: content-box;
+		gap: 7px;
+		height: 44px;
+		padding: 0 14px 0 16px;
+		border-color: var(--border-language-button);
+		font-size: 12.5px;
+	}
+
+	.language-button::before {
+		content: '';
+		position: absolute;
+		inset: var(--hit-inset);
+	}
+
+	.caret {
+		display: flex;
+		opacity: 0.55;
+	}
+
+	@media (hover: hover) {
+		.language-button:hover {
+			background: var(--bg-hover-subtle);
+		}
+	}
+</style>
