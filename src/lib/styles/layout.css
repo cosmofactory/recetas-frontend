@@ -63,6 +63,21 @@
 	--radius-button-compact: 13px;
 
 	/*
+	 * Mobile README -> Screen 2 sticky top bar: "bg rgba(246,239,227,.94) +
+	 * backdrop-filter: blur(8px)", back button "bg rgba(43,30,22,.07)", the
+	 * title "fades in (opacity 0 → 1, 200ms)"; the prototype adds the back
+	 * hover and `z-index:3`. Desktop prototype: back pill hover (its resting
+	 * colour is --bg-hover-subtle).
+	 */
+	--bg-top-bar: rgba(246, 239, 227, 0.94);
+	--blur-top-bar: blur(8px);
+	--bg-back-button: rgba(43, 30, 22, 0.07);
+	--bg-back-button-hover: rgba(43, 30, 22, 0.13);
+	--dur-top-bar-title: 200ms;
+	--z-top-bar: 3;
+	--bg-back-pill-hover: rgba(43, 30, 22, 0.11);
+
+	/*
 	 * The design gives no focus colour; ink is its existing high-contrast UI
 	 * colour (on every page and surface background).
 	 */

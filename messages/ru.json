@@ -111,5 +111,6 @@
 	"devUi_sheetPeek": "Выглядывает",
 	"devUi_sheetExpanded": "Развёрнута",
 	"devUi_openOverlay": "Открыть всплывающую панель",
-	"devUi_stickyPanel": "Закреплённая панель"
+	"devUi_stickyPanel": "Закреплённая панель",
+	"devUi_navigation": "Навигация"
 }

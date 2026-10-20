@@ -17,6 +17,11 @@ import { repoFile } from '../../testutil/load-export';
 // --shadow-card-hover     0 10px 26px rgba(43,30,22,.1)   desktop README -> Popular:
 //                                                "hover lifts 2px with shadow ..."
 // --radius-button-compact 13px                   prototype "Show results" (compact)
+// --bg-top-bar            rgba(246,239,227,.94)  StickyTopBar background
+// --blur-top-bar          blur(8px)              StickyTopBar backdrop-filter
+// --bg-back-button        rgba(43,30,22,.07)     StickyTopBar back circle
+// --bg-back-button-hover  rgba(43,30,22,.13)     its hover (prototype)
+// --bg-back-pill-hover    rgba(43,30,22,.11)     desktop BackPill hover (prototype)
 // --focus-ring            (any colour)           the shared :focus-visible ring
 //
 // The values are compared after normalising formatting (whitespace, a
@@ -36,7 +41,18 @@ const TOKENS: Record<string, string> = {
 	'--shadow-card-hover': '0 10px 26px rgba(43,30,22,.1)',
 	// Prototype (Asadorov Explorations.dc.html l.223/349): compact primary
 	// "Show results" is "border-radius:13px".
-	'--radius-button-compact': '13px'
+	'--radius-button-compact': '13px',
+	// FE-3 navigation. Mobile README -> Screen 2 sticky top bar: "bg
+	// rgba(246,239,227,.94) + backdrop-filter: blur(8px)", back button "bg
+	// rgba(43,30,22,.07)"; prototype (DishVariations/Recipe.dc.html) back
+	// hover "rgba(43,30,22,.13)". Desktop prototype back pill hover
+	// "rgba(43,30,22,.11)" (its resting rgba(43,30,22,.06) is already
+	// --bg-hover-subtle).
+	'--bg-top-bar': 'rgba(246,239,227,.94)',
+	'--blur-top-bar': 'blur(8px)',
+	'--bg-back-button': 'rgba(43,30,22,.07)',
+	'--bg-back-button-hover': 'rgba(43,30,22,.13)',
+	'--bg-back-pill-hover': 'rgba(43,30,22,.11)'
 };
 
 // Tokens whose value the design leaves open: declared once, any value.
