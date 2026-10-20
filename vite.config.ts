@@ -47,7 +47,20 @@ export default defineConfig({
 					name: 'server',
 					environment: 'node',
 					include: ['src/**/*.{test,spec}.{js,ts}', 'scripts/**/*.{test,spec}.{js,ts}'],
-					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
+					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}'],
+					// Pre-bundled once: transforming the compiler's many modules
+					// per test file costs seconds under a full parallel run.
+					deps: {
+						optimizer: {
+							ssr: {
+								enabled: true,
+								// Any other svelte/* subpath a server spec imports (directly or
+								// via compiled components) must be listed here too, or it loads
+								// a second copy of Svelte internals beside the bundled one.
+								include: ['svelte/compiler', 'svelte/server', 'svelte/internal/server', 'svelte']
+							}
+						}
+					}
 				}
 			}
 		]

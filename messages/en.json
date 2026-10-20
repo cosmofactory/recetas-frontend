@@ -90,5 +90,15 @@
 	"errors_notFoundBody": "We couldn't find that page.",
 	"errors_serverErrorTitle": "Something went wrong",
 	"errors_serverErrorBody": "Please try again in a moment.",
-	"errors_backHome": "Back to the map"
+	"errors_backHome": "Back to the map",
+	"a11y_search": "Search",
+	"a11y_back": "Back",
+	"a11y_close": "Close",
+	"a11y_check": "Check",
+	"devUi_title": "UI primitives (dev only)",
+	"devUi_iconButtons": "Icon buttons",
+	"devUi_chips": "Chips",
+	"devUi_segmentedSwitch": "Segmented switch",
+	"devUi_buttons": "Buttons",
+	"devUi_photos": "Photos"
 }

@@ -92,5 +92,15 @@
 	"errors_notFoundBody": "No hemos encontrado esa página.",
 	"errors_serverErrorTitle": "Algo salió mal",
 	"errors_serverErrorBody": "Inténtalo de nuevo en un momento.",
-	"errors_backHome": "Volver al mapa"
+	"errors_backHome": "Volver al mapa",
+	"a11y_search": "Buscar",
+	"a11y_back": "Atrás",
+	"a11y_close": "Cerrar",
+	"a11y_check": "Marcar",
+	"devUi_title": "Componentes de interfaz (solo desarrollo)",
+	"devUi_iconButtons": "Botones de icono",
+	"devUi_chips": "Chips",
+	"devUi_segmentedSwitch": "Selector segmentado",
+	"devUi_buttons": "Botones",
+	"devUi_photos": "Fotos"
 }

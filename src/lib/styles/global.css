@@ -4,11 +4,6 @@
 	box-sizing: border-box;
 }
 
-:root {
-	/* Content max-width cap (F6); tokens.css has no width token. */
-	--content-max-width: 1440px;
-}
-
 body {
 	margin: 0;
 	background: var(--bg-page);

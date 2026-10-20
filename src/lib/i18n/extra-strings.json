@@ -22,5 +22,51 @@
 			"serverErrorBody": "Попробуйте ещё раз чуть позже.",
 			"backHome": "Вернуться к карте"
 		}
+	},
+	"a11y": {
+		"en": {
+			"search": "Search",
+			"back": "Back",
+			"close": "Close",
+			"check": "Check"
+		},
+		"es": {
+			"search": "Buscar",
+			"back": "Atrás",
+			"close": "Cerrar",
+			"check": "Marcar"
+		},
+		"ru": {
+			"search": "Поиск",
+			"back": "Назад",
+			"close": "Закрыть",
+			"check": "Отметить"
+		}
+	},
+	"devUi": {
+		"en": {
+			"title": "UI primitives (dev only)",
+			"iconButtons": "Icon buttons",
+			"chips": "Chips",
+			"segmentedSwitch": "Segmented switch",
+			"buttons": "Buttons",
+			"photos": "Photos"
+		},
+		"es": {
+			"title": "Componentes de interfaz (solo desarrollo)",
+			"iconButtons": "Botones de icono",
+			"chips": "Chips",
+			"segmentedSwitch": "Selector segmentado",
+			"buttons": "Botones",
+			"photos": "Fotos"
+		},
+		"ru": {
+			"title": "Элементы интерфейса (только для разработки)",
+			"iconButtons": "Кнопки-иконки",
+			"chips": "Чипы",
+			"segmentedSwitch": "Переключатель",
+			"buttons": "Кнопки",
+			"photos": "Фото"
+		}
 	}
 }

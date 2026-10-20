@@ -1,5 +1,6 @@
 <script lang="ts">
 	import '#lib/styles/tokens.css';
+	import '#lib/styles/layout.css';
 	import '#lib/styles/fonts.css';
 	import '#lib/styles/global.css';
 	import { page } from '$app/state';
