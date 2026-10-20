@@ -11,6 +11,7 @@
 	import { localizedHref } from '#lib/i18n/localized-href.ts';
 	import { m } from '#lib/paraglide/messages.js';
 	import ContainersDemo from './ContainersDemo.svelte';
+	import NavigationDemo from './NavigationDemo.svelte';
 	import { PHOTO_SIZES, PHOTO_SLOTS, browseTabs, filterLabels, iconButtons } from './gallery.ts';
 	import type { PageProps } from './$types';
 
@@ -26,6 +27,8 @@
 	const dish = $derived(data.dishes[0]);
 	const region = $derived(data.regions[0]);
 	const dishHref = $derived(dish ? localizedHref(`/dishes/${dish.key}`, page.params.lang!) : '');
+	const homeHref = $derived(localizedHref('/', page.params.lang!));
+	const popularHref = $derived(localizedHref('/?tab=popular', page.params.lang!));
 </script>
 
 <svelte:head>
@@ -96,6 +99,8 @@
 		</section>
 
 		<ContainersDemo title={region?.name ?? ''} body={region?.description ?? ''} />
+
+		<NavigationDemo title={dish?.name ?? ''} {homeHref} {popularHref} />
 	</main>
 {/if}
 

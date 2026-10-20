@@ -109,5 +109,6 @@
 	"devUi_sheetPeek": "Asomada",
 	"devUi_sheetExpanded": "Desplegada",
 	"devUi_openOverlay": "Abrir la hoja superpuesta",
-	"devUi_stickyPanel": "Panel fijo"
+	"devUi_stickyPanel": "Panel fijo",
+	"devUi_navigation": "Navegación"
 }

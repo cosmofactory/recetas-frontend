@@ -1,0 +1,96 @@
+/*
+ * Page push (FE-3). Mobile README -> Screen 2: a deeper page "pushes in from
+ * the right over the home (translateX 102% → 0, 420ms --ease, shadow
+ * --shadow-page-push)"; going back slides it out again while the page below
+ * stays put (prototype). #lib/ui/page-push.svelte.ts sets the marks on
+ * <html>: data-page-push while a view transition runs, and
+ * data-page-push-fallback on the page container where the API is missing.
+ * Under reduced motion both marks are "fade".
+ */
+
+@keyframes page-push-slide-in {
+	from {
+		transform: translateX(102%);
+	}
+
+	to {
+		transform: translateX(0);
+	}
+}
+
+@keyframes page-push-slide-out {
+	from {
+		transform: translateX(0);
+	}
+
+	to {
+		transform: translateX(102%);
+	}
+}
+
+@keyframes page-push-fade-in {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes page-push-fade-out {
+	from {
+		opacity: 1;
+	}
+
+	to {
+		opacity: 0;
+	}
+}
+
+/* Both snapshots are opaque pages stacked, not a crossfade. */
+:root[data-page-push='push']::view-transition-old(root),
+:root[data-page-push='push']::view-transition-new(root),
+:root[data-page-push='pop']::view-transition-old(root),
+:root[data-page-push='pop']::view-transition-new(root) {
+	mix-blend-mode: normal;
+}
+
+:root[data-page-push='push']::view-transition-old(root),
+:root[data-page-push='pop']::view-transition-new(root) {
+	animation: none;
+}
+
+:root[data-page-push='push']::view-transition-new(root) {
+	box-shadow: var(--shadow-page-push);
+	animation: page-push-slide-in var(--dur-page) var(--ease);
+}
+
+/* The leaving page stays above the one it reveals. */
+:root[data-page-push='pop']::view-transition-old(root) {
+	z-index: 1;
+	box-shadow: var(--shadow-page-push);
+	animation: page-push-slide-out var(--dur-page) var(--ease) forwards;
+}
+
+:root[data-page-push='fade']::view-transition-old(root) {
+	animation: page-push-fade-out var(--dur-page) var(--ease) forwards;
+}
+
+:root[data-page-push='fade']::view-transition-new(root) {
+	animation: page-push-fade-in var(--dur-page) var(--ease);
+}
+
+/* The incoming page would otherwise widen the document while it slides. */
+:root[data-page-push-fallback='slide'] {
+	overflow-x: clip;
+}
+
+:root[data-page-push-fallback='slide'] .app-shell {
+	box-shadow: var(--shadow-page-push);
+	animation: page-push-slide-in var(--dur-page) var(--ease);
+}
+
+:root[data-page-push-fallback='fade'] .app-shell {
+	animation: page-push-fade-in var(--dur-page) var(--ease);
+}
