@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/env';
 	import { imageSetOrPlaceholder, intrinsicSize, type PhotoRole, type Photos } from '#lib/media.ts';
+	import { reportError } from '#lib/report-error.ts';
 
 	type Props = {
 		photos: Photos | null;
@@ -15,7 +16,7 @@
 	let { photos, role, sizes, alt, baseUrl, priority = false }: Props = $props();
 
 	// A bad prefix is a backend bug: log it once, on the server, not in every browser.
-	const report = browser ? undefined : (err: unknown) => console.error('media:', err);
+	const report = browser ? undefined : (err: unknown) => reportError('photo prefix rejected', err);
 
 	const set = $derived(
 		imageSetOrPlaceholder({ baseUrl, prefix: photos?.[role] ?? null, role, report })

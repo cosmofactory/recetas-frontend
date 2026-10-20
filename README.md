@@ -28,12 +28,17 @@ PUBLIC_ORIGIN=http://localhost:3000 BACKEND_API_BASE_URL=http://localhost:8080 p
 PUBLIC_ORIGIN=http://localhost:3000 DATA_SOURCE=mock pnpm start   # no backend: the vendored content bundle
 ```
 
-| Variable               | Required                 | Notes                                                                        |
-| ---------------------- | ------------------------ | ---------------------------------------------------------------------------- |
-| `PUBLIC_ORIGIN`        | yes (outside `vite dev`) | canonical and hreflang URLs, e.g. `https://demo.asadorov.es`                 |
-| `DATA_SOURCE`          | no                       | `api` (default) or `mock` (local dev and tests only)                         |
-| `BACKEND_API_BASE_URL` | when `DATA_SOURCE=api`   | internal Go API origin, e.g. `http://backend:8080`; dev default `:8080`      |
-| `MEDIA_BASE_URL`       | no (until INF-4)         | CloudFront base for photos, https with an optional path; unset: placeholders |
+| Variable                      | Required                 | Notes                                                                        |
+| ----------------------------- | ------------------------ | ---------------------------------------------------------------------------- |
+| `PUBLIC_ORIGIN`               | yes (outside `vite dev`) | canonical and hreflang URLs, e.g. `https://demo.asadorov.es`                 |
+| `DATA_SOURCE`                 | no                       | `api` (default) or `mock` (local dev and tests only)                         |
+| `BACKEND_API_BASE_URL`        | when `DATA_SOURCE=api`   | internal Go API origin, e.g. `http://backend:8080`; dev default `:8080`      |
+| `MEDIA_BASE_URL`              | no (until INF-4)         | CloudFront base for photos, https with an optional path; unset: placeholders |
+| `LOGFIRE_TOKEN`               | no                       | Logfire write token; unset: server telemetry off (stack.md B7)               |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | with `LOGFIRE_TOKEN`     | Logfire regional OTLP base URL, https; traces go to `<url>/v1/traces`        |
+| `APP_ENV`                     | with `LOGFIRE_TOKEN`     | `local`, `demo` or `prod` (`deployment.environment.name`)                    |
+| `OTEL_SERVICE_NAME`           | no                       | default `recetas-frontend`                                                   |
+| `APP_VERSION`                 | no                       | `service.version`; the Dockerfile sets it from the image tag (default `dev`) |
 
 ## API contract
 

@@ -15,7 +15,7 @@ export type {
 	VariationRef
 } from '#lib/server/catalog-source.ts';
 
-export type ErrorClass = new (message?: string) => Error;
+export type ErrorClass = new (message?: string, options?: ErrorOptions) => Error;
 
 // How the API serves a missing photo: every role null, never `photos: null`.
 export const NO_PHOTOS: Photos = { thumb: null, card: null, hero: null };
