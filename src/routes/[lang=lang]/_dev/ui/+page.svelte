@@ -10,6 +10,7 @@
 	import TextButton from '#lib/components/ui/TextButton.svelte';
 	import { localizedHref } from '#lib/i18n/localized-href.ts';
 	import { m } from '#lib/paraglide/messages.js';
+	import ContainersDemo from './ContainersDemo.svelte';
 	import { PHOTO_SIZES, PHOTO_SLOTS, browseTabs, filterLabels, iconButtons } from './gallery.ts';
 	import type { PageProps } from './$types';
 
@@ -23,6 +24,7 @@
 	const pressed: boolean[] = $state(labels.map((_, index) => index === 0));
 	let tab = $state(browseTabs()[0].value);
 	const dish = $derived(data.dishes[0]);
+	const region = $derived(data.regions[0]);
 	const dishHref = $derived(dish ? localizedHref(`/dishes/${dish.key}`, page.params.lang!) : '');
 </script>
 
@@ -92,6 +94,8 @@
 				/>
 			{/each}
 		</section>
+
+		<ContainersDemo title={region?.name ?? ''} body={region?.description ?? ''} />
 	</main>
 {/if}
 
