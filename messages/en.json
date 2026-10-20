@@ -95,10 +95,17 @@
 	"a11y_back": "Back",
 	"a11y_close": "Close",
 	"a11y_check": "Check",
+	"a11y_sheetHandle": "Expand or collapse",
 	"devUi_title": "UI primitives (dev only)",
 	"devUi_iconButtons": "Icon buttons",
 	"devUi_chips": "Chips",
 	"devUi_segmentedSwitch": "Segmented switch",
 	"devUi_buttons": "Buttons",
-	"devUi_photos": "Photos"
+	"devUi_photos": "Photos",
+	"devUi_containers": "Containers",
+	"devUi_sheetHidden": "Hidden",
+	"devUi_sheetPeek": "Peek",
+	"devUi_sheetExpanded": "Expanded",
+	"devUi_openOverlay": "Open the overlay sheet",
+	"devUi_stickyPanel": "Sticky panel"
 }

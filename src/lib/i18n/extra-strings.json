@@ -28,19 +28,22 @@
 			"search": "Search",
 			"back": "Back",
 			"close": "Close",
-			"check": "Check"
+			"check": "Check",
+			"sheetHandle": "Expand or collapse"
 		},
 		"es": {
 			"search": "Buscar",
 			"back": "Atrás",
 			"close": "Cerrar",
-			"check": "Marcar"
+			"check": "Marcar",
+			"sheetHandle": "Expandir o contraer"
 		},
 		"ru": {
 			"search": "Поиск",
 			"back": "Назад",
 			"close": "Закрыть",
-			"check": "Отметить"
+			"check": "Отметить",
+			"sheetHandle": "Развернуть или свернуть"
 		}
 	},
 	"devUi": {
@@ -50,7 +53,13 @@
 			"chips": "Chips",
 			"segmentedSwitch": "Segmented switch",
 			"buttons": "Buttons",
-			"photos": "Photos"
+			"photos": "Photos",
+			"containers": "Containers",
+			"sheetHidden": "Hidden",
+			"sheetPeek": "Peek",
+			"sheetExpanded": "Expanded",
+			"openOverlay": "Open the overlay sheet",
+			"stickyPanel": "Sticky panel"
 		},
 		"es": {
 			"title": "Componentes de interfaz (solo desarrollo)",
@@ -58,7 +67,13 @@
 			"chips": "Chips",
 			"segmentedSwitch": "Selector segmentado",
 			"buttons": "Botones",
-			"photos": "Fotos"
+			"photos": "Fotos",
+			"containers": "Contenedores",
+			"sheetHidden": "Oculta",
+			"sheetPeek": "Asomada",
+			"sheetExpanded": "Desplegada",
+			"openOverlay": "Abrir la hoja superpuesta",
+			"stickyPanel": "Panel fijo"
 		},
 		"ru": {
 			"title": "Элементы интерфейса (только для разработки)",
@@ -66,7 +81,13 @@
 			"chips": "Чипы",
 			"segmentedSwitch": "Переключатель",
 			"buttons": "Кнопки",
-			"photos": "Фото"
+			"photos": "Фото",
+			"containers": "Контейнеры",
+			"sheetHidden": "Скрыта",
+			"sheetPeek": "Выглядывает",
+			"sheetExpanded": "Развёрнута",
+			"openOverlay": "Открыть всплывающую панель",
+			"stickyPanel": "Закреплённая панель"
 		}
 	}
 }

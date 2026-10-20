@@ -97,10 +97,17 @@
 	"a11y_back": "Atrás",
 	"a11y_close": "Cerrar",
 	"a11y_check": "Marcar",
+	"a11y_sheetHandle": "Expandir o contraer",
 	"devUi_title": "Componentes de interfaz (solo desarrollo)",
 	"devUi_iconButtons": "Botones de icono",
 	"devUi_chips": "Chips",
 	"devUi_segmentedSwitch": "Selector segmentado",
 	"devUi_buttons": "Botones",
-	"devUi_photos": "Fotos"
+	"devUi_photos": "Fotos",
+	"devUi_containers": "Contenedores",
+	"devUi_sheetHidden": "Oculta",
+	"devUi_sheetPeek": "Asomada",
+	"devUi_sheetExpanded": "Desplegada",
+	"devUi_openOverlay": "Abrir la hoja superpuesta",
+	"devUi_stickyPanel": "Panel fijo"
 }

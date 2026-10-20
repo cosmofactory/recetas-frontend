@@ -99,10 +99,17 @@
 	"a11y_back": "Назад",
 	"a11y_close": "Закрыть",
 	"a11y_check": "Отметить",
+	"a11y_sheetHandle": "Развернуть или свернуть",
 	"devUi_title": "Элементы интерфейса (только для разработки)",
 	"devUi_iconButtons": "Кнопки-иконки",
 	"devUi_chips": "Чипы",
 	"devUi_segmentedSwitch": "Переключатель",
 	"devUi_buttons": "Кнопки",
-	"devUi_photos": "Фото"
+	"devUi_photos": "Фото",
+	"devUi_containers": "Контейнеры",
+	"devUi_sheetHidden": "Скрыта",
+	"devUi_sheetPeek": "Выглядывает",
+	"devUi_sheetExpanded": "Развёрнута",
+	"devUi_openOverlay": "Открыть всплывающую панель",
+	"devUi_stickyPanel": "Закреплённая панель"
 }

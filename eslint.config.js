@@ -31,6 +31,11 @@ const restrictedProperties = [
 const noBackendFetch =
 	'Load data in +page.server.ts via $lib/server/catalog.ts (FE-2, stack.md X4).';
 
+// Any spelling ($lib, #lib, relative) of a container's path.
+const containerImport = String.raw`components/ui/(BottomSheet|OverlaySheet|StickyPanel|Scrim)\.svelte$`;
+const noContainerImport =
+	'Content components never import a container; the screen wraps them (FE-3, F6).';
+
 export default defineConfig(
 	includeIgnoreFile(gitignorePath),
 	js.configs.recommended,
@@ -94,6 +99,22 @@ export default defineConfig(
 					property: 'fetch',
 					message: noBackendFetch
 				}))
+			]
+		}
+	},
+	{
+		// F6 content vs container: content components receive data and
+		// callbacks and are wrapped by a container, never the reverse. Flat
+		// config replaces rule options, so the FE-2 path rule is repeated.
+		files: ['src/lib/content/**/*.{js,ts,svelte}'],
+		ignores: ['**/*.spec.ts'],
+		rules: {
+			'no-restricted-imports': [
+				'error',
+				{
+					paths: [{ name: 'openapi-fetch', message: noBackendFetch }],
+					patterns: [{ regex: containerImport, message: noContainerImport }]
+				}
 			]
 		}
 	},

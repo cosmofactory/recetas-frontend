@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { cdp } from 'vitest/browser';
-import { loadUiExport } from '../../testutil/ui';
+import { emulateReducedMotion, loadUiExport, resetEmulatedMedia } from '../../testutil/ui';
 
 // FE-3 acceptance: "With `prefers-reduced-motion: reduce` emulated, there are
 // no transform animations, only fades." The exported prefersReducedMotion
@@ -10,13 +9,7 @@ type ReducedMotion = { current: boolean };
 type MotionFor = (reduced: boolean) => 'slide' | 'fade';
 const MODULE = 'motion.svelte.ts';
 
-function emulateReducedMotion(value: 'reduce' | 'no-preference') {
-	return cdp().send('Emulation.setEmulatedMedia', {
-		features: [{ name: 'prefers-reduced-motion', value }]
-	});
-}
-
-afterEach(() => cdp().send('Emulation.setEmulatedMedia', { features: [] }));
+afterEach(resetEmulatedMedia);
 
 describe('prefersReducedMotion in the browser', () => {
 	const settings = [

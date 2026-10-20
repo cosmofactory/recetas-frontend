@@ -1,12 +1,17 @@
-import { afterEach, expect } from 'vitest';
+import { afterEach, beforeEach, expect } from 'vitest';
+import { cdp, page } from 'vitest/browser';
 import type { Component } from 'svelte';
 
 // Browser-mode helpers for the FE-3 UI primitive specs (*.svelte.spec.ts).
 
-// The design tokens and the layout tokens, as the root layout loads them. A
-// glob, so a not-yet-written layout.css leaves its tokens unset (failing the
-// assertions that need them) instead of failing every spec at import.
-import.meta.glob(['../lib/styles/tokens.css', '../lib/styles/layout.css'], { eager: true });
+// The design tokens, the layout tokens and the global base styles (the
+// border-box reset), as the root layout loads them. A glob, so a
+// not-yet-written file leaves its rules unset (failing the assertions that
+// need them) instead of failing every spec at import.
+import.meta.glob(
+	['../lib/styles/tokens.css', '../lib/styles/layout.css', '../lib/styles/global.css'],
+	{ eager: true }
+);
 
 type Loader = () => Promise<unknown>;
 
@@ -120,13 +125,55 @@ export function paintedBox(control: Element): Element {
 	return painted!;
 }
 
+// A computed list value split on its top-level commas, so a
+// cubic-bezier(…) keeps its own.
+function splitList(value: string): string[] {
+	return value.split(/,(?![^(]*\))/).map((part) => part.trim());
+}
+
+// The entry of a computed transition list that applies to `property`
+// ("all" counts); lists shorter than transition-property repeat.
+function transitionEntry(el: Element, property: string, list: string): string | undefined {
+	const properties = splitList(getComputedStyle(el).transitionProperty);
+	const values = splitList(list);
+	const index = properties.findIndex((p) => p === property || p === 'all');
+	return index < 0 ? undefined : values[index % values.length];
+}
+
 // The duration the computed transition gives `property` ("all" counts).
 export function transitionDuration(el: Element, property: string): string | undefined {
-	const s = getComputedStyle(el);
-	const properties = s.transitionProperty.split(',').map((p) => p.trim());
-	const durations = s.transitionDuration.split(',').map((d) => d.trim());
-	const index = properties.findIndex((p) => p === property || p === 'all');
-	return index < 0 ? undefined : durations[index % durations.length];
+	return transitionEntry(el, property, getComputedStyle(el).transitionDuration);
+}
+
+export function transitionTimingFunction(el: Element, property: string): string | undefined {
+	return transitionEntry(el, property, getComputedStyle(el).transitionTimingFunction);
+}
+
+// Whether `property` animates at all: listed with a non-zero duration.
+export function animates(el: Element, property: string): boolean {
+	const duration = transitionDuration(el, property);
+	return duration !== undefined && parseFloat(duration) > 0;
+}
+
+// Emulates the user's motion setting through CDP (Chromium); pair with
+// afterEach(resetEmulatedMedia).
+export function emulateReducedMotion(value: 'reduce' | 'no-preference') {
+	return cdp().send('Emulation.setEmulatedMedia', {
+		features: [{ name: 'prefers-reduced-motion', value }]
+	});
+}
+
+export function resetEmulatedMedia() {
+	return cdp().send('Emulation.setEmulatedMedia', { features: [] });
+}
+
+// Vitest's own browser viewport, restored after each test.
+const DEFAULT_VIEWPORT = { width: 414, height: 896 };
+
+// Runs every test of the calling describe block at width × height.
+export function useViewport(width: number, height: number) {
+	beforeEach(() => page.viewport(width, height));
+	afterEach(() => page.viewport(DEFAULT_VIEWPORT.width, DEFAULT_VIEWPORT.height));
 }
 
 function* styleRules(

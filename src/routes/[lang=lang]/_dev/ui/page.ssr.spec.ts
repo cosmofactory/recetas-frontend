@@ -39,7 +39,13 @@ afterEach(() => {
 	vi.doUnmock('$app/state');
 });
 
-describe('_dev/ui gallery page', () => {
+// Each test re-imports the page after resetModules, so the first compiles the
+// whole gallery and every component it shows from cold; under a full
+// parallel run (browser specs included) that alone can pass Vitest's 5s
+// default.
+const COLD_COMPILE_TIMEOUT_MS = 30_000;
+
+describe('_dev/ui gallery page', { timeout: COLD_COMPILE_TIMEOUT_MS }, () => {
 	it('renders an empty body outside vite dev', async () => {
 		const body = visible((await renderWithDev(false)).body);
 		expect(body, `got gallery markup outside dev: ${body.slice(0, 200)}`).toBe('');

@@ -16,6 +16,29 @@
 	--sheet-peek: min(310px, var(--sheet-height));
 	--sheet-offset-peek: calc(var(--sheet-height) - var(--sheet-peek));
 	--sheet-offset-hidden: calc(100% + 40px);
+	/* Region sheet: "Scrim ... 400ms"; Filters sheet: "Scrim --scrim-filter, 300ms". */
+	--dur-scrim: 400ms;
+	--dur-scrim-filter: 300ms;
+	/* Filters sheet: "top radius 24px". */
+	--radius-filter-sheet: 24px;
+
+	/*
+	 * Desktop region panel: README "Sticky (top 28px), height calc(100vh −
+	 * 140px), ... radius 22px"; the prototype adds min-height 420px and
+	 * padding 32px 30px 22px (prototype wins, FE-3).
+	 */
+	--panel-top: 28px;
+	--panel-height-offset: 140px;
+	--panel-min-height: 420px;
+	--radius-panel: 22px;
+	--panel-padding: 32px 30px 22px;
+
+	/*
+	 * Stacking layers. Filters sheet: "Overlay above everything (z above home
+	 * sheet)".
+	 */
+	--z-sheet: 10;
+	--z-overlay: 20;
 
 	/* Desktop README -> Layout: max-width 1440px, centred; fluid padding and gaps. */
 	--content-max-width: 1440px;
