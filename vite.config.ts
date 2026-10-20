@@ -4,6 +4,9 @@ import adapter from '@sveltejs/adapter-node';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 
+// Vite 8's baseline-widely-available targets with Safari/iOS lowered to 16.
+const BUILD_TARGETS = ['chrome111', 'edge111', 'firefox114', 'safari16', 'ios16'];
+
 export default defineConfig({
 	plugins: [
 		// Options live in project.inlang/paraglide.config.ts.
@@ -21,6 +24,11 @@ export default defineConfig({
 		})
 	],
 	build: {
+		// stack.md X10 supports iOS/Safari 16; Vite's default baseline starts at
+		// 16.4, and its CSS minifier would then rewrite `min-width` queries
+		// into range syntax that Safari 16.0-16.3 ignores.
+		target: BUILD_TARGETS,
+		cssTarget: BUILD_TARGETS,
 		// Fonts are always separate files (preloaded, cached); never data: URLs.
 		assetsInlineLimit: (filePath) => (/\.woff2?$/.test(filePath) ? false : undefined)
 	},

@@ -60,7 +60,8 @@
 			"sheetExpanded": "Expanded",
 			"openOverlay": "Open the overlay sheet",
 			"stickyPanel": "Sticky panel",
-			"navigation": "Navigation"
+			"navigation": "Navigation",
+			"desktopTopBar": "Desktop top bar"
 		},
 		"es": {
 			"title": "Componentes de interfaz (solo desarrollo)",
@@ -75,7 +76,8 @@
 			"sheetExpanded": "Desplegada",
 			"openOverlay": "Abrir la hoja superpuesta",
 			"stickyPanel": "Panel fijo",
-			"navigation": "Navegación"
+			"navigation": "Navegación",
+			"desktopTopBar": "Barra superior de escritorio"
 		},
 		"ru": {
 			"title": "Элементы интерфейса (только для разработки)",
@@ -90,7 +92,8 @@
 			"sheetExpanded": "Развёрнута",
 			"openOverlay": "Открыть всплывающую панель",
 			"stickyPanel": "Закреплённая панель",
-			"navigation": "Навигация"
+			"navigation": "Навигация",
+			"desktopTopBar": "Верхняя панель для десктопа"
 		}
 	}
 }

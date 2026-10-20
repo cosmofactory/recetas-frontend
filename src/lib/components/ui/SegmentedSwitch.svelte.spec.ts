@@ -31,6 +31,7 @@ type SwitchProps = {
 	value: string;
 	label: string;
 	onChange?: (value: string) => void;
+	size?: 'regular' | 'desktop';
 };
 
 const TABS: Option[] = [
@@ -264,6 +265,35 @@ describe('SegmentedSwitch fit', () => {
 	// Localization -> Length: "Segment labels ... must not truncate".
 	it('shows the ru labels in full, on one line, at the narrowest desktop width (240px)', async () => {
 		const { tabs } = await renderSwitch({ options: RU_TABS });
+		tabs.forEach((tab, i) => {
+			expectFullyVisible(tab, RU_TABS[i].label);
+			expect(textLineCount(tab), `got "${RU_TABS[i].label}" on several lines`).toBe(1);
+		});
+	});
+});
+
+// Desktop prototype (Asadorov Desktop.dc.html l.22–23): the top bar's
+// segments are `font-size:13.5px; font-weight:600`, where the mobile switch
+// is 13px; prototype wins (FE-3 owner decision). `size="desktop"` selects
+// it (like PrimaryButton's size="compact"); the default stays the mobile
+// "regular" 13px.
+describe('SegmentedSwitch desktop size', () => {
+	const sizes: { size?: 'regular' | 'desktop'; fontSize: string }[] = [
+		{ fontSize: '13px' },
+		{ size: 'regular', fontSize: '13px' },
+		{ size: 'desktop', fontSize: '13.5px' }
+	];
+	for (const { size, fontSize } of sizes) {
+		it(`sets the segments in ${fontSize}/600 with size ${size ?? '(default)'}`, async () => {
+			const { tabs } = await renderSwitch(size ? { size } : {});
+			for (const tab of tabs) {
+				expect([style(tab, 'font-size'), style(tab, 'font-weight')]).toEqual([fontSize, '600']);
+			}
+		});
+	}
+
+	it('shows the ru labels in full on one line at desktop size, at its narrowest', async () => {
+		const { tabs } = await renderSwitch({ options: RU_TABS, size: 'desktop' });
 		tabs.forEach((tab, i) => {
 			expectFullyVisible(tab, RU_TABS[i].label);
 			expect(textLineCount(tab), `got "${RU_TABS[i].label}" on several lines`).toBe(1);

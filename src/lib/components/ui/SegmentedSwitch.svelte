@@ -10,9 +10,11 @@
 		// The tablist's accessible name (a message).
 		label: string;
 		onChange?: (value: string) => void;
+		// The desktop top bar's switch sets its labels a little larger.
+		size?: 'regular' | 'desktop';
 	};
 
-	let { options, value = $bindable(), label, onChange }: Props = $props();
+	let { options, value = $bindable(), label, onChange, size = 'regular' }: Props = $props();
 
 	const tabs: HTMLButtonElement[] = $state([]);
 	const selectedIndex = $derived(options.findIndex((option) => option.value === value));
@@ -42,6 +44,7 @@
 			type="button"
 			role="tab"
 			class="segment"
+			class:desktop={size === 'desktop'}
 			id={option.panelId ? `${option.panelId}-tab` : undefined}
 			aria-controls={option.panelId}
 			aria-selected={index === selectedIndex}
@@ -79,6 +82,11 @@
 		white-space: nowrap;
 		cursor: pointer;
 		transition: background-color var(--dur-colour);
+	}
+
+	/* Desktop prototype top bar: "font-size:13.5px;font-weight:600". */
+	.segment.desktop {
+		font-size: 13.5px;
 	}
 
 	.segment::before {

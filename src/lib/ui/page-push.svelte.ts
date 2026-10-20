@@ -12,7 +12,7 @@ type PushNavigation = PageNavigation & { complete: Promise<void> };
 type ViewTransitionMark = Exclude<PageDirection, 'none'> | 'fade';
 
 // The root layout's page container, which the CSS fallback animates.
-const PAGE_CONTAINER_CLASS = 'app-shell';
+const APP_SHELL_CLASS = 'app-shell';
 
 const root = () => document.documentElement;
 const ignore = () => undefined;
@@ -95,7 +95,7 @@ function setFallbackMark(motion: MotionKind): void {
 // container's last animation ending removes the mark.
 function clearFallbackMark(event: AnimationEvent): void {
 	if (!(event.target instanceof Element)) return;
-	if (!event.target.classList.contains(PAGE_CONTAINER_CLASS)) return;
+	if (!event.target.classList.contains(APP_SHELL_CLASS)) return;
 	if (event.target.getAnimations().length > 0) return;
 	delete root().dataset.pagePushFallback;
 	document.removeEventListener('animationend', clearFallbackMark);

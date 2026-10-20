@@ -352,6 +352,37 @@ describe('BottomSheet when expanded (modal)', () => {
 		await setState('hidden');
 		await expect.poll(() => document.activeElement, { timeout: 1000 }).toBe(opener);
 	});
+
+	// QA S4, with real pointer clicks: a page button opens the sheet at peek,
+	// a click on the handle expands it, Escape closes it.
+	it('returns focus to the clicked page button after click → peek, handle click → expanded, Escape', async () => {
+		const { opener, sheet, setState } = await renderSheet('hidden');
+		await userEvent.click(opener);
+		await setState('peek');
+		await userEvent.click(handleOf(sheet));
+		await setState('expanded');
+		await userEvent.keyboard('{Escape}');
+		await setState('hidden');
+		await expect.poll(() => document.activeElement, { timeout: 1000 }).toBe(opener);
+	});
+
+	// QA S4 as the gallery (and a /regions/:key deep link) has it: the sheet is
+	// already at peek when the page loads, so nothing "opened" it; the user
+	// clicks a page button, then the handle. Escape must return focus to that
+	// button (the last control outside the sheet before focus went in), not
+	// to <body>, which had focus when the sheet first showed.
+	it('returns focus to the last page control, not <body>, when the sheet was at peek from the start', async () => {
+		const { opener, sheet, setState } = await renderSheet('peek');
+		// In the gallery the page buttons sit outside the sheet's frame, so a
+		// click focuses them; here the frame's peek scrim covers the stand-in
+		// opener, so it is focused the way that click would.
+		opener.focus();
+		await userEvent.click(handleOf(sheet));
+		await setState('expanded');
+		await userEvent.keyboard('{Escape}');
+		await setState('hidden');
+		await expect.poll(() => document.activeElement, { timeout: 1000 }).toBe(opener);
+	});
 });
 
 describe('BottomSheet when peek (not modal)', () => {

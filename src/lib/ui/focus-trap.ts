@@ -66,11 +66,13 @@ function focusIsLostOrIn(within: HTMLElement | undefined): boolean {
 	return within.contains(active);
 }
 
-// Captures the focused element (the opener); the returned restore focuses it
-// again if it is still in the document. Given the sheet, it does so only when
-// focus is still in it or lost, so a user who has moved on keeps their place.
-export function rememberFocus(): (within?: HTMLElement) => void {
-	const opener = document.activeElement;
+// Captures the opener (by default the focused element); the returned restore
+// focuses it again if it is still in the document. Given the sheet, it does
+// so only when focus is still in it or lost, so a user who has moved on keeps
+// their place.
+export function rememberFocus(
+	opener: Element | null = document.activeElement
+): (within?: HTMLElement) => void {
 	return (within) => {
 		if (!(opener instanceof HTMLElement) || !opener.isConnected) return;
 		if (focusIsLostOrIn(within)) opener.focus();

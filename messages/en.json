@@ -108,5 +108,6 @@
 	"devUi_sheetExpanded": "Expanded",
 	"devUi_openOverlay": "Open the overlay sheet",
 	"devUi_stickyPanel": "Sticky panel",
-	"devUi_navigation": "Navigation"
+	"devUi_navigation": "Navigation",
+	"devUi_desktopTopBar": "Desktop top bar"
 }
