@@ -110,5 +110,6 @@
 	"devUi_sheetExpanded": "Desplegada",
 	"devUi_openOverlay": "Abrir la hoja superpuesta",
 	"devUi_stickyPanel": "Panel fijo",
-	"devUi_navigation": "Navegación"
+	"devUi_navigation": "Navegación",
+	"devUi_desktopTopBar": "Barra superior de escritorio"
 }

@@ -11,6 +11,7 @@
 	import { localizedHref } from '#lib/i18n/localized-href.ts';
 	import { m } from '#lib/paraglide/messages.js';
 	import ContainersDemo from './ContainersDemo.svelte';
+	import DesktopTopBarDemo from './DesktopTopBarDemo.svelte';
 	import NavigationDemo from './NavigationDemo.svelte';
 	import { PHOTO_SIZES, PHOTO_SLOTS, browseTabs, filterLabels, iconButtons } from './gallery.ts';
 	import type { PageProps } from './$types';
@@ -101,6 +102,8 @@
 		<ContainersDemo title={region?.name ?? ''} body={region?.description ?? ''} />
 
 		<NavigationDemo title={dish?.name ?? ''} {homeHref} {popularHref} />
+
+		<DesktopTopBarDemo {homeHref} lang={page.params.lang!} />
 	</main>
 {/if}
 
@@ -125,6 +128,6 @@
 
 	/* Desktop README -> Top bar: the switch is "clamp(240px, 22vw, 320px)" wide. */
 	.switch {
-		width: clamp(240px, 22vw, 320px);
+		width: var(--switch-width-desktop);
 	}
 </style>

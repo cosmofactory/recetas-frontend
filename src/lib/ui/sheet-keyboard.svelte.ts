@@ -12,6 +12,24 @@ type SheetKeyboardOptions = {
 	onEscape: () => void;
 };
 
+// Another sheet (role="dialog"), whose own focus return moves focus here.
+const OTHER_LAYER_SELECTOR = '[role="dialog"]';
+
+// A sheet already shown when the page loads (peek at mount, a deep link) had
+// no opener: focus was on <body>. So the opener is the last control outside
+// the sheet that focus came in from.
+function trackOpener(sheet: HTMLElement | undefined, onOpener: (opener: HTMLElement) => void) {
+	if (!sheet) return () => {};
+	const onFocusIn = (event: FocusEvent) => {
+		const from = event.relatedTarget;
+		if (!(from instanceof HTMLElement) || sheet.contains(from)) return;
+		if (from.closest(OTHER_LAYER_SELECTOR)) return;
+		onOpener(from);
+	};
+	sheet.addEventListener('focusin', onFocusIn);
+	return () => sheet.removeEventListener('focusin', onFocusIn);
+}
+
 // The keyboard and focus behaviour both sheets share; call it during
 // component init.
 export function sheetKeyboard(options: SheetKeyboardOptions) {
@@ -22,9 +40,14 @@ export function sheetKeyboard(options: SheetKeyboardOptions) {
 
 	$effect(() => {
 		if (!shown) return;
-		const restore = rememberFocus();
+		let restore = rememberFocus();
+		const stopTracking = trackOpener(
+			options.sheet(),
+			(opener) => (restore = rememberFocus(opener))
+		);
 		const removeLayer = pushEscapeLayer(options.kind, () => options.onEscape());
 		return () => {
+			stopTracking();
 			removeLayer();
 			restore(options.sheet());
 		};

@@ -66,10 +66,14 @@
 		gap: var(--chip-gap);
 	}
 
+	/*
+	 * The text buttons' hit areas reach --hit-min tall around a shorter text
+	 * box, so wrapped rows need at least that much between them not to overlap.
+	 */
 	.row {
 		display: flex;
 		flex-wrap: wrap;
-		gap: var(--gutter);
+		gap: var(--hit-min) var(--gutter);
 	}
 
 	/* Stands in for the home screen the sheets rest on. */

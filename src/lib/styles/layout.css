@@ -39,11 +39,24 @@
 	 */
 	--z-sheet: 10;
 	--z-overlay: 20;
+	/* Desktop prototype top bar: "position:relative;z-index:30". */
+	--z-top-bar-desktop: 30;
 
 	/* Desktop README -> Layout: max-width 1440px, centred; fluid padding and gaps. */
 	--content-max-width: 1440px;
 	--desktop-side-padding: clamp(24px, 2.8vw, 40px);
 	--desktop-gap: clamp(28px, 3.4vw, 48px);
+
+	/*
+	 * Desktop README -> Top bar: "height 76px", switch "width clamp(240px,
+	 * 22vw, 320px)"; the prototype adds the row gap and the language button's
+	 * "border:1.5px solid rgba(43,30,22,.2)". Its boxes are content-box, so
+	 * the switch is the clamp plus the track's 4px padding on each side.
+	 */
+	--top-bar-height-desktop: 76px;
+	--top-bar-gap-desktop: clamp(20px, 2.5vw, 36px);
+	--switch-width-desktop: calc(clamp(240px, 22vw, 320px) + 8px);
+	--border-language-button: rgba(43, 30, 22, 0.2);
 
 	/* Accessibility: "All tap targets ≥ 44px tall". */
 	--hit-min: 44px;
@@ -94,4 +107,81 @@
 :focus-visible {
 	outline: var(--focus-ring-width) solid var(--focus-ring);
 	outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * The one width breakpoint in CSS (F6: 860px, DESKTOP_MIN_WIDTH_PX in
+ * #lib/ui/breakpoints.ts). "Below" is the exact complement of the desktop
+ * query, so no fractional width (zoom, high DPR) falls between them; range
+ * syntax would too, but Safari before 16.4 (stack.md X10) ignores it.
+ * !important, so a component's own display can't show what the breakpoint
+ * hides.
+ */
+@media not all and (min-width: 860px) {
+	.desktop-only {
+		display: none !important;
+	}
+}
+
+@media (min-width: 860px) {
+	.mobile-only {
+		display: none !important;
+	}
+}
+
+/*
+ * Desktop README -> Layout: "Content max-width 1440px, centred", the 1440px
+ * including the side padding (prototype box-sizing:border-box). Screens set
+ * their own gaps, and below 860px their own padding.
+ */
+.page-container {
+	max-width: var(--content-max-width);
+	margin-inline: auto;
+}
+
+@media (min-width: 860px) {
+	.page-container {
+		padding-inline: var(--desktop-side-padding);
+	}
+}
+
+/*
+ * Desktop README -> Popular: card "hover lifts 2px with shadow ...". Under
+ * reduced motion the card doesn't move at all; only its shadow changes.
+ */
+.hover-lift {
+	transition: box-shadow var(--dur-colour);
+}
+
+@media (hover: hover) {
+	.hover-lift:hover {
+		box-shadow: var(--shadow-card-hover);
+	}
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.hover-lift {
+		transition:
+			transform var(--dur-colour),
+			box-shadow var(--dur-colour);
+	}
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+	.hover-lift:hover {
+		transform: translateY(-2px);
+	}
+}
+
+/* Text for assistive tech only (e.g. a control's full name beside a short visible label). */
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
 }

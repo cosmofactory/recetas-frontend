@@ -13,6 +13,8 @@
 	<title>{copy.title}</title>
 </svelte:head>
 
-<h1>{copy.title}</h1>
-<p>{copy.body}</p>
-<a href={localizedHref('/', locale)}>{copy.backHome}</a>
+<main class="page-container">
+	<h1>{copy.title}</h1>
+	<p>{copy.body}</p>
+	<a href={localizedHref('/', locale)}>{copy.backHome}</a>
+</main>

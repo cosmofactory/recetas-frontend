@@ -5,6 +5,7 @@ import { expect, test, type Page, type Request } from '@playwright/test';
 
 const BG_PAGE = 'rgb(246, 239, 227)'; // --bg-page: #F6EFE3
 const MAX_WIDTH = 1440;
+const WIDE_VIEWPORT = 1920;
 
 async function gotoCollecting(page: Page, url = '/'): Promise<Request[]> {
 	const requests: Request[] = [];
@@ -33,16 +34,39 @@ test.describe('global layout', () => {
 		).toMatch(/^Archivo\s*,/);
 	});
 
-	test('app shell is capped at 1440px and centred on a 1920px viewport', async ({ page }) => {
-		await page.setViewportSize({ width: 1920, height: 1080 });
+	// FE-3 PR 4 (desktop prototype wins): the 1440px cap is on
+	// .page-container, not .app-shell, so the DesktopTopBar's background and
+	// hairline span the viewport (prototype: full-width bar, inner row
+	// `max-width:1440px; margin:0 auto; box-sizing:border-box`).
+	test('app shell spans the full width of a 1920px viewport', async ({ page }) => {
+		await page.setViewportSize({ width: WIDE_VIEWPORT, height: 1080 });
 		await gotoCollecting(page);
-		const shell = page.getByTestId('app-shell');
-		await expect(shell).toHaveCount(1);
-		const box = await shell.boundingBox();
-		expect(box, 'got no bounding box for app-shell').not.toBeNull();
-		expect(box!.width, `got width ${box!.width}, want ${MAX_WIDTH}`).toBe(MAX_WIDTH);
-		const wantLeft = (1920 - MAX_WIDTH) / 2;
-		expect(box!.x, `got left ${box!.x}, want ${wantLeft}`).toBe(wantLeft);
+		await expect(page.getByTestId('app-shell')).toHaveCount(1);
+		const m = await page.evaluate(() => ({
+			shell: document.querySelector('[data-testid="app-shell"]')!.getBoundingClientRect(),
+			viewport: document.documentElement.clientWidth
+		}));
+		expect(m.shell.width, `got shell width ${m.shell.width}, want ${m.viewport}`).toBe(m.viewport);
+		expect(m.shell.x, `got shell left ${m.shell.x}, want 0`).toBe(0);
+	});
+
+	// No built page has a .page-container yet (FE-5 adds them), so a probe
+	// measures the rule the root layout ships. It goes in <body>, outside the
+	// shell, so only .page-container's own cap can give it 1440px.
+	test('.page-container is 1440px wide incl. padding and centred on a 1920px viewport', async ({
+		page
+	}) => {
+		await page.setViewportSize({ width: WIDE_VIEWPORT, height: 1080 });
+		await gotoCollecting(page);
+		const m = await page.evaluate(() => {
+			const probe = document.createElement('div');
+			probe.className = 'page-container';
+			document.body.append(probe);
+			return { box: probe.getBoundingClientRect(), viewport: document.documentElement.clientWidth };
+		});
+		expect(m.box.width, `got width ${m.box.width}, want ${MAX_WIDTH}`).toBe(MAX_WIDTH);
+		const wantLeft = (m.viewport - MAX_WIDTH) / 2;
+		expect(m.box.x, `got left ${m.box.x}, want ${wantLeft}`).toBe(wantLeft);
 	});
 
 	test('app shell fits the project viewport without horizontal scroll', async ({ page }) => {
@@ -240,3 +264,59 @@ const covers = (range: string, cp: number) =>
 const A = 0x41; // latin
 const A_MACRON = 0x100; // latin-ext
 const CYR_A = 0x410; // cyrillic
+
+// FE-3 review: the error page (src/routes/+error.svelte) sits in the content
+// cap like every page: its heading, text and link are inside a
+// .page-container, 1440px wide (incl. padding) and centred on a wide
+// viewport, with --desktop-side-padding from 860px.
+const MISSING_PAGE = '/en/no-such-page';
+const DESKTOP_MIN = 860;
+
+type ErrorLayout = {
+	inContainer: boolean;
+	box: { x: number; width: number } | null;
+	paddingLeft: number;
+	viewport: number;
+};
+
+async function errorLayout(page: Page): Promise<ErrorLayout> {
+	const res = await page.goto(MISSING_PAGE);
+	expect(res?.status(), `got status ${res?.status()}, want 404`).toBe(404);
+	return page.evaluate(() => {
+		const parts = [...document.querySelectorAll('h1, h1 ~ p, h1 ~ a')];
+		const container = document.querySelector('h1')?.closest('.page-container') ?? null;
+		const rect = container?.getBoundingClientRect();
+		return {
+			inContainer: parts.length === 3 && parts.every((el) => container?.contains(el)),
+			box: rect ? { x: rect.x, width: rect.width } : null,
+			paddingLeft: container ? parseFloat(getComputedStyle(container).paddingLeft) : -1,
+			viewport: document.documentElement.clientWidth
+		};
+	});
+}
+
+test.describe('error page layout', () => {
+	test('puts the 404 heading, text and link in a .page-container', async ({ page }) => {
+		const got = await errorLayout(page);
+		expect(got.inContainer, 'got the error content outside a .page-container').toBe(true);
+	});
+
+	test('caps the error content at 1440px, centred, on a 1920px viewport', async ({ page }) => {
+		await page.setViewportSize({ width: WIDE_VIEWPORT, height: 1080 });
+		const got = await errorLayout(page);
+		expect(got.box, 'got no .page-container around the error').not.toBeNull();
+		expect(got.box!.width, `got width ${got.box!.width}, want ${MAX_WIDTH}`).toBe(MAX_WIDTH);
+		const wantLeft = (got.viewport - MAX_WIDTH) / 2;
+		expect(got.box!.x, `got left ${got.box!.x}, want ${wantLeft}`).toBe(wantLeft);
+	});
+
+	test('pads the error content with --desktop-side-padding from 860px', async ({ page }) => {
+		const got = await errorLayout(page);
+		test.skip(got.viewport < DESKTOP_MIN, 'mobile project: screens set their own padding');
+		const want = Math.min(Math.max(0.028 * got.viewport, 24), 40);
+		expect(got.paddingLeft, `got padding-left ${got.paddingLeft}, want ${want}`).toBeCloseTo(
+			want,
+			1
+		);
+	});
+});

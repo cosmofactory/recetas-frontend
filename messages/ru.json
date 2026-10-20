@@ -112,5 +112,6 @@
 	"devUi_sheetExpanded": "Развёрнута",
 	"devUi_openOverlay": "Открыть всплывающую панель",
 	"devUi_stickyPanel": "Закреплённая панель",
-	"devUi_navigation": "Навигация"
+	"devUi_navigation": "Навигация",
+	"devUi_desktopTopBar": "Верхняя панель для десктопа"
 }

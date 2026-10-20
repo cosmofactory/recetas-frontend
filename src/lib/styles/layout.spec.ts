@@ -121,15 +121,21 @@ describe('layout.css wiring', () => {
 		expect(layoutCss, 'want layout.css imported after tokens.css').toBeGreaterThan(tokens);
 	});
 
-	// One place per value: global.css keeps using the width, layout.css owns it.
-	it('owns --content-max-width: global.css uses it but no longer declares it', () => {
+	// One place per value: layout.css owns the width and caps .page-container
+	// with it (FE-3 PR 4: the cap moved off .app-shell so bars can span the
+	// viewport).
+	it('owns --content-max-width: global.css neither declares nor uses it', () => {
 		const global = read('src/lib/styles/global.css');
 		const declared = declarations(global).map(([name]) => name);
 		expect(declared, 'got --content-max-width still declared in global.css').not.toContain(
 			'--content-max-width'
 		);
-		expect(global, 'want global.css to cap the content width with the token').toContain(
+		expect(global, 'got global.css still capping the app shell').not.toContain(
 			'var(--content-max-width)'
 		);
+		expect(
+			read('src/lib/styles/layout.css'),
+			'want layout.css to cap .page-container with the token'
+		).toMatch(/\.page-container\s*\{[^}]*max-width:\s*var\(--content-max-width\)/);
 	});
 });
