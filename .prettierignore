@@ -22,3 +22,6 @@ bun.lockb
 /src/lib/api/openapi.yaml
 /src/lib/api/schema.d.ts
 /src/lib/server/mock/content.bundle.json
+
+# Byte copy of the design map-grid.json (pnpm map-grid:check, D-FE4-1)
+/src/lib/map/map-grid.json

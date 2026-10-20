@@ -91,6 +91,29 @@
 	--bg-back-pill-hover: rgba(43, 30, 22, 0.11);
 
 	/*
+	 * Region map. Mobile README -> Map (shared): labels "9.5px/700 ...
+	 * padding 2px 4px, radius 4px", cells "Hover brightness(1.1)". Desktop
+	 * README -> Regional: "cell gap 5px, radius 6px. Hover: cell
+	 * brightness(1.12), its label turns solid surface with a shadow ...
+	 * Labels 12px/700, padding 3px 8px, radius 6px"; the desktop prototype
+	 * gives the label bg rgba(251,247,236,.85), the shadow, and the 150ms
+	 * filter and label transitions.
+	 */
+	--map-label-size: 9.5px;
+	--map-label-padding: 2px 4px;
+	--radius-map-label: 4px;
+	--map-hover-filter: brightness(1.1);
+	--map-gap-desktop: 5px;
+	--radius-map-cell-desktop: 6px;
+	--map-label-size-desktop: 12px;
+	--map-label-padding-desktop: 3px 8px;
+	--radius-map-label-desktop: 6px;
+	--map-label-bg-desktop: rgba(251, 247, 236, 0.85);
+	--shadow-map-label: 0 3px 10px rgba(43, 30, 22, 0.22);
+	--map-hover-filter-desktop: brightness(1.12);
+	--dur-map-hover: 150ms;
+
+	/*
 	 * The design gives no focus colour; ink is its existing high-contrast UI
 	 * colour (on every page and surface background).
 	 */
@@ -107,6 +130,37 @@
 :focus-visible {
 	outline: var(--focus-ring-width) solid var(--focus-ring);
 	outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * The documented exception to "components never style focus": a map region
+ * (RegionMap) is a link spanning the whole map whose cells aren't a
+ * rectangle, so the ring is drawn on the region's label instead.
+ */
+.map-region:focus-visible {
+	outline: none;
+}
+
+.map-region:focus-visible .map-label {
+	outline: var(--focus-ring-width) solid var(--focus-ring);
+	outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * Forced colours (FE-4): the UA drops the tile backgrounds, so every map
+ * cell keeps an outline and the selected region is Highlight. !important
+ * because the component's scoped selection rule is more specific.
+ */
+@media (forced-colors: active) {
+	.map-region .cell {
+		outline: 1px solid CanvasText;
+		outline-offset: -1px;
+	}
+
+	.map-region[aria-current='true'] .cell {
+		forced-color-adjust: none;
+		background: Highlight !important;
+	}
 }
 
 /*

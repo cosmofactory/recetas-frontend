@@ -18,6 +18,11 @@ type Loader = () => Promise<unknown>;
 const uiModules: Record<string, Loader> = import.meta.glob('../lib/components/ui/*.svelte');
 const harnessModules: Record<string, Loader> = import.meta.glob('./*Harness.svelte');
 const uiLogicModules: Record<string, Loader> = import.meta.glob('../lib/ui/*.ts');
+const contentModules: Record<string, Loader> = import.meta.glob('../lib/content/*.svelte');
+const mapModules: Record<string, Loader> = import.meta.glob([
+	'../lib/map/*.ts',
+	'!../lib/map/*.spec.ts'
+]);
 
 // A missing module (or one whose imports don't resolve yet) fails as an
 // assertion naming the file, not as a collection error for the whole spec.
@@ -48,6 +53,18 @@ export function loadHarness<P extends Record<string, unknown>>(
 // An export of a src/lib/ui module, e.g. loadUiExport('breakpoints.ts', 'desktopQuery').
 export function loadUiExport<T>(file: string, name: string): Promise<T> {
 	return loadFrom(uiLogicModules[`../lib/ui/${file}`], `src/lib/ui/${file}`, name);
+}
+
+export function loadContent<P extends Record<string, unknown>>(
+	name: string
+): Promise<Component<P>> {
+	const file = `../lib/content/${name}.svelte`;
+	return loadFrom(contentModules[file], `src/lib/content/${name}.svelte`, 'default');
+}
+
+// An export of a src/lib/map module, e.g. loadMapExport('grid.ts', 'parseGrid').
+export function loadMapExport<T>(file: string, name: string): Promise<T> {
+	return loadFrom(mapModules[`../lib/map/${file}`], `src/lib/map/${file}`, name);
 }
 
 const mounted: HTMLElement[] = [];
@@ -160,6 +177,14 @@ export function animates(el: Element, property: string): boolean {
 export function emulateReducedMotion(value: 'reduce' | 'no-preference') {
 	return cdp().send('Emulation.setEmulatedMedia', {
 		features: [{ name: 'prefers-reduced-motion', value }]
+	});
+}
+
+// Emulates Windows High Contrast-style forced colours (Chromium, CDP); pair
+// with afterEach(resetEmulatedMedia).
+export function emulateForcedColors() {
+	return cdp().send('Emulation.setEmulatedMedia', {
+		features: [{ name: 'forced-colors', value: 'active' }]
 	});
 }
 
