@@ -1,0 +1,59 @@
+/*
+ * App-level tokens the design tokens.css lacks (FE-3), and the one shared
+ * focus ring that uses them. tokens.css mirrors the design byte for byte, so
+ * values from the READMEs and prototypes that it doesn't carry live here.
+ * Like tokens.css, this is a place where colour literals are allowed
+ * (`pnpm check:colors`).
+ */
+
+:root {
+	/*
+	 * Region sheet (D-FE3-1): 640/844 of the design frame, capped at 640px. The
+	 * peek is content-driven, so it stays 310px unless the sheet is shorter.
+	 * Hidden clears the sheet's shadow (the design's 680 = 640 + 40).
+	 */
+	--sheet-height: min(76dvh, 640px);
+	--sheet-peek: min(310px, var(--sheet-height));
+	--sheet-offset-peek: calc(var(--sheet-height) - var(--sheet-peek));
+	--sheet-offset-hidden: calc(100% + 40px);
+
+	/* Desktop README -> Layout: max-width 1440px, centred; fluid padding and gaps. */
+	--content-max-width: 1440px;
+	--desktop-side-padding: clamp(24px, 2.8vw, 40px);
+	--desktop-gap: clamp(28px, 3.4vw, 48px);
+
+	/* Accessibility: "All tap targets ≥ 44px tall". */
+	--hit-min: 44px;
+	/*
+	 * The inset of a control's ::before that grows its hit area to --hit-min
+	 * on each axis without changing the visual box (the control is
+	 * positioned). Percentages resolve against the control where it is used.
+	 */
+	--hit-inset: min(0px, calc((100% - var(--hit-min)) / 2));
+
+	/* Mobile README -> Header: search button "Hover bg rgba(43,30,22,.06)". */
+	--bg-hover-subtle: rgba(43, 30, 22, 0.06);
+	/* Desktop README -> Popular: card "hover lifts 2px with shadow ...". */
+	--shadow-card-hover: 0 10px 26px rgba(43, 30, 22, 0.1);
+
+	/* Prototype: the compact primary ("Show results") has "border-radius:13px". */
+	--radius-button-compact: 13px;
+
+	/*
+	 * The design gives no focus colour; ink is its existing high-contrast UI
+	 * colour (on every page and surface background).
+	 */
+	--focus-ring: var(--ink);
+	--focus-ring-width: 2px;
+	--focus-ring-offset: 2px;
+}
+
+/*
+ * Every control shows the same ring for keyboard focus (Accessibility: every
+ * control is reachable and operable by keyboard); :focus-visible keeps it
+ * off after a mouse click.
+ */
+:focus-visible {
+	outline: var(--focus-ring-width) solid var(--focus-ring);
+	outline-offset: var(--focus-ring-offset);
+}

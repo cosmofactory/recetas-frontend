@@ -20,7 +20,20 @@ const VISIBLE_ATTRIBUTES = new Set([
 	'title'
 ]);
 // Component props that never carry copy.
-const NON_COPY_PROPS = new Set(['class', 'id', 'variant', 'size', 'as', 'type', 'role']);
+const NON_COPY_PROPS = new Set([
+	'class',
+	'id',
+	'variant',
+	'size',
+	'as',
+	'type',
+	'role',
+	// FE-3 primitives: IconButton's icon name; Photo's CSS lengths and sizes list.
+	'icon',
+	'height',
+	'radius',
+	'sizes'
+]);
 const DATA_PROP = /^data-/;
 // Separators and arrows are not copy; words and numbers are.
 const HAS_WORDS = /[\p{L}\p{N}]/u;

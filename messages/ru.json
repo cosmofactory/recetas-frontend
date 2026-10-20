@@ -94,5 +94,15 @@
 	"errors_notFoundBody": "Мы не нашли эту страницу.",
 	"errors_serverErrorTitle": "Что-то пошло не так",
 	"errors_serverErrorBody": "Попробуйте ещё раз чуть позже.",
-	"errors_backHome": "Вернуться к карте"
+	"errors_backHome": "Вернуться к карте",
+	"a11y_search": "Поиск",
+	"a11y_back": "Назад",
+	"a11y_close": "Закрыть",
+	"a11y_check": "Отметить",
+	"devUi_title": "Элементы интерфейса (только для разработки)",
+	"devUi_iconButtons": "Кнопки-иконки",
+	"devUi_chips": "Чипы",
+	"devUi_segmentedSwitch": "Переключатель",
+	"devUi_buttons": "Кнопки",
+	"devUi_photos": "Фото"
 }

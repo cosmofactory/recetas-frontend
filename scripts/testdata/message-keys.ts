@@ -91,5 +91,18 @@ export function pluralMessage(forms: Record<string, string>): unknown {
 export const EXTRA_MESSAGE_KEYS = [
 	'errors_notFoundTitle',
 	'errors_notFoundBody',
-	'errors_serverErrorTitle'
+	'errors_serverErrorTitle',
+	// FE-3: IconButton accessible names, product copy (not the dev gallery's).
+	'a11y_search',
+	'a11y_back',
+	'a11y_close',
+	'a11y_check'
+] as const;
+
+// Moved to a11y_* (FE-3 review); the dev gallery block keeps only its own copy.
+export const RETIRED_MESSAGE_KEYS = [
+	'devUi_search',
+	'devUi_back',
+	'devUi_close',
+	'devUi_check'
 ] as const;

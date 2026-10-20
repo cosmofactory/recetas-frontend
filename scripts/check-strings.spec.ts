@@ -339,7 +339,9 @@ describe('findViolations: literal expressions', () => {
 });
 
 // Component props are copy unless their name is on the allow-list of
-// non-copy props: class, id, variant, size, as, type, role and data-*.
+// non-copy props: class, id, variant, size, as, type, role and data-*, plus
+// the FE-3 primitives' non-copy props icon (IconButton's icon name) and
+// height, radius and sizes (Photo's CSS lengths and the image sizes list).
 // (href is checked by the href rule; the watched attributes by theirs.)
 describe('findViolations: component props', () => {
 	const clean: { name: string; source: string }[] = [
@@ -353,7 +355,16 @@ describe('findViolations: component props', () => {
 		{ name: 'an empty literal prop', source: '<Foo label="" />' },
 		{ name: 'the logo literal', source: '<Logo label="Asadorov" />' },
 		{ name: 'a spread and a binding', source: '<Foo {...props} bind:open />' },
-		{ name: 'a literal prop on a plain element', source: '<div label="x"></div>' }
+		{ name: 'a literal prop on a plain element', source: '<div label="x"></div>' },
+		{
+			name: 'an IconButton icon name',
+			source: '<IconButton icon="search" label={m.a11y_search()} />'
+		},
+		{
+			name: "Photo's height, radius and sizes",
+			source:
+				'<Photo photos={p} role="card" alt={alt} baseUrl={b} height="96px" radius="var(--radius-card)" sizes="(min-width: 860px) 33vw, 100vw" />'
+		}
 	];
 	for (const tc of clean) {
 		it(`reports nothing for ${tc.name}`, async () => {
@@ -375,6 +386,12 @@ describe('findViolations: component props', () => {
 			source: '<Chip text="Seafood" />',
 			prop: 'text',
 			text: 'Seafood'
+		},
+		{
+			name: 'a literal label next to an allowed icon',
+			source: '<IconButton icon="search" label="Search" />',
+			prop: 'label',
+			text: 'Search'
 		},
 		{
 			name: 'a namespaced component',

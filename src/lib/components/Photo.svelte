@@ -11,9 +11,13 @@
 		baseUrl: string | undefined;
 		// The above-the-fold photo (e.g. the recipe hero): eager, high fetch priority.
 		priority?: boolean;
+		// CSS lengths or token vars (the design's fixed heights and radii);
+		// without them the caller sizes the box and Photo fills it.
+		height?: string;
+		radius?: string;
 	};
 
-	let { photos, role, sizes, alt, baseUrl, priority = false }: Props = $props();
+	let { photos, role, sizes, alt, baseUrl, priority = false, height, radius }: Props = $props();
 
 	// A bad prefix is a backend bug: log it once, on the server, not in every browser.
 	const report = browser ? undefined : (err: unknown) => reportError('photo prefix rejected', err);
@@ -25,7 +29,7 @@
 </script>
 
 {#if set}
-	<picture>
+	<picture style:height style:border-radius={radius}>
 		{#each set.sources as source (source.type)}
 			<source type={source.type} srcset={source.srcset} {sizes} />
 		{/each}
@@ -44,6 +48,8 @@
 {:else}
 	<div
 		class="placeholder"
+		style:height
+		style:border-radius={radius}
 		role={alt ? 'img' : undefined}
 		aria-label={alt || undefined}
 		aria-hidden={alt ? undefined : 'true'}
@@ -58,6 +64,10 @@
 		width: 100%;
 		height: 100%;
 		border-radius: inherit;
+	}
+
+	picture {
+		overflow: hidden;
 	}
 
 	img {

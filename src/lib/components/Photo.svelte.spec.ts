@@ -33,6 +33,9 @@ type PhotoProps = {
 	alt: string;
 	baseUrl: string | undefined;
 	priority?: boolean;
+	// FE-3: a CSS length or token var; without them the caller sizes the box.
+	height?: string;
+	radius?: string;
 };
 
 // `.invalid` never resolves (RFC 2606), so no image request leaves the box.
@@ -258,5 +261,83 @@ describe('Photo placeholder', () => {
 		expect(getComputedStyle(placeholder).backgroundImage).toContain('repeating-linear-gradient');
 		expect(placeholder.getAttribute('aria-label')).toBe(ALT);
 		expect(consoleError, 'want no console.error in the browser').not.toHaveBeenCalled();
+	});
+});
+
+// FE-3: <Photo> takes the design's fixed height and radius as props, so a
+// card or hero needs no wrapper to size it: "Photo: fixed height and radius
+// from props ... explicit dimensions so the layout doesn't shift" (stage
+// FE-3). The width stays fluid (100% of the container). The box has its
+// final size before any image arrives (the `.invalid` origin never answers),
+// and the image is clipped to the radius.
+describe('Photo height and radius props', () => {
+	const WIDTH = 300;
+
+	function fluidBox(): HTMLElement {
+		const box = document.createElement('div');
+		box.style.width = `${WIDTH}px`;
+		document.body.append(box);
+		boxes.push(box);
+		return box;
+	}
+
+	async function renderSized(props: Partial<PhotoProps>) {
+		const Photo = await loadPhoto();
+		const target = fluidBox();
+		const all: PhotoProps = { photos: PHOTOS, role: 'card', sizes: SIZES, alt: ALT, baseUrl: BASE };
+		await render(Photo, { target, props: { ...all, ...props } });
+		return onlyChild(target);
+	}
+
+	// Mobile README: dish card "Photo: height 96px, radius 11px"; dish hero
+	// "hero photo (height 180px, radius 16px)".
+	const sized: { name: string; props: Partial<PhotoProps>; height: number; radius: string }[] = [
+		{
+			name: 'a dish card photo',
+			props: { height: '96px', radius: '11px' },
+			height: 96,
+			radius: '11px'
+		},
+		{
+			name: 'a dish hero photo',
+			props: { role: 'hero', height: '180px', radius: 'var(--radius-card)' },
+			height: 180,
+			radius: '16px'
+		},
+		{
+			name: 'a missing photo (placeholder)',
+			props: { photos: null, height: '96px', radius: '11px' },
+			height: 96,
+			radius: '11px'
+		}
+	];
+	for (const { name, props, height, radius } of sized) {
+		it(`sizes ${name} to ${WIDTH}x${height} with radius ${radius} before any image loads`, async () => {
+			const root = await renderSized(props);
+			expectFillsBox(root, { width: WIDTH, height });
+			expect(getComputedStyle(root).borderTopLeftRadius).toBe(radius);
+			expectNoForcedAspect(root);
+		});
+	}
+
+	it('clips the image to the radius', async () => {
+		const root = await renderSized({ height: '96px', radius: '11px' });
+		const img = root.querySelector('img')!;
+		expectFillsBox(img, { width: WIDTH, height: 96 });
+		const clipped =
+			getComputedStyle(root).overflow === 'hidden' ||
+			getComputedStyle(img).borderTopLeftRadius === '11px';
+		expect(clipped, 'got an image that overflows the rounded corners').toBe(true);
+	});
+
+	it('accepts a token var as the height', async () => {
+		const root = await renderSized({ height: 'var(--test-photo-height)' });
+		root.parentElement!.style.setProperty('--test-photo-height', '130px');
+		expectFillsBox(root, { width: WIDTH, height: 130 });
+	});
+
+	it('keeps the object-fit: cover crop when sized by props', async () => {
+		const img = (await renderSized({ height: '96px' })).querySelector('img')!;
+		expect(getComputedStyle(img).objectFit).toBe('cover');
 	});
 });
