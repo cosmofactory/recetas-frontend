@@ -22,7 +22,11 @@ type StickyPanelProps = { label: string; children: Snippet };
 
 const LABEL = 'Andalucía';
 const STICKY_TOP_PX = 28;
-const OFFSET_PX = 140;
+// The README's 140px assumes a 76px top bar, but the prototype's (and the
+// app's) bar is 76px plus its 1px hairline, so 140 made the desktop home
+// scroll by 1px at 1280×800 (FE-4 PR 3 QA: 801 vs 800). 77 + 28 + 36 = 141
+// keeps the page exactly one viewport tall (home-region.e2e.ts).
+const OFFSET_PX = 141;
 const MIN_HEIGHT_PX = 420;
 const TALL = `<div data-testid="${CONTENT_TEST_ID}" style="height: 2000px"></div>`;
 

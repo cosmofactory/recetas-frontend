@@ -8,6 +8,25 @@
 
 :root {
 	/*
+	 * WCAG AA overrides (stack.md X10 "Contrast overrides", owner decision):
+	 * these design text colours miss 4.5:1 on the cream backgrounds, so they
+	 * are nudged to the nearest passing value here; tokens.css stays the
+	 * design's byte mirror. --ink-2 .60 → .64, --ink-3 .50 → .63, the
+	 * eyebrow ("ink-3 at .55") → .63. Accent-coloured text uses
+	 * --accent-text; backgrounds, borders, buttons and the map keep --accent.
+	 */
+	--ink-2: rgba(43, 30, 22, 0.64);
+	--ink-3: rgba(43, 30, 22, 0.63);
+	--ink-eyebrow: rgba(43, 30, 22, 0.63);
+	--accent-text: #ba512c;
+	/*
+	 * Filled buttons: --on-accent on --accent is 3.99:1, so their background
+	 * is --bg-button (4.51:1), hover --bg-button-hover (5.2:1).
+	 */
+	--bg-button: #b64f2b;
+	--bg-button-hover: #a84727;
+
+	/*
 	 * Region sheet (D-FE3-1): 640/844 of the design frame, capped at 640px. The
 	 * peek is content-driven, so it stays 310px unless the sheet is shorter.
 	 * Hidden clears the sheet's shadow (the design's 680 = 640 + 40).
@@ -25,10 +44,12 @@
 	/*
 	 * Desktop region panel: README "Sticky (top 28px), height calc(100vh −
 	 * 140px), ... radius 22px"; the prototype adds min-height 420px and
-	 * padding 32px 30px 22px (prototype wins, FE-3).
+	 * padding 32px 30px 22px (prototype wins, FE-3). The offset is 141px, not
+	 * 140px: the top bar is 76px plus its 1px hairline, and 77 + 28 + 36 keeps
+	 * the desktop home exactly one viewport tall.
 	 */
 	--panel-top: 28px;
-	--panel-height-offset: 140px;
+	--panel-height-offset: 141px;
 	--panel-min-height: 420px;
 	--radius-panel: 22px;
 	--panel-padding: 32px 30px 22px;
@@ -114,14 +135,12 @@
 	--dur-map-hover: 150ms;
 
 	/*
-	 * Home Regional (FE-4). Mobile README -> Regional tab: the eyebrow is
-	 * "ink-3 at .55" (prototype rgba(43,30,22,.55), on both layouts). Desktop
-	 * README -> Regional: the map's "max-width max(560px, calc((100vh −
+	 * Home Regional (FE-4). The eyebrow colour is an AA override (below).
+	 * Desktop README -> Regional: the map's "max-width max(560px, calc((100vh −
 	 * 360px) × 14/11))" (14/11: the map grid's aspect); the prototype's "How
 	 * Spain really cooks" block gives the rule rgba(43,30,22,.12), the
 	 * paragraph rgba(43,30,22,.64), the title clamp and the column gap.
 	 */
-	--ink-eyebrow: rgba(43, 30, 22, 0.55);
 	--map-max-width-desktop: max(560px, calc((100vh - 360px) * 14 / 11));
 	/* Mobile: the map inside its size-container frame (cq units), "max-height: 100%" at 14/11. */
 	--map-max-width-mobile: min(100cqw, calc(100cqh * 14 / 11));
@@ -129,6 +148,17 @@
 	--ink-about: rgba(43, 30, 22, 0.64);
 	--about-title-size: clamp(28px, 2.6vw, 38px);
 	--about-gap: clamp(20px, 3vw, 40px);
+
+	/*
+	 * Region sheet and panel (RegionDetails). Both prototypes draw the dish
+	 * list's divider in the about rule's rgba(43,30,22,.12) (--border-about);
+	 * the desktop one gives the row chevron rgba(43,30,22,.35), the row
+	 * radius 14px and the thumb radius 12px (mobile: --radius-thumb). Its
+	 * description's .62 misses AA, so it uses --ink-2 (the X10 override).
+	 */
+	--ink-row-chevron: rgba(43, 30, 22, 0.35);
+	--radius-region-row-desktop: 14px;
+	--radius-thumb-desktop: 12px;
 
 	/*
 	 * The design gives no focus colour; ink is its existing high-contrast UI

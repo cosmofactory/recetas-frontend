@@ -30,7 +30,7 @@
 	});
 </script>
 
-<div class="layer">
+<div class="layer" class:shown={open}>
 	<Scrim variant="filter" opacity={open ? 1 : 0} onclick={onClose} />
 	<div
 		bind:this={sheet}
@@ -50,13 +50,24 @@
 </div>
 
 <style>
-	/* clip, not hidden: a hidden box still scrolls to show a focused control. */
+	/*
+	 * clip, not hidden: a hidden box still scrolls to show a focused control.
+	 * Closed and at rest it paints nothing (as BottomSheet): visibility turns
+	 * hidden after the slide or fade (--dur-filter), visible at once on open.
+	 */
 	.layer {
 		position: absolute;
 		inset: 0;
 		z-index: var(--z-overlay);
 		overflow: clip;
 		pointer-events: none;
+		visibility: hidden;
+		transition: visibility 0s var(--dur-filter);
+	}
+
+	.layer.shown {
+		visibility: visible;
+		transition-delay: 0s;
 	}
 
 	/*

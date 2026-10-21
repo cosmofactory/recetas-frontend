@@ -16,6 +16,7 @@ import {
 	focusIsIn,
 	labelled,
 	landsOn,
+	paintingInFrame,
 	scrimBeside,
 	screenFrame,
 	settle
@@ -671,4 +672,47 @@ describe('BottomSheet closing under prefers-reduced-motion: reduce', () => {
 			await expect.poll(() => sheet.closest('[inert]') !== null, { timeout: 1000 }).toBe(true);
 		});
 	}
+});
+
+// FE-4 PR 3 axe follow-up: on mobile /:lang/ the hidden sheet's full-frame
+// layer (and its transparent scrim) still overlapped the page, so axe could
+// only report the text under it as color-contrast "incomplete" (bgOverlap)
+// and contrast went unverified. Decision (coordinator, 2026-10-21): once
+// hidden and at rest, the sheet paints nothing over the frame: its layer,
+// scrim and sheet are `visibility: hidden` (or not rendered). While it slides
+// or fades out it stays visible, so the motion still shows.
+
+describe('BottomSheet when hidden paints nothing over the frame', () => {
+	useViewport(390, 844);
+	afterEach(() => resetEmulatedMedia());
+
+	it('mounted hidden: layer, scrim and sheet are all visibility: hidden', async () => {
+		const { frame } = await renderSheet('hidden');
+		await expect.poll(() => paintingInFrame(frame)).toEqual([]);
+	});
+
+	it('peek → hidden: visible while it slides out, then nothing paints', async () => {
+		const { frame, sheet, startState } = await renderSheet('peek');
+		await startState('hidden');
+		expect(style(sheet, 'visibility'), 'want the sheet visible during its slide').toBe('visible');
+		settle();
+		await expect.poll(() => paintingInFrame(frame)).toEqual([]);
+	});
+
+	it('hidden → peek: the sheet and scrim paint again', async () => {
+		const { frame, sheet, setState } = await renderSheet('hidden');
+		await setState('peek');
+		await expect.poll(() => style(sheet, 'visibility')).toBe('visible');
+		const scrim = scrimBeside(frame, sheet);
+		expect(style(scrim, 'visibility'), 'want the scrim visible in peek').toBe('visible');
+		expect(landsOn(scrim, ABOVE_SHEET.x, ABOVE_SHEET.y), 'want taps on the scrim').toBe(true);
+	});
+
+	it('under reduced motion: nothing paints once the fade ends', async () => {
+		await emulateReducedMotion('reduce');
+		const { frame, startState } = await renderSheet('peek');
+		await startState('hidden');
+		settle();
+		await expect.poll(() => paintingInFrame(frame)).toEqual([]);
+	});
 });

@@ -21,7 +21,11 @@
 {/if}
 
 <style>
-	/* Mobile README -> Dish detail: "accent bg, --on-accent text, radius 14px, padding 15px, 14px/600". */
+	/*
+	 * Mobile README -> Dish detail: "accent bg, --on-accent text, radius 14px,
+	 * padding 15px, 14px/600"; the accent background is its AA override
+	 * --bg-button (stack.md X10).
+	 */
 	.primary {
 		position: relative;
 		display: block;
@@ -29,7 +33,7 @@
 		padding: 15px;
 		border: 0;
 		border-radius: var(--radius-button);
-		background: var(--accent);
+		background: var(--bg-button);
 		color: var(--on-accent);
 		font: 600 14px var(--font-text);
 		text-align: center;
@@ -53,7 +57,7 @@
 
 	@media (hover: hover) {
 		.primary:hover {
-			background: var(--accent-hover);
+			background: var(--bg-button-hover);
 		}
 	}
 </style>

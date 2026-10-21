@@ -125,3 +125,15 @@ export function transitionRunning(el: Element, property: string): boolean {
 				animation.playState === 'running'
 		);
 }
+
+// Elements a sheet rendered in `frame` (not the test's own buttons, appended
+// straight to the frame) that still paint: a box and not visibility: hidden.
+// A hidden sheet at rest must leave this empty (FE-4 PR 3: nothing over the
+// page, so axe can decide the contrast under it).
+export function paintingInFrame(frame: HTMLElement): string[] {
+	const isTestButton = (el: HTMLElement) => el.parentElement === frame && el.tagName === 'BUTTON';
+	return [...frame.querySelectorAll<HTMLElement>('*')]
+		.filter((el) => !isTestButton(el))
+		.filter((el) => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden')
+		.map((el) => `<${el.tagName.toLowerCase()} class="${el.className}">`);
+}

@@ -109,6 +109,35 @@ describe('layout.css tokens', () => {
 	});
 });
 
+// stack.md X10 "Contrast overrides" (owner, 2026-10-21): the design text
+// colours that miss WCAG AA 4.5:1 on the cream backgrounds, overridden here
+// with the nearest passing values while tokens.css stays the design's byte
+// mirror. The one place these values are pinned.
+const CONTRAST_OVERRIDES: Record<string, string> = {
+	'--ink-2': 'rgba(43,30,22,.64)',
+	'--ink-3': 'rgba(43,30,22,.63)',
+	'--ink-eyebrow': 'rgba(43,30,22,.63)',
+	'--accent-text': '#ba512c',
+	// Filled buttons (same decision): --on-accent on --accent is 3.99:1.
+	'--bg-button': '#b64f2b',
+	'--bg-button-hover': '#a84727'
+};
+
+describe('layout.css AA contrast overrides', () => {
+	for (const [name, value] of Object.entries(CONTRAST_OVERRIDES)) {
+		it(`declares ${name}: ${value} exactly once`, () => {
+			const matching = declarations(read(LAYOUT_CSS)).filter(([n]) => n === name);
+			expect(matching.length, `got ${matching.length} declarations of ${name}, want 1`).toBe(1);
+			expect(matching[0][1], `got ${name}: ${matching[0][1]}`).toBe(normalise(value));
+		});
+	}
+
+	it('keeps --accent itself for backgrounds: layout.css does not override it', () => {
+		const names = declarations(read(LAYOUT_CSS)).map(([n]) => n);
+		expect(names, 'got --accent overridden in layout.css').not.toContain('--accent');
+	});
+});
+
 describe('layout.css wiring', () => {
 	it('is loaded app-wide by the root layout, after tokens.css', () => {
 		const layout = read('src/routes/+layout.svelte');

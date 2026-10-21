@@ -53,7 +53,9 @@ import {
 // - Right column: the region panel arrives in PR 3; this PR only pins the
 //   column track (whatever the column holds now).
 
-const EYEBROW_COLOUR = 'rgba(43, 30, 22, 0.55)';
+// The eyebrow's AA override (stack.md X10 "Contrast overrides": the design's
+// .55 → .63), resolved from the token rather than copied.
+const eyebrowColour = (page: Page) => tokenValue(page, 'color', 'var(--ink-eyebrow)');
 const ABOUT_RULE_COLOUR = 'rgba(43, 30, 22, 0.12)';
 const ABOUT_BODY_COLOUR = 'rgba(43, 30, 22, 0.64)';
 const MAP_RATIO = 11 / 14;
@@ -229,14 +231,14 @@ test.describe('mobile Regional layout (< 860px)', () => {
 		expect(meta.style['align-items']).toBe('baseline');
 	});
 
-	test('eyebrow: 11px/600, .1em, upper-case, ink at .55', async ({ page }) => {
+	test('eyebrow: 11px/600, .1em, upper-case, --ink-eyebrow', async ({ page }) => {
 		skipUnlessMobile(page);
 		const style = present((await measureMobile(page)).eyebrow, 'eyebrow').style;
 		expect(style['font-size']).toBe('11px');
 		expect(style['font-weight']).toBe('600');
 		expectPx(parseFloat(style['letter-spacing']), 1.1, 'eyebrow tracking', 0.01);
 		expect(style['text-transform']).toBe('uppercase');
-		expect(style.color).toBe(EYEBROW_COLOUR);
+		expect(style.color).toBe(await eyebrowColour(page));
 	});
 
 	test('hint: 11.5px in --ink-3', async ({ page }) => {
@@ -486,7 +488,9 @@ test.describe('desktop Regional grid (≥ 860px)', () => {
 		expect(style['padding-top']).toBe('4px');
 	});
 
-	test('eyebrow 11.5px/700, .11em, upper-case, ink at .55; hint 13px --ink-3', async ({ page }) => {
+	test('eyebrow 11.5px/700, .11em, upper-case, --ink-eyebrow; hint 13px --ink-3', async ({
+		page
+	}) => {
 		skipUnlessDesktopProject(page);
 		const m = await measureDesktop(page, VIEWPORTS[0].viewport);
 		const eyebrow = present(m.eyebrow, 'eyebrow').style;
@@ -494,7 +498,7 @@ test.describe('desktop Regional grid (≥ 860px)', () => {
 		expect(eyebrow['font-weight']).toBe('700');
 		expectPx(parseFloat(eyebrow['letter-spacing']), 0.11 * 11.5, 'eyebrow tracking', 0.01);
 		expect(eyebrow['text-transform']).toBe('uppercase');
-		expect(eyebrow.color).toBe(EYEBROW_COLOUR);
+		expect(eyebrow.color).toBe(await eyebrowColour(page));
 		const hint = present(m.hint, 'hint').style;
 		expect(hint['font-size']).toBe('13px');
 		expect(hint.color).toBe(await tokenValue(page, 'color', 'var(--ink-3)'));

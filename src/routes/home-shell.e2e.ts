@@ -1,4 +1,4 @@
-import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { expect, test, type Locator, type Page, type TestInfo } from '@playwright/test';
 import { getRaw } from '../testutil/e2e';
 import {
 	expectSameDocument,
@@ -41,6 +41,21 @@ async function clickRegion(page: Page, regionKey: string) {
 	await page.waitForURL((url) => url.pathname === href);
 }
 
+// From a region URL on mobile the sheet's scrim covers the map and the
+// header (mobile README -> Region sheet: "Tapping the scrim → hidden"), so a
+// tap there closes the sheet. These cases are about the URL, not the
+// pointer: they activate the link with the keyboard (FE-4 PR 3).
+async function activateLink(page: Page, link: Locator) {
+	await link.focus();
+	await page.keyboard.press('Enter');
+}
+
+async function activateRegion(page: Page, regionKey: string) {
+	const href = `/en/regions/${regionKey}`;
+	await activateLink(page, visibleMap(page).locator(`a[href="${href}"]`));
+	await page.waitForURL((url) => url.pathname === href);
+}
+
 // Tags the visible map node, to compare node identity after a navigation.
 async function tagMap(page: Page) {
 	await visibleMap(page).evaluate((el) => {
@@ -78,7 +93,7 @@ test.describe('(home) route group keeps the layout mounted', () => {
 	test('region → another region keeps the same map element', async ({ page }) => {
 		await gotoHydrated(page, '/en/regions/gal');
 		await tagMap(page);
-		await clickRegion(page, 'and');
+		await activateRegion(page, 'and');
 		await expectSameMap(page, 'after /en/regions/gal → /en/regions/and');
 	});
 
@@ -138,14 +153,14 @@ test.describe('tab state in the URL', () => {
 
 	test('switching to Popular from a region closes it: /:lang/?tab=popular', async ({ page }) => {
 		await gotoHydrated(page, '/en/regions/gal');
-		await tab(page, en.popular).click();
+		await activateLink(page, tab(page, en.popular));
 		await page.waitForURL((url) => url.search === '?tab=popular');
 		expect(pathAndQuery(page), 'want the region closed').toBe('/en/?tab=popular');
 	});
 
 	test('Back after switching from a region returns to the region', async ({ page }) => {
 		await gotoHydrated(page, '/en/regions/gal');
-		await tab(page, en.popular).click();
+		await activateLink(page, tab(page, en.popular));
 		await page.waitForURL((url) => url.search === '?tab=popular');
 		await page.goBack();
 		await page.waitForURL((url) => url.pathname === '/en/regions/gal');

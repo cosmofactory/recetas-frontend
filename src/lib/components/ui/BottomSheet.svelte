@@ -9,23 +9,32 @@
 		toggledSheetState,
 		type SheetState
 	} from '#lib/ui/sheet.ts';
+	import { scrollToTopOn } from '#lib/ui/scroll-reset.svelte.ts';
 	import Scrim from './Scrim.svelte';
 
 	// The mobile container (F6) for the region and dish sheets, controlled: it
 	// shows `state` and asks for a new one through onStateChange. `label` is
 	// its accessible name, `handleLabel` the handle's (it has no visible text).
+	// A new `contentKey` (other content, e.g. another region) scrolls the
+	// body back to the top.
 	type Props = {
 		state: SheetState;
 		onStateChange: (next: SheetState) => void;
 		label: string;
 		handleLabel: string;
+		contentKey?: unknown;
 		children: Snippet;
 	};
 
 	// Renamed: a local `state` would turn the $state rune into a store read.
-	let { state: current, onStateChange, label, handleLabel, children }: Props = $props();
+	let { state: current, onStateChange, label, handleLabel, contentKey, children }: Props = $props();
 
 	let sheet: HTMLElement | undefined = $state();
+	let body: HTMLElement | undefined = $state();
+	scrollToTopOn(
+		() => contentKey,
+		() => body
+	);
 	const modal = $derived(isSheetModal(current));
 	const fade = $derived(motionFor(prefersReducedMotion.current) === 'fade');
 	const place = placeWhileFading({ target: () => current, hidden: 'hidden', fade: () => fade });
@@ -39,7 +48,7 @@
 	});
 </script>
 
-<div class="layer">
+<div class="layer" class:shown={current !== 'hidden'}>
 	<Scrim opacity={sheetScrimOpacity(current)} onclick={() => onStateChange('hidden')} />
 	<div
 		bind:this={sheet}
@@ -63,7 +72,7 @@
 		>
 			<span class="bar"></span>
 		</button>
-		<div class="body">
+		<div class="body" bind:this={body}>
 			{@render children()}
 		</div>
 	</div>
@@ -73,6 +82,9 @@
 	/*
 	 * Fills the screen frame the sheet rests on. clip, not hidden: a hidden
 	 * box still scrolls to show a focused control, which would lift the sheet.
+	 * Once hidden and at rest it paints nothing over the frame (so axe can
+	 * read the page's contrast): visibility turns hidden only after the slide
+	 * or fade (both --dur-sheet), and visible at once when shown.
 	 */
 	.layer {
 		position: absolute;
@@ -80,6 +92,13 @@
 		z-index: var(--z-sheet);
 		overflow: clip;
 		pointer-events: none;
+		visibility: hidden;
+		transition: visibility 0s var(--dur-sheet);
+	}
+
+	.layer.shown {
+		visibility: visible;
+		transition-delay: 0s;
 	}
 
 	/* Mobile README -> Region sheet: shell, states and 450ms --ease transform (D-FE3-1 geometry). */
