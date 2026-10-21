@@ -20,11 +20,30 @@ export type DishCardProps = {
 
 // What FilterBar takes (FE-5 PR 1 contract): the active ids (parseFilters of
 // the URL) and two callbacks. onToggle(id) asks the screen to navigate to
-// toggleFilterHref; onOpenFilters opens the Filters sheet (PR 2).
+// toggleFilterHref; onOpenFilters opens the Filters sheet. PR 2 adds
+// filtersOpen: whether that sheet is open (the button's aria-expanded).
 export type FilterBarProps = {
 	active: readonly string[];
 	onToggle: (id: string) => void;
 	onOpenFilters: () => void;
+	filtersOpen: boolean;
+};
+
+// What FilterGroups takes (FE-5 PR 2 contract): the Filters sheet's (and PR
+// 3's desktop sidebar's) four groups of chips, controlled like FilterBar.
+export type FilterGroupsProps = {
+	active: readonly string[];
+	onToggle: (id: string) => void;
+};
+
+// What DishDetails takes (FE-5 PR 2 contract): the dish sheet's content.
+// variationsHref is the "See all variations" link (/:lang/dishes/:dishKey);
+// recipeHref(dishKey, regionKey) is a variation row's link, as in RegionDetails.
+export type DishDetailsProps = {
+	dish: Dish;
+	variationsHref: string;
+	recipeHref: (dishKey: string, regionKey: string) => string;
+	mediaBaseUrl: string | undefined;
 };
 
 export function dishesIn(lang: PopularLocale): Dish[] {

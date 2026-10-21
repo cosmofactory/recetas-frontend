@@ -4,10 +4,14 @@ import {
 	FILTERS_ACTIVE_ATTR,
 	filtersLabel,
 	POPULAR_COPY,
+	SHEET_COPY,
 	TEST_IDS,
+	type FilterIdCopy,
+	type GroupKey,
 	type PopularLocale,
 	type QuickId
 } from './popular-copy';
+import { regionSheet } from './region-e2e';
 
 // Shared fixtures for the FE-5 Popular tab Playwright specs. Content is the
 // vendored mock bundle (DATA_SOURCE=mock); copy is in popular-copy.ts.
@@ -92,3 +96,117 @@ export const listScroller = (page: Page) => measureScroller(page);
 const SCROLL_PAST_END = 100_000;
 
 export const scrollListToEnd = (page: Page) => measureScroller(page, SCROLL_PAST_END);
+
+// FE-5 PR 2: the Filters sheet (OverlaySheet: a dialog named "Filters") and
+// the dish sheet (BottomSheet: the one [role="dialog"][data-state] on the
+// Popular tab, named by the dish).
+
+export function filtersSheet(page: Page, lang: PopularLocale): Locator {
+	return page.getByRole('dialog', { name: POPULAR_COPY[lang].filters, exact: true });
+}
+
+export function sheetGroup(page: Page, lang: PopularLocale, key: GroupKey): Locator {
+	const name = SHEET_COPY[lang].groups[key];
+	return filtersSheet(page, lang).getByRole('group', { name, exact: true });
+}
+
+export function sheetChip(page: Page, lang: PopularLocale, id: FilterIdCopy): Locator {
+	const name = SHEET_COPY[lang].labels[id];
+	return filtersSheet(page, lang).getByRole('button', { name, exact: true });
+}
+
+export function clearAllInSheet(page: Page, lang: PopularLocale): Locator {
+	const name = POPULAR_COPY[lang].clearAll;
+	const sheet = filtersSheet(page, lang);
+	return sheet
+		.getByRole('button', { name, exact: true })
+		.or(sheet.getByRole('link', { name, exact: true }));
+}
+
+export function showResults(page: Page, lang: PopularLocale): Locator {
+	const name = SHEET_COPY[lang].showResults;
+	return filtersSheet(page, lang).getByRole('button', { name, exact: true });
+}
+
+export async function openFiltersSheet(page: Page, lang: PopularLocale) {
+	await filtersButton(page).click();
+	await expectFiltersSheetOpen(page, lang);
+}
+
+// By keyboard: works with a dish sheet's scrim over the filter bar.
+export async function openFiltersSheetByKeyboard(page: Page, lang: PopularLocale) {
+	await filtersButton(page).focus();
+	await page.keyboard.press('Enter');
+	await expectFiltersSheetOpen(page, lang);
+}
+
+const REST_TOLERANCE_PX = 1;
+
+// Whether the open sheet has come to rest: no transition or animation still
+// running on it, and its bottom edge on the frame's bottom (translateY 0).
+function sheetAtRest(sheet: Locator): Promise<boolean> {
+	return sheet.evaluate((el, tolerance) => {
+		const settled = el.getAnimations().every((a) => a.playState !== 'running');
+		const bottom = el.getBoundingClientRect().bottom;
+		return settled && Math.abs(bottom - window.innerHeight) <= tolerance;
+	}, REST_TOLERANCE_PX);
+}
+
+// Open and settled: geometry read after this is the resting layout, not a
+// frame of the 400ms slide (--dur-filter).
+export async function expectFiltersSheetOpen(page: Page, lang: PopularLocale) {
+	const sheet = filtersSheet(page, lang);
+	await expect(sheet).toBeVisible();
+	await expect(sheet).toHaveAttribute('aria-modal', 'true');
+	await expect(filtersButton(page)).toHaveAttribute('aria-expanded', 'true');
+	await expect
+		.poll(() => sheetAtRest(sheet), {
+			message: 'want the Filters sheet at rest on the frame bottom'
+		})
+		.toBe(true);
+}
+
+export async function expectFiltersSheetClosed(page: Page, lang: PopularLocale) {
+	await expect(filtersSheet(page, lang)).toHaveCount(0);
+	await expect(filtersButton(page)).toHaveAttribute('aria-expanded', 'false');
+}
+
+export async function sheetPressedIds(
+	page: Page,
+	lang: PopularLocale,
+	ids: readonly FilterIdCopy[]
+): Promise<FilterIdCopy[]> {
+	const pressed: FilterIdCopy[] = [];
+	for (const id of ids) {
+		if ((await sheetChip(page, lang, id).getAttribute('aria-pressed')) === 'true') pressed.push(id);
+	}
+	return pressed;
+}
+
+export const dishSheet = regionSheet;
+
+export function dishCard(page: Page, key: string): Locator {
+	return popularPanel(page).locator(`[data-testid="${TEST_IDS.dishCard}"][href$="dish=${key}"]`);
+}
+
+// The dish sheet's variation rows (links into a recipe), in DOM order.
+export async function sheetRowHrefs(page: Page): Promise<string[]> {
+	const hrefs = await dishSheet(page)
+		.locator('a[href]')
+		.evaluateAll((links) => links.map((a) => a.getAttribute('href') ?? ''));
+	return hrefs.filter((href) => /\/dishes\/[^/]+\/[^/]+$/.test(href));
+}
+
+export function seeAllLink(page: Page, lang: PopularLocale): Locator {
+	return dishSheet(page).getByRole('link', { name: SHEET_COPY[lang].seeAll, exact: true });
+}
+
+// Taps the scrim at the top of the screen frame, above any open sheet.
+export async function tapTopScrim(page: Page) {
+	const width = page.viewportSize()?.width ?? 0;
+	await page.mouse.click(width / 2, 8);
+}
+
+export async function focusIsIn(container: Locator): Promise<boolean> {
+	return container.evaluate((el) => el.contains(document.activeElement));
+}

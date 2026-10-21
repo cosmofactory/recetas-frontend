@@ -254,6 +254,27 @@ test.describe('mobile region sheet: focus return', () => {
 		await expect(regionLink(page, 'gal'), 'want focus back on the Galicia link').toBeFocused();
 	});
 
+	// WebKit guard: WebKit doesn't focus a link on click, so the sheet must
+	// return focus to the tapped region without relying on it. Chromium does
+	// focus it, so the test cancels mousedown (no focus move, the click still
+	// navigates) to stand in for WebKit.
+	test('closing after a pointer tap returns focus to the tapped region', async ({ page }) => {
+		await gotoHydrated(page, '/en/');
+		await regionLink(page, 'gal').evaluate((link) =>
+			link.addEventListener('mousedown', (event) => event.preventDefault())
+		);
+		await tapRegion(page, 'gal');
+		await expectSheetPeek(page, GALICIA_EN.name);
+		await expect(regionLink(page, 'gal'), 'want the tap to leave focus alone').not.toBeFocused();
+		await page.keyboard.press('Escape');
+		await page.waitForURL((url) => url.pathname === '/en/');
+		await expectSheetHidden(page);
+		await expect(
+			regionLink(page, 'gal'),
+			'want focus back on the tapped Galicia link'
+		).toBeFocused();
+	});
+
 	test('closing from expanded returns focus to the map region too', async ({ page }) => {
 		await gotoHydrated(page, '/en/');
 		await activateRegion(page, 'gal');

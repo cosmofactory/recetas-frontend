@@ -19,3 +19,10 @@ export function sheetScrimOpacity(state: SheetState): number {
 export function isSheetModal(state: SheetState): boolean {
 	return state === 'expanded';
 }
+
+// A sheet whose content comes from the URL (a region, a dish): open, it
+// rests in peek and the handle's local `expanded` raises it; closed, hidden.
+export function urlSheetState(open: boolean, expanded: boolean): SheetState {
+	if (!open) return 'hidden';
+	return expanded ? 'expanded' : 'peek';
+}

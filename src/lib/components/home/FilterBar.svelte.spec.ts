@@ -49,6 +49,9 @@ import {
 // - The Filters button is a <button> named by its visible label ("Filters" /
 //   "Filters · N"), with data-active="true" while N>0 (the ink fill). It is
 //   not a toggle (no aria-pressed): it opens the sheet (PR 2).
+// - FE-5 PR 2: the Filters button opens a dialog, so it carries
+//   aria-haspopup="dialog" and aria-expanded from the new `filtersOpen` prop
+//   (the screen owns the sheet's open state).
 // - The ru check runs at 320px: the 360px viewport minus the header's 20px
 //   side padding.
 
@@ -64,6 +67,7 @@ type RenderSpec = {
 	width?: number;
 	onToggle?: (id: string) => void;
 	onOpenFilters?: () => void;
+	filtersOpen?: boolean;
 };
 
 async function renderBar(spec: RenderSpec = {}): Promise<HTMLElement> {
@@ -74,7 +78,8 @@ async function renderBar(spec: RenderSpec = {}): Promise<HTMLElement> {
 	const props: FilterBarProps = {
 		active: spec.active ?? [],
 		onToggle: spec.onToggle ?? (() => {}),
-		onOpenFilters: spec.onOpenFilters ?? (() => {})
+		onOpenFilters: spec.onOpenFilters ?? (() => {}),
+		filtersOpen: spec.filtersOpen ?? false
 	};
 	render(FilterBar, { target, props });
 	const root = target.querySelector<HTMLElement>(`[data-testid="${TEST_IDS.filterBar}"]`);
@@ -165,6 +170,18 @@ describe('FilterBar: the Filters button', () => {
 		const on = filtersButton(await renderBar({ active: ['desserts'] }));
 		expect(on.getAttribute(FILTERS_ACTIVE_ATTR)).toBe('true');
 	});
+
+	it('announces the dialog it opens: aria-haspopup="dialog"', async () => {
+		const button = filtersButton(await renderBar());
+		expect(button.getAttribute('aria-haspopup')).toBe('dialog');
+	});
+
+	for (const filtersOpen of [false, true]) {
+		it(`aria-expanded="${filtersOpen}" while the sheet is ${filtersOpen ? 'open' : 'closed'}`, async () => {
+			const button = filtersButton(await renderBar({ filtersOpen }));
+			expect(button.getAttribute('aria-expanded')).toBe(String(filtersOpen));
+		});
+	}
 
 	it('a press calls onOpenFilters, not onToggle', async () => {
 		const onOpenFilters = vi.fn();

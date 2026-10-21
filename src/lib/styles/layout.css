@@ -170,6 +170,10 @@
 	--bg-card-hover: #fdfaf3;
 	--radius-card-photo: 11px;
 
+	/* Mobile README -> Dish detail sheet: variation "Row: ... radius 8px: 42px thumb (radius 8px)". */
+	--radius-dish-row: 8px;
+	--radius-dish-thumb: 8px;
+
 	/*
 	 * The design gives no focus colour; ink is its existing high-contrast UI
 	 * colour (on every page and surface background).

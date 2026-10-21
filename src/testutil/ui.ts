@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect } from 'vitest';
 import { cdp, page } from 'vitest/browser';
 import type { Component } from 'svelte';
+import { composite, contrastRatio, parseColour } from './contrast';
 
 // Browser-mode helpers for the FE-3 UI primitive specs (*.svelte.spec.ts).
 
@@ -262,4 +263,21 @@ export function expectFullyVisible(control: HTMLElement, text: string) {
 			el.clientWidth + 1
 		);
 	}
+}
+
+// The deepest element under `root` whose whole (trimmed) text is `text`.
+export function textElement(root: Element, text: string): HTMLElement {
+	const all = [...root.querySelectorAll<HTMLElement>('*')].filter(
+		(el) => el.textContent?.trim() === text
+	);
+	const leaf = all.find((el) => !all.some((other) => other !== el && el.contains(other)));
+	expect(leaf, `got no element with the text "${text}"`).toBeDefined();
+	return leaf!;
+}
+
+// The WCAG contrast ratio of the element's text colour over `background`
+// (a CSS colour value, e.g. computed('background-color', 'var(--bg-surface)')).
+export function textContrast(el: Element, background: string): number {
+	const bottom = parseColour(background);
+	return contrastRatio(composite(parseColour(style(el, 'color')), bottom), bottom);
 }

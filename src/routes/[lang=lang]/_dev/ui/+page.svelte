@@ -8,7 +8,7 @@
 	import PrimaryButton from '#lib/components/ui/PrimaryButton.svelte';
 	import SegmentedSwitch from '#lib/components/ui/SegmentedSwitch.svelte';
 	import TextButton from '#lib/components/ui/TextButton.svelte';
-	import { localizedHref } from '#lib/i18n/localized-href.ts';
+	import { localizedHref, variationsHref } from '#lib/i18n/localized-href.ts';
 	import { m } from '#lib/paraglide/messages.js';
 	import ContainersDemo from './ContainersDemo.svelte';
 	import DesktopTopBarDemo from './DesktopTopBarDemo.svelte';
@@ -27,7 +27,7 @@
 	let tab = $state(browseTabs()[0].value);
 	const dish = $derived(data.dishes[0]);
 	const region = $derived(data.regions[0]);
-	const dishHref = $derived(dish ? localizedHref(`/dishes/${dish.key}`, page.params.lang!) : '');
+	const dishHref = $derived(dish ? variationsHref(dish.key, page.params.lang!) : '');
 	const homeHref = $derived(localizedHref('/', page.params.lang!));
 	const popularHref = $derived(localizedHref('/?tab=popular', page.params.lang!));
 </script>

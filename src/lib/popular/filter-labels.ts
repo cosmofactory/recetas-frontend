@@ -1,7 +1,7 @@
 import { DOT_SEPARATOR, formatNumber } from '#lib/i18n/format.ts';
 import { m } from '#lib/paraglide/messages.js';
 import { getLocale } from '#lib/paraglide/runtime.js';
-import type { FilterId } from './filters.ts';
+import type { FilterGroupKey, FilterId } from './filters.ts';
 
 // strings.json -> home.filterLabels, by filter id.
 const FILTER_LABELS: Record<FilterId, () => string> = {
@@ -20,6 +20,16 @@ const FILTER_LABELS: Record<FilterId, () => string> = {
 };
 
 export const filterLabel = (id: FilterId): string => FILTER_LABELS[id]();
+
+// strings.json -> home.diet / course / effort / season: the groups' eyebrows.
+const GROUP_LABELS: Record<FilterGroupKey, () => string> = {
+	diet: m.home_diet,
+	course: m.home_course,
+	effort: m.home_effort,
+	season: m.home_season
+};
+
+export const filterGroupLabel = (key: FilterGroupKey): string => GROUP_LABELS[key]();
 
 // Mobile README -> Filter bar: "Filters", or "Filters · N" when N filters
 // are active (prototype countLabel: filters + ' · ' + active.length).

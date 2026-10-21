@@ -10,7 +10,7 @@
 	import { localeFromPath } from '#lib/i18n/locales.ts';
 	import { localizedHref } from '#lib/i18n/localized-href.ts';
 	import { m } from '#lib/paraglide/messages.js';
-	import { toggleFilterHref } from '#lib/popular/filters.ts';
+	import { closeDishHref, toggleFilterHref } from '#lib/popular/filters.ts';
 	import { isHomeTab, POPULAR, REGIONAL, tabFromUrl, tabHref } from '#lib/ui/home-tab.ts';
 	import type { LayoutProps } from './$types';
 
@@ -36,6 +36,12 @@
 	function closeRegion() {
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		void goto(localizedHref('/', lang), { reset: false });
+	}
+
+	// The dish sheet's scrim and Escape, the same way: Back reopens the dish.
+	function closeDish() {
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		void goto(closeDishHref(page.url), { reset: false });
 	}
 
 	// A filter change refines the same list, so it replaces the entry: Back
@@ -79,9 +85,11 @@
 			<PopularTab
 				dishes={data.dishes}
 				url={page.url}
+				{lang}
 				mediaBaseUrl={data.mediaBaseUrl}
 				onToggleFilter={toggleFilter}
 				onClearFilters={replaceFilters}
+				onCloseDish={closeDish}
 			/>
 		</HomeTabPanel>
 	</main>
