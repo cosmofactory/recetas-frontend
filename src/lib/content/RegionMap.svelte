@@ -3,13 +3,16 @@
 	import MapRegion from './MapRegion.svelte';
 
 	// regions in API order; a region the API doesn't return isn't drawn.
+	// defaultKey: drawn selected from 860px by CSS alone (the desktop default
+	// without JavaScript); only selectedKey sets aria-current.
 	type Props = {
 		regions: MapRegionData[];
 		selectedKey?: string;
+		defaultKey?: string;
 		hrefFor: (key: string) => string;
 	};
 
-	let { regions, selectedKey, hrefFor }: Props = $props();
+	let { regions, selectedKey, defaultKey, hrefFor }: Props = $props();
 
 	const drawn = $derived(shapedRegions(regions));
 </script>
@@ -27,7 +30,12 @@
 >
 	{#each drawn as region (region.key)}
 		<li class="region-item">
-			<MapRegion {region} href={hrefFor(region.key)} selected={region.key === selectedKey} />
+			<MapRegion
+				{region}
+				href={hrefFor(region.key)}
+				selected={region.key === selectedKey}
+				isDefault={region.key === defaultKey}
+			/>
 		</li>
 	{/each}
 </ul>

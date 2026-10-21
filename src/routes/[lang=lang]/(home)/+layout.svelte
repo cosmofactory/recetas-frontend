@@ -18,7 +18,6 @@
 
 	const lang = $derived(localeFromPath(page.url.pathname));
 	const tab = $derived(tabFromUrl(page.url, page.params.regionKey));
-	const hrefFor = (regionKey: string) => localizedHref(`/regions/${regionKey}`, lang);
 
 	// The tabs are links (a click is a new history entry); onChange comes
 	// only from arrow keys, which replace the entry. reset: false keeps focus
@@ -28,6 +27,13 @@
 		// tabHref goes through localizedHref; the app has no paths.base to resolve().
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		void goto(tabHref(next, lang), { replace: true, reset: false });
+	}
+
+	// The sheet's scrim and Escape: a new entry, so Back reopens the region;
+	// reset: false lets the sheet return focus to the map region it came from.
+	function closeRegion() {
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		void goto(localizedHref('/', lang), { reset: false });
 	}
 
 	const tabs = $derived({ value: tab, label: m.a11y_homeTabs(), onChange: replaceTab });
@@ -46,11 +52,20 @@
 		tabs={{ ...tabs, options: tabOptions(lang, false) }}
 		{language}
 	/>
-	<HomeTabPanel tab={REGIONAL} selected={tab === REGIONAL}>
-		<RegionalTab regions={data.regions} selectedKey={page.params.regionKey} {hrefFor} />
-	</HomeTabPanel>
-	<!-- The Popular tab arrives with FE-5. -->
-	<HomeTabPanel tab={POPULAR} selected={tab === POPULAR} />
+	<main class="home-main">
+		<HomeTabPanel tab={REGIONAL} selected={tab === REGIONAL}>
+			<RegionalTab
+				regions={data.regions}
+				dishes={data.dishes}
+				selectedKey={page.params.regionKey}
+				{lang}
+				mediaBaseUrl={data.mediaBaseUrl}
+				onCloseRegion={closeRegion}
+			/>
+		</HomeTabPanel>
+		<!-- The Popular tab arrives with FE-5. -->
+		<HomeTabPanel tab={POPULAR} selected={tab === POPULAR} />
+	</main>
 	{@render children()}
 </div>
 
@@ -65,6 +80,14 @@
 		display: flex;
 		flex-direction: column;
 		min-height: 100dvh;
+	}
+
+	/* The page content's one landmark; it fills the frame under the header. */
+	.home-main {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		min-height: 0;
 	}
 
 	@media not all and (min-width: 860px) {

@@ -5,13 +5,15 @@ import type { Component } from 'svelte';
 // Browser-mode helpers for the FE-3 UI primitive specs (*.svelte.spec.ts).
 
 // The design tokens, the layout tokens and the global base styles (the
-// border-box reset), as the root layout loads them. A glob, so a
+// border-box reset), as the root layout loads them. Globs, so a
 // not-yet-written file leaves its rules unset (failing the assertions that
-// need them) instead of failing every spec at import.
-import.meta.glob(
-	['../lib/styles/tokens.css', '../lib/styles/layout.css', '../lib/styles/global.css'],
-	{ eager: true }
-);
+// need them) instead of failing every spec at import. One glob per file, in
+// the root layout's order: layout.css must come after tokens.css, or its
+// AA contrast overrides (--ink-2, --ink-3) lose to the design values (one
+// glob of all three loads them alphabetically).
+import.meta.glob('../lib/styles/tokens.css', { eager: true });
+import.meta.glob('../lib/styles/layout.css', { eager: true });
+import.meta.glob('../lib/styles/global.css', { eager: true });
 
 type Loader = () => Promise<unknown>;
 

@@ -16,6 +16,7 @@ import {
 	focusIsIn,
 	labelled,
 	landsOn,
+	paintingInFrame,
 	scrimBeside,
 	screenFrame,
 	settle
@@ -454,5 +455,44 @@ describe('OverlaySheet closing under prefers-reduced-motion: reduce', () => {
 		settle();
 		await expect.poll(() => style(sheet, 'opacity'), { timeout: 1000 }).toBe('0');
 		await expect.poll(() => sheet.closest('[inert]') !== null, { timeout: 1000 }).toBe(true);
+	});
+});
+
+// FE-4 PR 3 review: like BottomSheet, a closed OverlaySheet at rest paints
+// nothing over the frame (layer, scrim and sheet visibility: hidden, or not
+// rendered), so axe can decide the contrast of the page under it; while it
+// slides or fades out it stays visible.
+describe('OverlaySheet when closed paints nothing over the frame', () => {
+	useViewport(390, 844);
+	afterEach(() => resetEmulatedMedia());
+
+	it('mounted closed: layer, scrim and sheet are all visibility: hidden', async () => {
+		const { frame } = await renderOverlay(false);
+		await expect.poll(() => paintingInFrame(frame)).toEqual([]);
+	});
+
+	it('open → closed: visible while it slides out, then nothing paints', async () => {
+		const { frame, sheet, startOpen } = await renderOverlay(true);
+		await startOpen(false);
+		expect(style(sheet, 'visibility'), 'want the sheet visible during its slide').toBe('visible');
+		settle();
+		await expect.poll(() => paintingInFrame(frame)).toEqual([]);
+	});
+
+	it('closed → open: the sheet and scrim paint again', async () => {
+		const { frame, sheet, setOpen } = await renderOverlay(false);
+		await setOpen(true);
+		await expect.poll(() => style(sheet, 'visibility')).toBe('visible');
+		const scrim = scrimBeside(frame, sheet);
+		expect(style(scrim, 'visibility'), 'want the scrim visible when open').toBe('visible');
+		expect(landsOn(scrim, ABOVE_SHEET.x, ABOVE_SHEET.y), 'want taps on the scrim').toBe(true);
+	});
+
+	it('under reduced motion: nothing paints once the fade ends', async () => {
+		await emulateReducedMotion('reduce');
+		const { frame, startOpen } = await renderOverlay(true);
+		await startOpen(false);
+		settle();
+		await expect.poll(() => paintingInFrame(frame)).toEqual([]);
 	});
 });

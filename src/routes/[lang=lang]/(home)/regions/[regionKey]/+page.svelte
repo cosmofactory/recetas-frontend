@@ -1,5 +1,13 @@
-<!--
-	The region renders in the (home) layout, which selects it on the map; its
-	sheet / panel, title and meta arrive with FE-4 PR 3. The loader only
-	validates the key (404).
--->
+<script lang="ts">
+	import { regionTitle } from '#lib/components/home/home-head.ts';
+	import type { PageProps } from './$types';
+
+	// The region renders in the (home) layout (map selection, sheet and
+	// panel); the loader validates the key (404) and gives the head its text.
+	let { data }: PageProps = $props();
+</script>
+
+<svelte:head>
+	<title>{regionTitle(data.region.name)}</title>
+	<meta name="description" content={data.region.description} />
+</svelte:head>

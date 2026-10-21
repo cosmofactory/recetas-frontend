@@ -22,6 +22,11 @@ import {
 // page) and a type="button" <button> otherwise. Hover styles apply only
 // under `(hover: hover)` (stage FE-3 -> Desktop); tap targets are ≥ 44px tall
 // (Accessibility). Labels never truncate (Localization -> Length).
+//
+// Contrast (stack.md X10, owner 2026-10-21): --on-accent on --accent is
+// 3.99:1, so filled buttons use --bg-button (#B64F2B, 4.51:1) and hover
+// --bg-button-hover (#A84727) instead of --accent / --accent-hover; accent
+// text (TextButton) uses --accent-text.
 
 type ButtonProps = {
 	label: string;
@@ -156,9 +161,11 @@ describe('PrimaryButton sizes', () => {
 		});
 	}
 
-	it('compact: stays accent with --on-accent text', async () => {
+	it('compact: stays --bg-button with --on-accent text', async () => {
 		const button = await renderButton('PrimaryButton', { size: 'compact' });
-		expect(style(button, 'background-color')).toBe(computed('background-color', 'var(--accent)'));
+		expect(style(button, 'background-color')).toBe(
+			computed('background-color', 'var(--bg-button)')
+		);
 		expect(style(button, 'color')).toBe(computed('color', 'var(--on-accent)'));
 	});
 });
@@ -166,7 +173,7 @@ describe('PrimaryButton sizes', () => {
 describe('PrimaryButton look', () => {
 	// "accent bg, `--on-accent` text, radius 14px, padding 15px, 14px/600".
 	for (const href of [undefined, HREF]) {
-		it(`is accent with --on-accent 14px/600 text, radius 14px, padding 15px as ${href ? 'a link' : 'a button'}`, async () => {
+		it(`is --bg-button with --on-accent 14px/600 text, radius 14px, padding 15px as ${href ? 'a link' : 'a button'}`, async () => {
 			const button = await renderButton('PrimaryButton', { href });
 			const got = [
 				'background-color',
@@ -177,7 +184,7 @@ describe('PrimaryButton look', () => {
 				'font-weight'
 			].map((p) => style(button, p));
 			expect(got).toEqual([
-				computed('background-color', 'var(--accent)'),
+				computed('background-color', 'var(--bg-button)'),
 				computed('color', 'var(--on-accent)'),
 				computed('border-top-left-radius', 'var(--radius-button)'),
 				'15px',
@@ -192,20 +199,23 @@ describe('PrimaryButton look', () => {
 		expect(style(link, 'text-decoration-line')).toBe('none');
 	});
 
-	// "hover `--accent-hover`" (headless Chromium matches (hover: hover)).
-	it('turns --accent-hover on hover', async () => {
+	// "hover `--accent-hover`", as its AA override --bg-button-hover (headless
+	// Chromium matches (hover: hover)).
+	it('turns --bg-button-hover on hover, only under (hover: hover)', async () => {
 		const button = await renderButton('PrimaryButton');
 		await userEvent.hover(button);
-		const want = computed('background-color', 'var(--accent-hover)');
+		const want = computed('background-color', 'var(--bg-button-hover)');
 		await expect.poll(() => style(button, 'background-color')).toBe(want);
+		expect(ungatedHoverRules(button), 'got :hover outside @media (hover: hover)').toEqual([]);
 	});
 });
 
 describe('TextButton look', () => {
 	for (const href of [undefined, HREF]) {
+		// Accent-coloured text uses the AA override --accent-text (stack.md X10).
 		it(`is accent text with no background or border as ${href ? 'a link' : 'a button'}`, async () => {
 			const button = await renderButton('TextButton', { href });
-			expect(style(button, 'color')).toBe(computed('color', 'var(--accent)'));
+			expect(style(button, 'color')).toBe(computed('color', 'var(--accent-text)'));
 			expect(style(button, 'background-color')).toBe(TRANSPARENT);
 			expect(style(button, 'border-top-width')).toBe('0px');
 		});

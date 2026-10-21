@@ -25,7 +25,7 @@
 		padding: 0;
 		border: 0;
 		background: transparent;
-		color: var(--accent);
+		color: var(--accent-text);
 		font: 600 14px var(--font-text);
 		text-decoration: none;
 		cursor: pointer;

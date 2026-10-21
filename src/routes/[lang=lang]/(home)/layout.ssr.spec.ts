@@ -311,3 +311,191 @@ describe('(home) layout: tabs are links', { timeout: COLD_COMPILE_TIMEOUT_MS }, 
 		});
 	}
 });
+
+// FE-4 PR 3, region details in the server HTML (stage FE-4 -> Region sheet,
+// Desktop Regional, Acceptance): "A direct load of /:lang/regions/:key
+// server-renders the map with the sheet open in peek"; "Deep link
+// /ru/regions/gal server-renders with the sheet in peek and Russian text
+// (check with JavaScript disabled: the content is present in the HTML)".
+// Desktop: the region panel is always visible and "Andalucía is selected by
+// default only when the URL has no region".
+//
+// Decisions pinned here: the mobile sheet is the BottomSheet (role="dialog",
+// data-state, named by the region) and the desktop panel the StickyPanel (a
+// <section> named by the region); both are in the HTML (CSS hides one), so
+// a no-JS page of either width has its content. On /:lang/ the sheet is
+// hidden (inert) and the panel shows Andalucía. The region name is an <h2>
+// (the page's <h1>s stay the logo and the about title).
+
+type StartTag = { name: string; attrs: Record<string, string> };
+
+function startTags(html: string): StartTag[] {
+	const tags = html.replace(/<!--[\s\S]*?-->/g, '').match(/<[a-zA-Z][^>]*>/g) ?? [];
+	return tags.map((tag) => ({
+		name: /^<([a-zA-Z0-9-]+)/.exec(tag)![1].toLowerCase(),
+		attrs: Object.fromEntries(
+			[...tag.matchAll(/\s([a-zA-Z:-]+)(?:="([^"]*)")?/g)].map((m) => [m[1], m[2] ?? ''])
+		)
+	}));
+}
+
+function sheetTag(html: string): StartTag {
+	const dialogs = startTags(html).filter((t) => t.attrs.role === 'dialog');
+	expect(dialogs.length, 'want one region sheet (role="dialog") in the HTML').toBe(1);
+	return dialogs[0];
+}
+
+function panelNames(html: string): string[] {
+	return startTags(html)
+		.filter((t) => t.name === 'section' && t.attrs['aria-label'] !== undefined)
+		.map((t) => t.attrs['aria-label']);
+}
+
+function headingTexts(html: string, level: 1 | 2): string[] {
+	const pattern = new RegExp(`<h${level}\\b[^>]*>([\\s\\S]*?)</h${level}>`, 'g');
+	return [...html.matchAll(pattern)].map((m) => visibleText(m[1]));
+}
+
+const GALICIA_RU = {
+	name: 'Галисия',
+	description: 'Атлантические морепродукты, еда паломников и самый любимый осьминог Испании.',
+	count: '4 варианта',
+	chips: ['Pulpo á feira', 'Empanada gallega', 'Lacón con grelos'],
+	rows: [
+		{ dishKey: 'tortilla', name: 'По-бетансосски, жидкая внутри' },
+		{ dishKey: 'cocido', name: 'Cocido gallego' },
+		{ dishKey: 'croquetas', name: 'De marisco' },
+		{ dishKey: 'torrijas', name: 'Filloas' }
+	]
+};
+
+const ANDALUCIA_EN_DESCRIPTION = 'Cold soups, fried fish and eight provinces of contrasts.';
+
+describe(
+	'(home) layout: region sheet in the server HTML',
+	{ timeout: COLD_COMPILE_TIMEOUT_MS },
+	() => {
+		it('/ru/regions/gal: the sheet is in peek, not inert, named Галисия', async () => {
+			const sheet = sheetTag(await renderHome({ lang: 'ru', path: '/ru/regions/gal' }));
+			expect(sheet.attrs['data-state'], 'want the sheet in peek').toBe('peek');
+			expect('inert' in sheet.attrs, 'got an inert sheet in peek').toBe(false);
+			expect(sheet.attrs['aria-label']).toBe(GALICIA_RU.name);
+		});
+
+		it('/ru/regions/gal: the Russian region content is in the HTML', async () => {
+			const text = visibleText(await renderHome({ lang: 'ru', path: '/ru/regions/gal' }));
+			const wants = [
+				GALICIA_RU.name,
+				GALICIA_RU.description,
+				GALICIA_RU.count,
+				...GALICIA_RU.chips,
+				...GALICIA_RU.rows.map((r) => r.name)
+			];
+			for (const want of wants) expect(text, `got no "${want}"`).toContain(want);
+		});
+
+		it('/ru/regions/gal: every row links to its Russian recipe URL', async () => {
+			const html = await renderHome({ lang: 'ru', path: '/ru/regions/gal' });
+			const hrefs = new Set(startTags(html).map((t) => t.attrs.href));
+			for (const row of GALICIA_RU.rows) {
+				const href = `/ru/dishes/${row.dishKey}/gal`;
+				expect(hrefs.has(href), `got no link to ${href}`).toBe(true);
+			}
+		});
+
+		it('/en/: the sheet is hidden and inert', async () => {
+			const sheet = sheetTag(await renderHome({ lang: 'en', path: '/en/' }));
+			expect(sheet.attrs['data-state'], 'want the sheet hidden on the bare home').toBe('hidden');
+			expect('inert' in sheet.attrs, 'want the hidden sheet inert').toBe(true);
+		});
+
+		it('/en/regions/and: the sheet is in peek on a region URL', async () => {
+			const sheet = sheetTag(await renderHome({ lang: 'en', path: '/en/regions/and' }));
+			expect(sheet.attrs['data-state']).toBe('peek');
+			expect(sheet.attrs['aria-label']).toBe('Andalucía');
+		});
+	}
+);
+
+describe(
+	'(home) layout: desktop region panel in the server HTML',
+	{ timeout: COLD_COMPILE_TIMEOUT_MS },
+	() => {
+		it('/en/: the panel shows Andalucía, the default', async () => {
+			const html = await renderHome({ lang: 'en', path: '/en/' });
+			expect(panelNames(html), 'want one panel, named Andalucía').toEqual(['Andalucía']);
+			expect(visibleText(html), 'got no Andalucía description').toContain(ANDALUCIA_EN_DESCRIPTION);
+		});
+
+		it('/en/regions/gal: the panel shows Galicia, not Andalucía', async () => {
+			const html = await renderHome({ lang: 'en', path: '/en/regions/gal' });
+			expect(panelNames(html)).toEqual(['Galicia']);
+			expect(visibleText(html), 'got the default region on a region URL').not.toContain(
+				ANDALUCIA_EN_DESCRIPTION
+			);
+		});
+
+		it('/ru/: the default panel is in Russian', async () => {
+			const html = await renderHome({ lang: 'ru', path: '/ru/' });
+			expect(panelNames(html)).toEqual(['Андалусия']);
+		});
+
+		it('/en/?tab=popular: no region panel and no open sheet', async () => {
+			const html = await renderHome({ lang: 'en', path: '/en/?tab=popular' });
+			expect(panelNames(html), 'got a region panel on Popular').toEqual([]);
+			const dialogs = startTags(html).filter((t) => t.attrs.role === 'dialog');
+			for (const dialog of dialogs) {
+				expect(dialog.attrs['data-state'], 'got an open sheet on Popular').toBe('hidden');
+			}
+		});
+	}
+);
+
+describe('(home) layout: region headings', { timeout: COLD_COMPILE_TIMEOUT_MS }, () => {
+	it('/en/regions/gal: the region name is an <h2>, never an <h1>', async () => {
+		const html = await renderHome({ lang: 'en', path: '/en/regions/gal' });
+		expect(headingTexts(html, 2), 'want Galicia as an <h2>').toContain('Galicia');
+		expect(headingTexts(html, 1), 'got the region name as an <h1>').not.toContain('Galicia');
+	});
+
+	it('/en/regions/gal: the <h1>s stay the logo and the about title', async () => {
+		const html = await renderHome({ lang: 'en', path: '/en/regions/gal' });
+		expect(headingTexts(html, 1).sort()).toEqual(['Asadorov', COPY.en.aboutTitle].sort());
+	});
+});
+
+// FE-4 PR 3 review (WCAG 1.3.1, axe best-practice landmark-one-main / region):
+// the page content sits in exactly one <main>; the mobile header and the
+// desktop top bar are banners outside it.
+function mainRange(html: string): { start: number; end: number } {
+	const opens = [...html.matchAll(/<main\b/g)];
+	expect(opens.length, `got ${opens.length} <main> elements, want 1`).toBe(1);
+	const start = opens[0].index!;
+	const end = html.indexOf('</main>', start);
+	expect(end, 'got an unclosed <main>').toBeGreaterThan(start);
+	return { start, end };
+}
+
+describe('(home) layout: one <main> landmark', { timeout: COLD_COMPILE_TIMEOUT_MS }, () => {
+	for (const path of ['/en/', '/en/?tab=popular', '/en/regions/gal']) {
+		it(`${path}: exactly one <main>, holding the tab panels`, async () => {
+			const html = await renderHome({ lang: 'en', path });
+			const { start, end } = mainRange(html);
+			const panels = [...html.matchAll(/role="tabpanel"/g)].map((m) => m.index!);
+			expect(panels.length, 'want both tab panels').toBe(2);
+			for (const at of panels) {
+				expect(at > start && at < end, 'got a tab panel outside <main>').toBe(true);
+			}
+		});
+
+		it(`${path}: both headers sit outside <main>`, async () => {
+			const html = await renderHome({ lang: 'en', path });
+			const { start, end } = mainRange(html);
+			const headers = [...html.matchAll(/<header\b/g)].map((m) => m.index!);
+			expect(headers.length, 'want the mobile header and the desktop top bar').toBe(2);
+			for (const at of headers) {
+				expect(at < start || at > end, 'got a <header> inside <main>').toBe(true);
+			}
+		});
+	}
+});

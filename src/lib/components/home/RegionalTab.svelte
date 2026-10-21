@@ -1,12 +1,42 @@
 <script lang="ts">
-	import type { ComponentProps } from 'svelte';
+	import type { components } from '#lib/api/schema.d.ts';
+	import { MediaQuery } from 'svelte/reactivity';
+	import StickyPanel from '#lib/components/ui/StickyPanel.svelte';
+	import RegionDetails from '#lib/content/RegionDetails.svelte';
 	import RegionMap from '#lib/content/RegionMap.svelte';
+	import { localizedHref } from '#lib/i18n/localized-href.ts';
+	import type { MapRegionData } from '#lib/map/region-map.ts';
+	import { desktopQuery } from '#lib/ui/breakpoints.ts';
 	import AboutBlock from './AboutBlock.svelte';
 	import MetaRow from './MetaRow.svelte';
+	import RegionSheet from './RegionSheet.svelte';
+	import { DEFAULT_DESKTOP_REGION_KEY, findRegion, shownRegionKey } from './region-selection.ts';
 
-	type Props = ComponentProps<typeof RegionMap>;
+	// selectedKey: the URL's region. onCloseRegion leaves it (the sheet's
+	// scrim and Escape).
+	type Props = {
+		regions: MapRegionData[];
+		dishes: components['schemas']['Dish'][];
+		selectedKey: string | undefined;
+		lang: string;
+		mediaBaseUrl: string | undefined;
+		onCloseRegion: () => void;
+	};
 
-	let { regions, selectedKey, hrefFor }: Props = $props();
+	let { regions, dishes, selectedKey, lang, mediaBaseUrl, onCloseRegion }: Props = $props();
+
+	// The server can't know the width: it renders the mobile selection, and
+	// the desktop default appears on the map once hydrated.
+	const desktop = new MediaQuery(desktopQuery, false);
+	const selected = $derived(findRegion(regions, selectedKey));
+	const panelRegion = $derived(findRegion(regions, shownRegionKey(selectedKey, true)));
+	const mapKey = $derived(shownRegionKey(selectedKey, desktop.current));
+	// Drawn selected by CSS alone from 860px, so the no-JS desktop map shows it.
+	const defaultKey = $derived(selectedKey === undefined ? DEFAULT_DESKTOP_REGION_KEY : undefined);
+
+	const hrefFor = (regionKey: string) => localizedHref(`/regions/${regionKey}`, lang);
+	const recipeHref = (dishKey: string, regionKey: string) =>
+		localizedHref(`/dishes/${dishKey}/${regionKey}`, lang);
 </script>
 
 <!--
@@ -17,15 +47,29 @@
 	<div class="map-column">
 		<MetaRow regionCount={regions.length} />
 		<div class="map-frame">
-			<div class="map-box">
-				<RegionMap {regions} {selectedKey} {hrefFor} />
+			<!-- reset false: focus stays on the region link, so closing returns it there. -->
+			<div class="map-box" data-sveltekit-reset="false">
+				<RegionMap {regions} selectedKey={mapKey} {defaultKey} {hrefFor} />
 			</div>
 		</div>
 		<AboutBlock />
 	</div>
-	<!-- The region panel (StickyPanel) arrives with FE-4 PR 3. -->
-	<div class="panel-column desktop-only"></div>
+	<div class="panel-column desktop-only">
+		{#if panelRegion}
+			<StickyPanel label={panelRegion.name} contentKey={panelRegion.key}>
+				<RegionDetails region={panelRegion} {dishes} {recipeHref} {mediaBaseUrl} />
+			</StickyPanel>
+		{/if}
+	</div>
 </div>
+<RegionSheet
+	region={selected}
+	active={!desktop.current}
+	onClose={onCloseRegion}
+	{dishes}
+	{recipeHref}
+	{mediaBaseUrl}
+/>
 
 <style>
 	/*
