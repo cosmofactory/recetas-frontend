@@ -14,7 +14,9 @@ export const TEST_IDS = {
 	noMatch: 'no-match',
 	// FE-5 PR 2: the content components' roots.
 	filterGroups: 'filter-groups',
-	dishDetails: 'dish-details'
+	dishDetails: 'dish-details',
+	// FE-5 PR 3: the desktop filter sidebar's root (the sticky column).
+	filterSidebar: 'filter-sidebar'
 } as const;
 
 // The Filters button: data-active="true" while any filter is on (ink fill).

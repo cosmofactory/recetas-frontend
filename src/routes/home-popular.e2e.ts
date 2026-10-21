@@ -228,7 +228,9 @@ test.describe('Popular (mobile): nothing matches', () => {
 
 	// Clear all replaces the entry, as a chip does, and the link goes with
 	// the empty state, so focus moves on: to the Filters button on mobile,
-	// and to the result count on desktop (no Filters button until PR 3).
+	// and to the result count on desktop. FE-5 PR 3 keeps the count: it is
+	// where the empty state was, it reads the restored total, and the next
+	// Tab reaches the first card (the sidebar's own Clear all keeps focus).
 	test('Clear all replaces the entry and moves focus (mobile: Filters, desktop: the count)', async ({
 		page
 	}) => {
