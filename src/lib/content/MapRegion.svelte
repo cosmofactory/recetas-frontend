@@ -3,9 +3,15 @@
 
 	// isDefault: the desktop default region, drawn selected from 860px by
 	// CSS alone (a server-rendered page doesn't know its width).
-	type Props = { region: ShapedRegion; href: string; selected: boolean; isDefault?: boolean };
+	type Props = {
+		region: ShapedRegion;
+		href: string;
+		selected: boolean;
+		isDefault?: boolean;
+		onclick?: (event: MouseEvent & { currentTarget: HTMLAnchorElement }) => void;
+	};
 
-	let { region, href, selected, isDefault = false }: Props = $props();
+	let { region, href, selected, isDefault = false, onclick }: Props = $props();
 
 	const isPlainSpace = (event: KeyboardEvent) =>
 		event.key === ' ' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey;
@@ -27,6 +33,7 @@
 	class:untinted={region.tileColor === null}
 	style:--tile-color={region.tileColor ?? undefined}
 	onkeydown={activateOnSpace}
+	{onclick}
 >
 	{#each region.shape.cells as cell (`${cell.row}/${cell.col}`)}
 		<span

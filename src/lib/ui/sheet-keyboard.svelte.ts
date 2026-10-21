@@ -1,3 +1,4 @@
+import { untrack } from 'svelte';
 import { pushEscapeLayer, type EscapeLayerKind } from './escape-layers.ts';
 import { rememberFocus, trapFocus } from './focus-trap.ts';
 
@@ -10,6 +11,9 @@ type SheetKeyboardOptions = {
 	// While modal, Tab is trapped inside.
 	modal: () => boolean;
 	onEscape: () => void;
+	// The control that opened it, when the screen knows (WebKit doesn't focus
+	// a link on click); otherwise the focused element.
+	opener?: () => HTMLElement | undefined;
 };
 
 // Another sheet (role="dialog"), whose own focus return moves focus here.
@@ -40,7 +44,7 @@ export function sheetKeyboard(options: SheetKeyboardOptions) {
 
 	$effect(() => {
 		if (!shown) return;
-		let restore = rememberFocus();
+		let restore = rememberFocus(untrack(() => options.opener?.()));
 		const stopTracking = trackOpener(
 			options.sheet(),
 			(opener) => (restore = rememberFocus(opener))

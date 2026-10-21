@@ -4,15 +4,17 @@
 
 	// regions in API order; a region the API doesn't return isn't drawn.
 	// defaultKey: drawn selected from 860px by CSS alone (the desktop default
-	// without JavaScript); only selectedKey sets aria-current.
+	// without JavaScript); only selectedKey sets aria-current. onActivate
+	// reports the region link a click (or Enter/Space) followed.
 	type Props = {
 		regions: MapRegionData[];
 		selectedKey?: string;
 		defaultKey?: string;
 		hrefFor: (key: string) => string;
+		onActivate?: (key: string, link: HTMLElement) => void;
 	};
 
-	let { regions, selectedKey, defaultKey, hrefFor }: Props = $props();
+	let { regions, selectedKey, defaultKey, hrefFor, onActivate }: Props = $props();
 
 	const drawn = $derived(shapedRegions(regions));
 </script>
@@ -35,6 +37,7 @@
 				href={hrefFor(region.key)}
 				selected={region.key === selectedKey}
 				isDefault={region.key === defaultKey}
+				onclick={(event) => onActivate?.(region.key, event.currentTarget)}
 			/>
 		</li>
 	{/each}

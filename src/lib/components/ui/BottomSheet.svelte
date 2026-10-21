@@ -16,18 +16,28 @@
 	// shows `state` and asks for a new one through onStateChange. `label` is
 	// its accessible name, `handleLabel` the handle's (it has no visible text).
 	// A new `contentKey` (other content, e.g. another region) scrolls the
-	// body back to the top.
+	// body back to the top. `opener` is the control that opened it, when the
+	// screen knows; focus returns there once hidden.
 	type Props = {
 		state: SheetState;
 		onStateChange: (next: SheetState) => void;
 		label: string;
 		handleLabel: string;
 		contentKey?: unknown;
+		opener?: () => HTMLElement | undefined;
 		children: Snippet;
 	};
 
 	// Renamed: a local `state` would turn the $state rune into a store read.
-	let { state: current, onStateChange, label, handleLabel, contentKey, children }: Props = $props();
+	let {
+		state: current,
+		onStateChange,
+		label,
+		handleLabel,
+		contentKey,
+		opener,
+		children
+	}: Props = $props();
 
 	let sheet: HTMLElement | undefined = $state();
 	let body: HTMLElement | undefined = $state();
@@ -44,7 +54,8 @@
 		kind: 'sheet',
 		shown: () => current !== 'hidden',
 		modal: () => modal,
-		onEscape: () => onStateChange('hidden')
+		onEscape: () => onStateChange('hidden'),
+		opener: () => opener?.()
 	});
 </script>
 

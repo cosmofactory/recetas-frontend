@@ -2,40 +2,48 @@
 	import { tick } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import type { components } from '#lib/api/schema.d.ts';
-	import TextButton from '#lib/components/ui/TextButton.svelte';
-	import DishCard from '#lib/content/DishCard.svelte';
 	import { m } from '#lib/paraglide/messages.js';
 	import {
 		clearFiltersHref,
-		dishSheetHref,
 		filterDishes,
+		openDishKey,
 		parseFilters,
-		type FilterUrl
+		type DishUrl
 	} from '#lib/popular/filters.ts';
 	import { desktopQuery } from '#lib/ui/breakpoints.ts';
 	import { isPlainClick } from '#lib/ui/plain-click.ts';
-	import FilterBar from './FilterBar.svelte';
+	import { sheetOpener } from '#lib/ui/sheet-opener.ts';
+	import DishResults from './DishResults.svelte';
+	import DishSheet from './DishSheet.svelte';
+	import PopularFilters from './PopularFilters.svelte';
 
-	// url: the page URL, whose `f` params are the active filters (D-FE5-1).
-	// onToggleFilter(id) and onClearFilters(href) ask the screen to navigate
-	// (replacing the entry); the latter resolves once it has.
+	// url: the page URL, whose `f` params are the active filters (D-FE5-1)
+	// and `dish` the open dish sheet (D-FE5-2). onToggleFilter(id) and
+	// onClearFilters(href) ask the screen to navigate (replacing the entry);
+	// the latter resolves once it has. onCloseDish leaves the dish sheet.
 	type Props = {
 		dishes: components['schemas']['Dish'][];
-		url: FilterUrl;
+		url: DishUrl;
+		lang: string;
 		mediaBaseUrl: string | undefined;
 		onToggleFilter: (id: string) => void;
 		onClearFilters: (href: string) => Promise<void>;
+		onCloseDish: () => void;
 	};
 
-	let { dishes, url, mediaBaseUrl, onToggleFilter, onClearFilters }: Props = $props();
+	let { dishes, url, lang, mediaBaseUrl, onToggleFilter, onClearFilters, onCloseDish }: Props =
+		$props();
 
 	const active = $derived(parseFilters(url));
 	const shown = $derived(filterDishes(dishes, active));
-	// The Filters sheet arrives with FE-5 PR 2.
-	const openFilters = () => {};
+	const openDish = $derived(dishes.find((dish) => dish.key === openDishKey(url)));
 
 	const desktop = new MediaQuery(desktopQuery, false);
-	let filterBar: ReturnType<typeof FilterBar> | undefined = $state();
+
+	// The card that opened the dish sheet gets focus back when it closes.
+	const dishOpener = sheetOpener();
+
+	let filters: ReturnType<typeof PopularFilters> | undefined = $state();
 	let resultCount: HTMLElement | undefined = $state();
 
 	// "Clear all" keeps its href (no JS, new tab); a plain click replaces the
@@ -53,7 +61,7 @@
 	// also reads out the restored count.
 	function focusAfterClear() {
 		if (desktop.current) resultCount?.focus();
-		else filterBar?.focusFiltersButton();
+		else filters?.focusFiltersButton();
 	}
 </script>
 
@@ -61,14 +69,12 @@
 	<!-- The desktop <h1> lives in the Regional panel, so this panel names itself. -->
 	<h2 class="visually-hidden">{m.home_popular()}</h2>
 	<div class="controls">
-		<div class="mobile-only">
-			<FilterBar
-				bind:this={filterBar}
-				{active}
-				onToggle={onToggleFilter}
-				onOpenFilters={openFilters}
-			/>
-		</div>
+		<PopularFilters
+			bind:this={filters}
+			{active}
+			onToggle={onToggleFilter}
+			onClear={() => void onClearFilters(clearFiltersHref(url))}
+		/>
 		<p
 			bind:this={resultCount}
 			class="result-count"
@@ -79,26 +85,22 @@
 			{m.home_dish({ count: shown.length })}
 		</p>
 	</div>
-	<div class="list">
-		{#if shown.length > 0}
-			<ul class="cards" role="list">
-				{#each shown as dish (dish.key)}
-					<li><DishCard {dish} href={dishSheetHref(url, dish.key)} {mediaBaseUrl} /></li>
-				{/each}
-			</ul>
-		{:else}
-			<div class="no-match" data-testid="no-match">
-				<p class="no-match-text">{m.desktop_noMatch()}</p>
-				<TextButton
-					label={m.home_clearAll()}
-					href={clearFiltersHref(url)}
-					size="small"
-					onclick={clearFilters}
-				/>
-			</div>
-		{/if}
-	</div>
+	<DishResults
+		dishes={shown}
+		{url}
+		{mediaBaseUrl}
+		onClear={clearFilters}
+		onOpenDish={dishOpener.remember}
+	/>
 </div>
+<DishSheet
+	dish={openDish}
+	active={!desktop.current}
+	{lang}
+	{mediaBaseUrl}
+	onClose={onCloseDish}
+	opener={() => dishOpener.forKey(openDish?.key)}
+/>
 
 <style>
 	.popular {
@@ -130,49 +132,5 @@
 		font-weight: 700;
 		letter-spacing: 0.09em;
 		text-transform: uppercase;
-	}
-
-	/*
-	 * Prototype: the body is "flex:1; padding:14px 16px 16px" and the list
-	 * scrolls in it ("flex:1; min-height:0; overflow-y:auto; scrollbar-width:
-	 * none; gap:10px; padding:2px 2px 8px"); the home frame never scrolls.
-	 */
-	.list {
-		flex: 1;
-		min-height: 0;
-		margin: 14px 16px 16px;
-		padding: 2px 2px 8px;
-		overflow-x: hidden;
-		overflow-y: auto;
-		overscroll-behavior: contain;
-		scrollbar-width: none;
-	}
-
-	.list::-webkit-scrollbar {
-		display: none;
-	}
-
-	.cards {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	/* Desktop prototype's empty state ("padding 48px 0", gap 12px, serif 24px) at the mobile card's 21px. */
-	.no-match {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 12px;
-		padding: 48px 0;
-		text-align: center;
-	}
-
-	.no-match-text {
-		margin: 0;
-		font: 400 21px var(--font-display);
 	}
 </style>

@@ -1,5 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { gotoHydrated } from '../testutil/home-e2e';
+import { openFiltersSheet, openFiltersSheetByKeyboard } from '../testutil/popular-e2e';
 import {
 	expectSheetExpanded,
 	expectSheetPeek,
@@ -93,7 +94,10 @@ test.describe('axe: WCAG 2.2 AA on the home screens', () => {
 		'/en/?tab=popular',
 		'/es/?tab=popular',
 		'/ru/?tab=popular&f=vegetarian&f=quick',
-		'/en/?tab=popular&f=desserts&f=summer'
+		'/en/?tab=popular&f=desserts&f=summer',
+		// FE-5 PR 2: the dish sheet in peek on mobile; ignored on desktop.
+		'/en/?tab=popular&dish=tortilla',
+		'/ru/?tab=popular&f=vegetarian&dish=gazpacho'
 	];
 	for (const url of urls) {
 		test(`${url} has no violations`, async ({ page }, testInfo) => {
@@ -124,6 +128,47 @@ test.describe('axe: WCAG 2.2 AA on the home screens', () => {
 		await regionSheet(page).getByRole('button', { name: HANDLE_LABEL_EN }).click();
 		await expectSheetExpanded(page, GALICIA_EN.name);
 		await expectNoViolations(page, '/en/regions/gal (expanded)');
+	});
+});
+
+// FE-5 PR 2: the dish sheet expanded and the Filters sheet open, on mobile.
+test.describe('axe: WCAG 2.2 AA with the Popular sheets open', () => {
+	test('/en/?tab=popular&dish=tortilla in peek has no violations', async ({ page }, testInfo) => {
+		onlyOnMobile(testInfo);
+		await gotoHydrated(page, '/en/?tab=popular&dish=tortilla');
+		await expectSheetPeek(page, 'Tortilla de patatas');
+		await expectNoViolations(page, '/en/?tab=popular&dish=tortilla (peek)');
+	});
+
+	test('/ru/?tab=popular&dish=tortilla expanded has no violations', async ({ page }, testInfo) => {
+		onlyOnMobile(testInfo);
+		await gotoHydrated(page, '/ru/?tab=popular&dish=tortilla');
+		await regionSheet(page).locator('button[aria-expanded]').click();
+		await expectSheetExpanded(page, 'Тортилья');
+		await expectNoViolations(page, '/ru/?tab=popular&dish=tortilla (expanded)');
+	});
+
+	const filtersOpen = [
+		{ lang: 'en', query: '&f=vegetarian' },
+		{ lang: 'ru', query: '&f=quick&f=summer' },
+		{ lang: 'es', query: '' }
+	] as const;
+	for (const { lang, query } of filtersOpen) {
+		const url = `/${lang}/?tab=popular${query}`;
+		test(`${url} with the Filters sheet open has no violations`, async ({ page }, testInfo) => {
+			onlyOnMobile(testInfo);
+			await gotoHydrated(page, url);
+			await openFiltersSheet(page, lang);
+			await expectNoViolations(page, `${url} (Filters sheet)`);
+		});
+	}
+
+	test('the Filters sheet over the dish sheet has no violations', async ({ page }, testInfo) => {
+		onlyOnMobile(testInfo);
+		await gotoHydrated(page, '/en/?tab=popular&dish=tortilla');
+		await expectSheetPeek(page, 'Tortilla de patatas');
+		await openFiltersSheetByKeyboard(page, 'en');
+		await expectNoViolations(page, 'the Filters sheet over the dish sheet');
 	});
 });
 

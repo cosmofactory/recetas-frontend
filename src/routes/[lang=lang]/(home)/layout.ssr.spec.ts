@@ -345,6 +345,17 @@ function sheetTag(html: string): StartTag {
 	return dialogs[0];
 }
 
+// Dialogs that are shown: a BottomSheet not in data-state="hidden", or any
+// other dialog (the Filters OverlaySheet) that isn't inert.
+function openDialogs(html: string): string[] {
+	return startTags(html)
+		.filter((t) => t.attrs.role === 'dialog')
+		.filter((t) =>
+			'data-state' in t.attrs ? t.attrs['data-state'] !== 'hidden' : !('inert' in t.attrs)
+		)
+		.map((t) => t.attrs['aria-label'] ?? '(unnamed)');
+}
+
 function panelNames(html: string): string[] {
 	return startTags(html)
 		.filter((t) => t.name === 'section' && t.attrs['aria-label'] !== undefined)
@@ -440,13 +451,12 @@ describe(
 			expect(panelNames(html)).toEqual(['Андалусия']);
 		});
 
+		// FE-5 PR 2: a closed Filters sheet (OverlaySheet, no data-state) may be
+		// in the HTML too; closed means inert.
 		it('/en/?tab=popular: no region panel and no open sheet', async () => {
 			const html = await renderHome({ lang: 'en', path: '/en/?tab=popular' });
 			expect(panelNames(html), 'got a region panel on Popular').toEqual([]);
-			const dialogs = startTags(html).filter((t) => t.attrs.role === 'dialog');
-			for (const dialog of dialogs) {
-				expect(dialog.attrs['data-state'], 'got an open sheet on Popular').toBe('hidden');
-			}
+			expect(openDialogs(html), 'got an open sheet on Popular').toEqual([]);
 		});
 	}
 );
@@ -662,3 +672,191 @@ describe('(home) layout: the Popular panel heading', { timeout: COLD_COMPILE_TIM
 		]);
 	});
 });
+
+// FE-5 PR 2, the dish detail sheet in the server HTML (D-FE5-2:
+// ?tab=popular[&f=…]&dish=<key> opens it; an unknown key opens nothing).
+// The acceptance's "Back from the Variations page restores ... the open dish
+// sheet" and the shareable-URL rule both need the sheet to come from the URL
+// alone, so a direct load renders it open, like the region sheet.
+//
+// Decisions pinned here (FE-5 PR 2):
+// - The dish sheet is a BottomSheet (role="dialog", data-state, named by the
+//   dish) holding DishDetails (data-testid="dish-details"); a dish URL opens
+//   it in peek. The server can't know the width, so it renders it as on
+//   mobile; desktop ignores ?dish once hydrated (and CSS hides the sheet).
+// - It lives in the Popular tab: ?dish on the Regional tab opens nothing.
+// - The Filters sheet's open state is in memory (see home-popular-sheets
+//   e2e), so the server always renders it closed; the Filters button
+//   carries aria-haspopup="dialog" and aria-expanded="false".
+
+type DishSheetCase = { lang: Lang; path: string; name: string };
+
+function dishSheetTag(html: string, name: string): StartTag {
+	const sheets = startTags(html).filter(
+		(t) => t.attrs.role === 'dialog' && t.attrs['aria-label'] === name
+	);
+	expect(sheets.length, `want one dialog named "${name}"`).toBe(1);
+	return sheets[0];
+}
+
+const VOID_TAGS = new Set([
+	'area',
+	'br',
+	'col',
+	'hr',
+	'img',
+	'input',
+	'link',
+	'meta',
+	'source',
+	'wbr'
+]);
+const TAG = /<!--[\s\S]*?-->|<\/?([a-zA-Z][a-zA-Z0-9-]*)\b[^>]*?(\/?)>/g;
+
+// The HTML of the element whose start tag begins at `start`, up to its
+// matching end tag (void and self-closed tags don't nest).
+function elementHtml(html: string, start: number): string {
+	TAG.lastIndex = start;
+	let depth = 0;
+	for (let match = TAG.exec(html); match; match = TAG.exec(html)) {
+		const [tag, name, selfClosed] = match;
+		if (!name || selfClosed || VOID_TAGS.has(name.toLowerCase())) continue;
+		depth += tag.startsWith('</') ? -1 : 1;
+		if (depth === 0) return html.slice(start, TAG.lastIndex);
+	}
+	throw new Error('got an unclosed element in the HTML');
+}
+
+// The HTML inside the dialog named `name`.
+function dishSheetHtml(html: string, name: string): string {
+	const label = html.indexOf(`aria-label="${name}"`);
+	expect(label, `got no dialog named "${name}"`).toBeGreaterThan(-1);
+	return elementHtml(html, html.lastIndexOf('<', label));
+}
+
+const TORTILLA_REGIONS = [
+	'gal',
+	'ast',
+	'bas',
+	'cat',
+	'cyl',
+	'mad',
+	'ara',
+	'val',
+	'ext',
+	'clm',
+	'mur',
+	'and',
+	'bal'
+];
+
+const TORTILLA_RU = {
+	name: 'Тортилья',
+	description: 'Одно блюдо — два века споров. С луком или без — это только начало.',
+	count: '13 вариантов',
+	seeAll: 'Все варианты',
+	rows: ['По-бетансосски, жидкая внутри', 'С чорисо', 'С собрасадой'],
+	regions: ['Галисия', 'Астурия', 'Балеарские острова']
+};
+
+describe(
+	'(home) layout: the dish sheet in the server HTML',
+	{ timeout: COLD_COMPILE_TIMEOUT_MS },
+	() => {
+		const open: DishSheetCase[] = [
+			{ lang: 'en', path: '/en/?tab=popular&dish=tortilla', name: 'Tortilla de patatas' },
+			{ lang: 'ru', path: '/ru/?tab=popular&dish=tortilla', name: 'Тортилья' },
+			{ lang: 'es', path: '/es/?tab=popular&dish=paella', name: 'Arroces' },
+			{
+				lang: 'en',
+				path: '/en/?tab=popular&f=vegetarian&dish=gazpacho',
+				name: 'Cold soups'
+			}
+		];
+		for (const tc of open) {
+			it(`${tc.path}: the sheet is in peek, not inert, named "${tc.name}"`, async () => {
+				const sheet = dishSheetTag(await renderHome(tc), tc.name);
+				expect(sheet.attrs['data-state'], 'want the dish sheet in peek').toBe('peek');
+				expect('inert' in sheet.attrs, 'got an inert dish sheet').toBe(false);
+			});
+		}
+
+		it('/ru/?tab=popular&dish=tortilla: the Russian dish content is in the sheet', async () => {
+			const html = await renderHome({ lang: 'ru', path: '/ru/?tab=popular&dish=tortilla' });
+			const sheet = dishSheetHtml(html, TORTILLA_RU.name);
+			expect(sheet, 'got no DishDetails root').toContain('data-testid="dish-details"');
+			const text = visibleText(sheet);
+			const wants = [
+				TORTILLA_RU.description,
+				TORTILLA_RU.count,
+				TORTILLA_RU.seeAll,
+				...TORTILLA_RU.rows,
+				...TORTILLA_RU.regions
+			];
+			for (const want of wants) expect(text, `got no "${want}" in the sheet`).toContain(want);
+		});
+
+		it('/ru/?tab=popular&dish=tortilla: rows link to each recipe in region order, then See all', async () => {
+			const html = await renderHome({ lang: 'ru', path: '/ru/?tab=popular&dish=tortilla' });
+			const hrefs = startTags(dishSheetHtml(html, TORTILLA_RU.name))
+				.map((t) => t.attrs.href ?? '')
+				.filter((href) => href.startsWith('/ru/dishes/tortilla'));
+			const rows = TORTILLA_REGIONS.map((region) => `/ru/dishes/tortilla/${region}`);
+			expect(hrefs).toEqual([...rows, '/ru/dishes/tortilla']);
+		});
+
+		it('/en/?tab=popular&dish=bogus: an unknown key opens nothing', async () => {
+			const html = await renderHome({ lang: 'en', path: '/en/?tab=popular&dish=bogus' });
+			expect(openDialogs(html), 'got a sheet open for an unknown dish').toEqual([]);
+			expect(cardHrefs(popularPanel(html)).length, 'want the full list still').toBe(7);
+		});
+
+		it('/en/?dish=tortilla (Regional): the dish sheet stays closed', async () => {
+			const html = await renderHome({ lang: 'en', path: '/en/?dish=tortilla' });
+			expect(openDialogs(html), 'got a sheet open on the Regional tab').toEqual([]);
+		});
+
+		it('/en/?tab=popular: no dish, no open dish sheet', async () => {
+			const html = await renderHome({ lang: 'en', path: '/en/?tab=popular' });
+			expect(html).not.toContain('data-testid="dish-details"');
+		});
+
+		it('/en/?tab=popular&f=vegetarian&dish=tortilla: the tabs still lead to bare tab URLs', async () => {
+			const tabs = tabsIn(
+				await renderHome({ lang: 'en', path: '/en/?tab=popular&f=vegetarian&dish=tortilla' })
+			);
+			const hrefs = new Set(tabs.map((t) => t.href));
+			expect([...hrefs].sort()).toEqual(['/en/', '/en/?tab=popular']);
+		});
+	}
+);
+
+describe(
+	'(home) layout: the Filters button in the server HTML',
+	{ timeout: COLD_COMPILE_TIMEOUT_MS },
+	() => {
+		// The <button> whose text is "Filters" or "Filters · N".
+		function filtersButtonTag(html: string): StartTag {
+			const buttons = html.match(/<button\b[^>]*>[\s\S]*?<\/button>/g) ?? [];
+			const found = buttons.find((b) => /^Filters( · \d+)?$/.test(visibleText(b)));
+			expect(found, 'got no Filters button').toBeDefined();
+			return startTags(found!)[0];
+		}
+
+		for (const path of ['/en/?tab=popular', '/en/?tab=popular&f=vegetarian&dish=tortilla']) {
+			it(`${path}: aria-haspopup="dialog", aria-expanded="false" (closed on load)`, async () => {
+				const button = filtersButtonTag(await renderHome({ lang: 'en', path }));
+				expect(button.attrs['aria-haspopup']).toBe('dialog');
+				expect(button.attrs['aria-expanded']).toBe('false');
+			});
+		}
+
+		it('/en/?tab=popular: the Filters sheet is not open on load', async () => {
+			const html = await renderHome({ lang: 'en', path: '/en/?tab=popular' });
+			const filters = startTags(html).filter(
+				(t) => t.attrs.role === 'dialog' && t.attrs['aria-label'] === 'Filters'
+			);
+			for (const sheet of filters) expect('inert' in sheet.attrs, 'want it inert').toBe(true);
+		});
+	}
+);

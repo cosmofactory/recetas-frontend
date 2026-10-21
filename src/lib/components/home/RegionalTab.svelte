@@ -4,9 +4,10 @@
 	import StickyPanel from '#lib/components/ui/StickyPanel.svelte';
 	import RegionDetails from '#lib/content/RegionDetails.svelte';
 	import RegionMap from '#lib/content/RegionMap.svelte';
-	import { localizedHref } from '#lib/i18n/localized-href.ts';
+	import { localizedHref, recipeHref as recipeHrefIn } from '#lib/i18n/localized-href.ts';
 	import type { MapRegionData } from '#lib/map/region-map.ts';
 	import { desktopQuery } from '#lib/ui/breakpoints.ts';
+	import { sheetOpener } from '#lib/ui/sheet-opener.ts';
 	import AboutBlock from './AboutBlock.svelte';
 	import MetaRow from './MetaRow.svelte';
 	import RegionSheet from './RegionSheet.svelte';
@@ -34,9 +35,11 @@
 	// Drawn selected by CSS alone from 860px, so the no-JS desktop map shows it.
 	const defaultKey = $derived(selectedKey === undefined ? DEFAULT_DESKTOP_REGION_KEY : undefined);
 
+	// The map link that opened the sheet gets focus back when it closes.
+	const regionOpener = sheetOpener();
+
 	const hrefFor = (regionKey: string) => localizedHref(`/regions/${regionKey}`, lang);
-	const recipeHref = (dishKey: string, regionKey: string) =>
-		localizedHref(`/dishes/${dishKey}/${regionKey}`, lang);
+	const recipeHref = (dishKey: string, regionKey: string) => recipeHrefIn(dishKey, regionKey, lang);
 </script>
 
 <!--
@@ -49,7 +52,13 @@
 		<div class="map-frame">
 			<!-- reset false: focus stays on the region link, so closing returns it there. -->
 			<div class="map-box" data-sveltekit-reset="false">
-				<RegionMap {regions} selectedKey={mapKey} {defaultKey} {hrefFor} />
+				<RegionMap
+					{regions}
+					selectedKey={mapKey}
+					{defaultKey}
+					{hrefFor}
+					onActivate={regionOpener.remember}
+				/>
 			</div>
 		</div>
 		<AboutBlock />
@@ -66,6 +75,7 @@
 	region={selected}
 	active={!desktop.current}
 	onClose={onCloseRegion}
+	opener={() => regionOpener.forKey(selected?.key)}
 	{dishes}
 	{recipeHref}
 	{mediaBaseUrl}

@@ -53,12 +53,14 @@ export const FILTER_IDS: readonly FilterId[] = FILTER_GROUPS.flatMap((group) => 
 export const QUICK_FILTER_IDS: readonly FilterId[] = ['vegetarian', 'quick', 'desserts', 'summer'];
 
 export const FILTER_PARAM = 'f';
-// D-FE5-2: the open dish sheet (PR 2 reads it).
+// D-FE5-2: the open dish sheet (mobile).
 export const DISH_PARAM = 'dish';
 
 // What the helpers read of a URL ($app/state's page.url is read-only).
 type FilterSearch = { searchParams: Pick<URLSearchParams, 'getAll'> };
 export type FilterUrl = FilterSearch & { pathname: string };
+// A Popular URL that may also open a dish sheet (?dish).
+export type DishUrl = FilterUrl & { searchParams: Pick<URLSearchParams, 'get'> };
 
 // Keeps the dishes (in the order given) that pass, in every group with an
 // active id, at least one of that group's active tests. Unknown ids are ignored.
@@ -101,3 +103,10 @@ export const clearFiltersHref = (url: FilterUrl): string => popularHref(url.path
 // A dish card's link: the same filtered list with that dish's sheet open.
 export const dishSheetHref = (url: FilterUrl, dishKey: string): string =>
 	popularHref(url.pathname, parseFilters(url), [[DISH_PARAM, dishKey]]);
+
+// The dish whose sheet the URL opens, if any (the key may be unknown).
+export const openDishKey = (url: DishUrl) => url.searchParams.get(DISH_PARAM) ?? undefined;
+
+// The dish sheet's close: the same filtered list without its dish.
+export const closeDishHref = (url: FilterUrl): string =>
+	popularHref(url.pathname, parseFilters(url));

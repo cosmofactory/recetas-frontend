@@ -5,20 +5,24 @@
 	import { QUICK_FILTER_IDS } from '#lib/popular/filters.ts';
 
 	// Controlled: `active` is the URL's filters; a chip press asks the screen
-	// to navigate (onToggle), the Filters button to open the sheet.
+	// to navigate (onToggle), the Filters button to open the sheet, whose
+	// open state the screen owns (filtersOpen).
 	type Props = {
 		active: readonly string[];
 		onToggle: (id: string) => void;
 		onOpenFilters: () => void;
+		filtersOpen: boolean;
 	};
 
-	let { active, onToggle, onOpenFilters }: Props = $props();
+	let { active, onToggle, onOpenFilters, filtersOpen }: Props = $props();
 
 	const hasActive = $derived(active.length > 0);
 
 	let filtersButton: HTMLButtonElement | undefined = $state();
 
-	// For a screen that removes the control that had focus (e.g. "Clear all").
+	// For a screen that removes the control that had focus (e.g. "Clear all")
+	// or closes the sheet (WebKit doesn't focus a button on click, so the
+	// sheet can't always return focus itself).
 	export function focusFiltersButton() {
 		filtersButton?.focus();
 	}
@@ -31,6 +35,8 @@
 			type="button"
 			class="filters-button"
 			data-active={hasActive ? 'true' : undefined}
+			aria-haspopup="dialog"
+			aria-expanded={filtersOpen}
 			onclick={onOpenFilters}
 		>
 			{filtersButtonLabel(active.length)}

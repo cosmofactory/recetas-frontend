@@ -9,9 +9,10 @@
 		dish: components['schemas']['Dish'];
 		href: string;
 		mediaBaseUrl: string | undefined;
+		onclick?: (event: MouseEvent & { currentTarget: HTMLAnchorElement }) => void;
 	};
 
-	let { dish, href, mediaBaseUrl }: Props = $props();
+	let { dish, href, mediaBaseUrl, onclick }: Props = $props();
 
 	// Mobile: the list's full width. Desktop: a grid column of at least 250px
 	// (desktop README -> Popular); PR 3 refines it with the desktop grid.
@@ -20,7 +21,7 @@
 </script>
 
 <!-- The whole card is one link; the photo is decorative, the name names it. -->
-<a class="dish-card" data-testid="dish-card" {href}>
+<a class="dish-card" data-testid="dish-card" {href} {onclick}>
 	<Photo
 		photos={dish.photos}
 		role="card"
