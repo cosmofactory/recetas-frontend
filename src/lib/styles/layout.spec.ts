@@ -117,7 +117,8 @@ const CONTRAST_OVERRIDES: Record<string, string> = {
 	'--ink-2': 'rgba(43,30,22,.64)',
 	'--ink-3': 'rgba(43,30,22,.63)',
 	'--ink-eyebrow': 'rgba(43,30,22,.63)',
-	'--accent-text': '#ba512c',
+	'--accent-text': '#b44e2a',
+	'--accent-text-hover': '#a84727',
 	// Filled buttons (same decision): --on-accent on --accent is 3.99:1.
 	'--bg-button': '#b64f2b',
 	'--bg-button-hover': '#a84727'

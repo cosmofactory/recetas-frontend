@@ -26,3 +26,6 @@ test-results
 
 # Paraglide output (generated from messages/ by the Vite plugin)
 /src/lib/paraglide
+
+# Vitest coverage (pnpm test:coverage)
+/coverage

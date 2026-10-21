@@ -13,12 +13,18 @@
 	 * are nudged to the nearest passing value here; tokens.css stays the
 	 * design's byte mirror. --ink-2 .60 → .64, --ink-3 .50 → .63, the
 	 * eyebrow ("ink-3 at .55") → .63. Accent-coloured text uses
-	 * --accent-text; backgrounds, borders, buttons and the map keep --accent.
+	 * --accent-text (AA on both page and surface); backgrounds, borders,
+	 * buttons and the map keep --accent.
 	 */
 	--ink-2: rgba(43, 30, 22, 0.64);
 	--ink-3: rgba(43, 30, 22, 0.63);
 	--ink-eyebrow: rgba(43, 30, 22, 0.63);
-	--accent-text: #ba512c;
+	--accent-text: #b44e2a;
+	/*
+	 * --accent-text sits next to --accent-hover (#B44B27), so its hover
+	 * would not show; text hover darkens like --bg-button-hover.
+	 */
+	--accent-text-hover: #a84727;
 	/*
 	 * Filled buttons: --on-accent on --accent is 3.99:1, so their background
 	 * is --bg-button (4.51:1), hover --bg-button-hover (5.2:1).
@@ -159,6 +165,10 @@
 	--ink-row-chevron: rgba(43, 30, 22, 0.35);
 	--radius-region-row-desktop: 14px;
 	--radius-thumb-desktop: 12px;
+
+	/* Mobile README -> Popular tab: dish card "Hover bg #FDFAF3", photo "radius 11px". */
+	--bg-card-hover: #fdfaf3;
+	--radius-card-photo: 11px;
 
 	/*
 	 * The design gives no focus colour; ink is its existing high-contrast UI

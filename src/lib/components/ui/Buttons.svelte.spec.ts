@@ -220,4 +220,16 @@ describe('TextButton look', () => {
 			expect(style(button, 'border-top-width')).toBe('0px');
 		});
 	}
+
+	// --accent-text is close to --accent-hover, so hover uses its own darker
+	// --accent-text-hover (stack.md X10), a visible change from rest.
+	it('turns --accent-text-hover on hover, only under (hover: hover)', async () => {
+		const button = await renderButton('TextButton');
+		const rest = style(button, 'color');
+		await userEvent.hover(button);
+		const want = computed('color', 'var(--accent-text-hover)');
+		await expect.poll(() => style(button, 'color')).toBe(want);
+		expect(want, 'want the hover colour to differ from rest').not.toBe(rest);
+		expect(ungatedHoverRules(button), 'got :hover outside @media (hover: hover)').toEqual([]);
+	});
 });

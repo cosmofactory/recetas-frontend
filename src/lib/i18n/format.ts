@@ -1,6 +1,10 @@
 import { m } from '#lib/paraglide/messages.js';
 import type { Locale } from './locales.ts';
 
+// The middle dot between parts of one line ("Asadorov · Popular", "Filters · 2",
+// "Region · Variation"); the prototypes use it everywhere.
+export const DOT_SEPARATOR = ' · ';
+
 // Quantities show at most one decimal unless the caller asks otherwise.
 const DEFAULT_NUMBER_FORMAT: Intl.NumberFormatOptions = { maximumFractionDigits: 1 };
 

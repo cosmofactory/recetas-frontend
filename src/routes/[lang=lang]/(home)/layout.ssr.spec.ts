@@ -499,3 +499,166 @@ describe('(home) layout: one <main> landmark', { timeout: COLD_COMPILE_TIMEOUT_M
 		});
 	}
 });
+
+// FE-5 PR 1, the Popular tab in the server HTML. Every URL is shareable and
+// indexable (CLAUDE.md), and the filters live in the URL (D-FE5-1), so the
+// server renders the filtered list itself: a reload or a shared link shows
+// the same dishes before any JavaScript runs.
+//
+// Decisions pinned here (FE-5 PR 1):
+// - Each DishCard is a link with data-testid="dish-card" whose href is
+//   /:lang/?tab=popular[&f=…canonical]&dish=<key> (PR 2 opens the dish sheet
+//   there; D-FE5-2).
+// - The result count carries data-testid="result-count" (home.dish plural);
+//   the empty state is desktop.noMatch plus a "Clear all" action.
+// - The Popular panel has its own <h2>, the tab label (home.popular): the
+//   desktop <h1> lives in the Regional panel, which is hidden on Popular.
+
+const decodeAmp = (href: string) => href.replaceAll('&amp;', '&');
+
+// From the Popular panel's start tag to the end of <main> (it is the last panel).
+function popularPanel(html: string): string {
+	const start = html.indexOf('id="home-popular"');
+	expect(start, 'got no #home-popular panel').toBeGreaterThan(-1);
+	return html.slice(start, html.indexOf('</main>', start));
+}
+
+function cardHrefs(html: string): string[] {
+	return startTags(html)
+		.filter((t) => t.attrs['data-testid'] === 'dish-card')
+		.map((t) => decodeAmp(t.attrs.href ?? ''));
+}
+
+function resultCount(html: string): string {
+	const match = /<[^>]*data-testid="result-count"[^>]*>([\s\S]*?)<\//.exec(html);
+	expect(match, 'got no [data-testid="result-count"]').not.toBeNull();
+	return visibleText(match![1]);
+}
+
+const ALL_DISHES = [
+	'tortilla',
+	'paella',
+	'cocido',
+	'gazpacho',
+	'croquetas',
+	'torrijas',
+	'arrozleche'
+];
+
+describe(
+	'(home) layout: the Popular list in the server HTML',
+	{ timeout: COLD_COMPILE_TIMEOUT_MS },
+	() => {
+		it('/en/?tab=popular: every dish card, in dish order, each linking to its dish sheet URL', async () => {
+			const html = popularPanel(await renderHome({ lang: 'en', path: '/en/?tab=popular' }));
+			const want = ALL_DISHES.map((key) => `/en/?tab=popular&dish=${key}`);
+			expect(cardHrefs(html)).toEqual(want);
+			expect(resultCount(html)).toBe('7 dishes');
+		});
+
+		it('/ru/?tab=popular&f=vegetarian&f=summer: only gazpacho, "1 блюдо"', async () => {
+			const html = popularPanel(
+				await renderHome({ lang: 'ru', path: '/ru/?tab=popular&f=vegetarian&f=summer' })
+			);
+			expect(cardHrefs(html)).toEqual(['/ru/?tab=popular&f=vegetarian&f=summer&dish=gazpacho']);
+			expect(resultCount(html)).toBe('1 блюдо');
+			expect(visibleText(html)).toContain('Холодные супы');
+		});
+
+		it('/es/?tab=popular&f=vegetarian: three dishes, "3 platos"', async () => {
+			const html = popularPanel(
+				await renderHome({ lang: 'es', path: '/es/?tab=popular&f=vegetarian' })
+			);
+			expect(cardHrefs(html)).toEqual(
+				['tortilla', 'gazpacho', 'arrozleche'].map((k) => `/es/?tab=popular&f=vegetarian&dish=${k}`)
+			);
+			expect(resultCount(html)).toBe('3 platos');
+		});
+
+		it('a messy filter URL reads canonical: order, duplicates and unknown ids', async () => {
+			const path = '/en/?tab=popular&f=summer&f=bogus&f=vegetarian&f=summer';
+			const html = popularPanel(await renderHome({ lang: 'en', path }));
+			expect(cardHrefs(html)).toEqual(['/en/?tab=popular&f=vegetarian&f=summer&dish=gazpacho']);
+		});
+
+		it('the Filters button counts the active filters: "Filters · 2"', async () => {
+			const html = await renderHome({ lang: 'en', path: '/en/?tab=popular&f=pork&f=winter' });
+			expect(visibleText(html)).toContain('Filters · 2');
+		});
+
+		it('the Filters button reads "Filters" with no filter', async () => {
+			const html = await renderHome({ lang: 'en', path: '/en/?tab=popular' });
+			expect(visibleText(html)).toContain('Filters');
+			expect(visibleText(html)).not.toMatch(/Filters · \d/);
+		});
+
+		const empty: { lang: Lang; noMatch: string; clearAll: string; count: string }[] = [
+			{
+				lang: 'en',
+				noMatch: 'No dishes match these filters.',
+				clearAll: 'Clear all',
+				count: '0 dishes'
+			},
+			{
+				lang: 'es',
+				noMatch: 'Ningún plato coincide con estos filtros.',
+				clearAll: 'Borrar todo',
+				count: '0 platos'
+			},
+			{ lang: 'ru', noMatch: 'Нет блюд по этим фильтрам.', clearAll: 'Сбросить', count: '0 блюд' }
+		];
+		for (const tc of empty) {
+			it(`/${tc.lang}/ desserts AND summer: no cards, "${tc.noMatch}" and "${tc.clearAll}"`, async () => {
+				const path = `/${tc.lang}/?tab=popular&f=desserts&f=summer`;
+				const html = popularPanel(await renderHome({ lang: tc.lang, path }));
+				expect(cardHrefs(html), 'got cards for a combination that matches nothing').toEqual([]);
+				const text = visibleText(html);
+				expect(text, `got no "${tc.noMatch}"`).toContain(tc.noMatch);
+				expect(text, `got no "${tc.clearAll}"`).toContain(tc.clearAll);
+				expect(resultCount(html)).toBe(tc.count);
+			});
+		}
+
+		it('no empty state while dishes match', async () => {
+			const html = popularPanel(await renderHome({ lang: 'en', path: '/en/?tab=popular&f=quick' }));
+			expect(visibleText(html)).not.toContain('No dishes match these filters.');
+		});
+
+		it('/en/ (Regional): the Popular panel renders no dish card', async () => {
+			const html = await renderHome({ lang: 'en', path: '/en/' });
+			expect(cardHrefs(html), 'got dish cards on the Regional tab').toEqual([]);
+		});
+	}
+);
+
+describe('(home) layout: the Popular panel heading', { timeout: COLD_COMPILE_TIMEOUT_MS }, () => {
+	const cases: { lang: Lang; want: string }[] = [
+		{ lang: 'en', want: 'Popular' },
+		{ lang: 'es', want: 'Popular' },
+		{ lang: 'ru', want: 'Популярное' }
+	];
+	for (const tc of cases) {
+		it(`/${tc.lang}/?tab=popular: the panel has an <h2> "${tc.want}"`, async () => {
+			const html = popularPanel(
+				await renderHome({ lang: tc.lang, path: `/${tc.lang}/?tab=popular` })
+			);
+			expect(headingTexts(html, 2), 'want the tab label as the panel <h2>').toContain(tc.want);
+		});
+	}
+
+	it('/en/?tab=popular: the dish names are <h3>s under it', async () => {
+		const html = popularPanel(await renderHome({ lang: 'en', path: '/en/?tab=popular' }));
+		const h3s = [...html.matchAll(/<h3\b[^>]*>([\s\S]*?)<\/h3>/g)].map((m) =>
+			decodeAmp(visibleText(m[1]))
+		);
+		expect(h3s).toEqual([
+			'Tortilla de patatas',
+			'Rice dishes',
+			'Cocido & stews',
+			'Cold soups',
+			'Croquetas',
+			'Fried sweets',
+			'Milk puddings'
+		]);
+	});
+});
