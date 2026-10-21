@@ -44,7 +44,7 @@
 
 	@media (hover: hover) {
 		.text-button:hover {
-			color: var(--accent-hover);
+			color: var(--accent-text-hover);
 		}
 	}
 </style>

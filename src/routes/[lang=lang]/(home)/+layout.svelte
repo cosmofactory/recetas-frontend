@@ -3,12 +3,14 @@
 	import { page } from '$app/state';
 	import HomeTabPanel from '#lib/components/home/HomeTabPanel.svelte';
 	import MobileHeader from '#lib/components/home/MobileHeader.svelte';
+	import PopularTab from '#lib/components/home/PopularTab.svelte';
 	import RegionalTab from '#lib/components/home/RegionalTab.svelte';
 	import { tabOptions } from '#lib/components/home/home-header.ts';
 	import DesktopTopBar from '#lib/components/ui/DesktopTopBar.svelte';
 	import { localeFromPath } from '#lib/i18n/locales.ts';
 	import { localizedHref } from '#lib/i18n/localized-href.ts';
 	import { m } from '#lib/paraglide/messages.js';
+	import { toggleFilterHref } from '#lib/popular/filters.ts';
 	import { isHomeTab, POPULAR, REGIONAL, tabFromUrl, tabHref } from '#lib/ui/home-tab.ts';
 	import type { LayoutProps } from './$types';
 
@@ -35,6 +37,16 @@
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		void goto(localizedHref('/', lang), { reset: false });
 	}
+
+	// A filter change refines the same list, so it replaces the entry: Back
+	// leaves the tab instead of replaying every press. reset: false keeps
+	// focus on the chip (Clear all moves it itself).
+	function replaceFilters(href: string) {
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		return goto(href, { replace: true, reset: false });
+	}
+
+	const toggleFilter = (id: string) => void replaceFilters(toggleFilterHref(page.url, id));
 
 	const tabs = $derived({ value: tab, label: m.a11y_homeTabs(), onChange: replaceTab });
 	// Until the language menu arrives (FE-7) the button opens nothing.
@@ -63,8 +75,15 @@
 				onCloseRegion={closeRegion}
 			/>
 		</HomeTabPanel>
-		<!-- The Popular tab arrives with FE-5. -->
-		<HomeTabPanel tab={POPULAR} selected={tab === POPULAR} />
+		<HomeTabPanel tab={POPULAR} selected={tab === POPULAR}>
+			<PopularTab
+				dishes={data.dishes}
+				url={page.url}
+				mediaBaseUrl={data.mediaBaseUrl}
+				onToggleFilter={toggleFilter}
+				onClearFilters={replaceFilters}
+			/>
+		</HomeTabPanel>
 	</main>
 	{@render children()}
 </div>

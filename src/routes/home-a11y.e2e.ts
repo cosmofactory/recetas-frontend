@@ -84,7 +84,18 @@ function onlyOnMobile(testInfo: TestInfo) {
 }
 
 test.describe('axe: WCAG 2.2 AA on the home screens', () => {
-	for (const url of ['/en/', '/en/regions/gal', '/ru/regions/gal', '/en/?tab=popular']) {
+	// FE-5 PR 1: Popular filtered (a pressed chip, the ink Filters button), in
+	// ru (the longest labels) and with nothing matching (the empty state).
+	const urls = [
+		'/en/',
+		'/en/regions/gal',
+		'/ru/regions/gal',
+		'/en/?tab=popular',
+		'/es/?tab=popular',
+		'/ru/?tab=popular&f=vegetarian&f=quick',
+		'/en/?tab=popular&f=desserts&f=summer'
+	];
+	for (const url of urls) {
 		test(`${url} has no violations`, async ({ page }, testInfo) => {
 			onlyInScanProjects(testInfo);
 			await gotoHydrated(page, url);
@@ -144,7 +155,7 @@ async function expectContrastDecided(page: Page, what: string) {
 }
 
 test.describe('axe: contrast decided everywhere on the mobile home', () => {
-	for (const url of ['/en/', '/en/?tab=popular']) {
+	for (const url of ['/en/', '/en/?tab=popular', '/en/?tab=popular&f=vegetarian']) {
 		test(`${url}: no color-contrast results left incomplete`, async ({ page }, testInfo) => {
 			onlyOnMobile(testInfo);
 			await gotoHydrated(page, url);
