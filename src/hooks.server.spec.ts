@@ -11,6 +11,10 @@ import { inActiveSpan, startTestTracing, type TestTracing } from './testutil/ote
 // 503 from orHttpError, which logs the outage itself) and framework errors
 // (an unknown URL) are not logged here.
 
+// hooks.server.ts reads APP_ENV for X-Robots-Tag (FE-8,
+// hooks.server.robots.spec.ts); it is irrelevant to handleError.
+vi.mock('$app/env/private', () => ({ APP_ENV: 'prod', PUBLIC_ORIGIN: 'http://127.0.0.1:4173' }));
+
 type Caught = { kind: string; error: unknown; event: unknown };
 type HandleError = (input: Caught) => unknown;
 

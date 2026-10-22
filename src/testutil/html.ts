@@ -65,3 +65,11 @@ export function elementsWith(html: string, attribute: string): string[] {
 	}
 	return found;
 }
+
+// The `content` of every <meta> whose `property` (Open Graph) or `name`
+// (description, twitter:*) is `key`, in document order.
+export function metaContents(html: string, key: string): string[] {
+	return startTags(html)
+		.filter((t) => t.name === 'meta' && (t.attrs.property === key || t.attrs.name === key))
+		.map((t) => decodeAmp(t.attrs.content ?? ''));
+}

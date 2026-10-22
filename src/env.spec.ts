@@ -48,3 +48,45 @@ describe('MEDIA_BASE_URL', () => {
 		expect(got.issues?.length, 'got no issues, want a validation issue').toBeGreaterThan(0);
 	});
 });
+
+// FE-8 PR 1 (stage FE-8 -> Env vars): APP_ENV decides whether the site may be
+// indexed (`prod`) or not (demo: robots `Disallow: /` + `X-Robots-Tag:
+// noindex`). It is required outside `vite dev` and the build, like
+// PUBLIC_ORIGIN, so a deployment can't silently fall back to either mode. The
+// values are the one enum the Go API and telemetry already use
+// (`local|demo|prod`, appEnvs in #lib/server/telemetry/config.ts), so
+// APP_ENV=local with a LOGFIRE_TOKEN keeps working.
+
+async function appEnv(value: string | undefined): Promise<Validation> {
+	const variables = await loadExport<Record<string, EnvEntry>>('src/env.ts', 'variables');
+	const entry = variables.APP_ENV;
+	expect(entry, 'src/env.ts must declare APP_ENV').toBeDefined();
+	return entry.schema['~standard'].validate(value);
+}
+
+describe('APP_ENV', () => {
+	for (const value of ['local', 'demo', 'prod']) {
+		it(`accepts ${value}`, async () => {
+			const got = await appEnv(value);
+			expect(got.issues, `got issues ${JSON.stringify(got.issues)}, want none`).toBeUndefined();
+			expect(got.value, `got ${JSON.stringify(got.value)}, want ${value}`).toBe(value);
+		});
+	}
+
+	const invalid: { name: string; value: string | undefined }[] = [
+		{ name: 'unset (it is required at runtime)', value: undefined },
+		{ name: 'empty', value: '' },
+		{ name: 'an unknown environment', value: 'staging' },
+		{ name: 'a differently cased value', value: 'PROD' }
+	];
+	for (const { name, value } of invalid) {
+		it(`rejects ${name}`, async () => {
+			const got = await appEnv(value);
+			expect(
+				(got.issues ?? []).length,
+				`got value ${JSON.stringify(got.value)}, want an issue`
+			).toBeGreaterThan(0);
+			expect(JSON.stringify(got.issues), 'want the issue to name APP_ENV').toContain('APP_ENV');
+		});
+	}
+});
