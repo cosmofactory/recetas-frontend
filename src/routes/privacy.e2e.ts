@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { getRaw, LOCALES, localePath, PAGES, setCookieHeaders } from '../testutil/e2e';
+import { installStorageSpy, recordedWrites } from '../testutil/storage-spy';
 
 // FE-1 acceptance / stack.md X6: no response except /set-lang sets a cookie,
 // and no page writes localStorage, sessionStorage, document.cookie or IndexedDB.
@@ -27,33 +28,6 @@ test.describe('no Set-Cookie outside /set-lang', () => {
 	}
 });
 
-// Records every storage/cookie write before any app code runs.
-function installStorageSpy() {
-	const writes: string[] = [];
-	(window as unknown as { __writes: string[] }).__writes = writes;
-	for (const method of ['setItem', 'removeItem', 'clear'] as const) {
-		const original = Storage.prototype[method];
-		Storage.prototype[method] = function (this: Storage, ...args: unknown[]) {
-			writes.push(`Storage.${method}(${JSON.stringify(args)})`);
-			return (original as (...a: unknown[]) => unknown).apply(this, args);
-		} as never;
-	}
-	const cookie = Object.getOwnPropertyDescriptor(Document.prototype, 'cookie')!;
-	Object.defineProperty(Document.prototype, 'cookie', {
-		configurable: true,
-		get: cookie.get,
-		set(value: string) {
-			writes.push(`document.cookie = ${value}`);
-			cookie.set!.call(this, value);
-		}
-	});
-	const open = IDBFactory.prototype.open;
-	IDBFactory.prototype.open = function (this: IDBFactory, ...args: Parameters<typeof open>) {
-		writes.push(`indexedDB.open(${String(args[0])})`);
-		return open.apply(this, args);
-	};
-}
-
 test.describe('no client-side storage', () => {
 	for (const url of [...PAGE_URLS, '/', '/fr/']) {
 		// One locale per engine: the storage APIs don't change with the language.
@@ -61,9 +35,7 @@ test.describe('no client-side storage', () => {
 		test(`${url} writes no cookie or storage`, { tag }, async ({ page, context }) => {
 			await page.addInitScript(installStorageSpy);
 			await page.goto(url, { waitUntil: 'networkidle' });
-			const writes = await page.evaluate(
-				() => (window as unknown as { __writes: string[] }).__writes
-			);
+			const writes = await recordedWrites(page);
 			expect(writes, `got writes ${JSON.stringify(writes)}, want none`).toEqual([]);
 			const state = await context.storageState();
 			expect(state.cookies, `got cookies ${JSON.stringify(state.cookies)}, want none`).toEqual([]);

@@ -41,7 +41,8 @@
 			"close": "Close",
 			"check": "Check",
 			"sheetHandle": "Expand or collapse",
-			"homeTabs": "Browse"
+			"homeTabs": "Browse",
+			"clearSearch": "Clear search"
 		},
 		"es": {
 			"search": "Buscar",
@@ -49,7 +50,8 @@
 			"close": "Cerrar",
 			"check": "Marcar",
 			"sheetHandle": "Expandir o contraer",
-			"homeTabs": "Explorar"
+			"homeTabs": "Explorar",
+			"clearSearch": "Borrar búsqueda"
 		},
 		"ru": {
 			"search": "Поиск",
@@ -57,7 +59,8 @@
 			"close": "Закрыть",
 			"check": "Отметить",
 			"sheetHandle": "Развернуть или свернуть",
-			"homeTabs": "Обзор"
+			"homeTabs": "Обзор",
+			"clearSearch": "Очистить поиск"
 		}
 	},
 	"devUi": {

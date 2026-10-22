@@ -2,9 +2,11 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import HomeTabPanel from '#lib/components/home/HomeTabPanel.svelte';
+	import { HomeSearch } from '#lib/components/home/home-search.svelte.ts';
 	import MobileHeader from '#lib/components/home/MobileHeader.svelte';
 	import PopularTab from '#lib/components/home/PopularTab.svelte';
 	import RegionalTab from '#lib/components/home/RegionalTab.svelte';
+	import SearchOverlay from '#lib/components/search/SearchOverlay.svelte';
 	import { tabOptions } from '#lib/components/home/home-header.ts';
 	import DesktopTopBar from '#lib/components/ui/DesktopTopBar.svelte';
 	import { localeFromPath } from '#lib/i18n/locales.ts';
@@ -54,6 +56,13 @@
 
 	const toggleFilter = (id: string) => void replaceFilters(toggleFilterHref(page.url, id));
 
+	const search = new HomeSearch({ catalog: () => data, lang: () => lang, tab: () => tab });
+	const searchButton = $derived({
+		label: m.a11y_search(),
+		expanded: search.open,
+		onclick: search.openFrom
+	});
+
 	const tabs = $derived({ value: tab, label: m.a11y_homeTabs(), onChange: replaceTab });
 	// Until the language menu arrives (FE-7) the button opens nothing.
 	const language = $derived({ code: lang, label: m.home_language(), expanded: false });
@@ -63,7 +72,7 @@
 	<MobileHeader
 		tabs={{ ...tabs, options: tabOptions(lang, true) }}
 		{language}
-		searchLabel={m.a11y_search()}
+		search={searchButton}
 	/>
 	<DesktopTopBar
 		homeHref={localizedHref('/', lang)}
@@ -94,6 +103,15 @@
 		</HomeTabPanel>
 	</main>
 	{@render children()}
+	{#if search.hydrated}
+		<SearchOverlay
+			open={search.open}
+			index={search.index}
+			onClose={search.close}
+			onSelect={search.select}
+			opener={search.opener}
+		/>
+	{/if}
 </div>
 
 <style>
