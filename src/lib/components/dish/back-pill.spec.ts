@@ -79,6 +79,11 @@ const CASES: { what: string; origin: BackOrigin | null; want: BackPillLink }[] =
 		what: 'another region names the origin region, not the recipe’s',
 		origin: { href: '/en/regions/and', from: 'home', tab: 'regional' },
 		want: { label: 'Andalucía', href: '/en/regions/and' }
+	},
+	{
+		what: 'the bare Regional home reads Regional (the home tab, prototype L860)',
+		origin: { href: '/en/', from: 'home', tab: 'regional' },
+		want: { label: 'Regional', href: '/en/' }
 	}
 ];
 
