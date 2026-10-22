@@ -29,7 +29,6 @@ export function formatNumber(
 }
 
 export function unitLabel(locale: Locale | string, unit: Unit | string): string {
-	const message = UNIT_MESSAGES[unit as Unit];
-	if (!message) throw new Error(`unitLabel: unknown unit ${unit}`);
-	return message({}, { locale: locale as Locale });
+	if (!Object.hasOwn(UNIT_MESSAGES, unit)) throw new Error(`unitLabel: unknown unit ${unit}`);
+	return UNIT_MESSAGES[unit as Unit]({}, { locale: locale as Locale });
 }
