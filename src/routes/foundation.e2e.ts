@@ -21,18 +21,22 @@ function originOf(url: string): string {
 }
 
 test.describe('global layout', () => {
-	test('body uses the --bg-page background and the --font-text stack', async ({ page }) => {
-		await gotoCollecting(page);
-		const styles = await page.evaluate(() => {
-			const cs = getComputedStyle(document.body);
-			return { bg: cs.backgroundColor, font: cs.fontFamily };
-		});
-		expect(styles.bg, `got background ${styles.bg}, want ${BG_PAGE}`).toBe(BG_PAGE);
-		expect(
-			styles.font.replace(/["']/g, ''),
-			`got font-family ${styles.font}, want it to start with Archivo`
-		).toMatch(/^Archivo\s*,/);
-	});
+	test(
+		'body uses the --bg-page background and the --font-text stack',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await gotoCollecting(page);
+			const styles = await page.evaluate(() => {
+				const cs = getComputedStyle(document.body);
+				return { bg: cs.backgroundColor, font: cs.fontFamily };
+			});
+			expect(styles.bg, `got background ${styles.bg}, want ${BG_PAGE}`).toBe(BG_PAGE);
+			expect(
+				styles.font.replace(/["']/g, ''),
+				`got font-family ${styles.font}, want it to start with Archivo`
+			).toMatch(/^Archivo\s*,/);
+		}
+	);
 
 	// FE-3 PR 4 (desktop prototype wins): the 1440px cap is on
 	// .page-container, not .app-shell, so the DesktopTopBar's background and
@@ -69,27 +73,31 @@ test.describe('global layout', () => {
 		expect(m.box.x, `got left ${m.box.x}, want ${wantLeft}`).toBe(wantLeft);
 	});
 
-	test('app shell fits the project viewport without horizontal scroll', async ({ page }) => {
-		await gotoCollecting(page);
-		const shell = page.getByTestId('app-shell');
-		await expect(shell).toHaveCount(1);
-		const m = await page.evaluate(() => {
-			const el = document.querySelector('[data-testid="app-shell"]')!;
-			return {
-				shellWidth: el.getBoundingClientRect().width,
-				innerWidth: window.innerWidth,
-				scrollWidth: document.documentElement.scrollWidth
-			};
-		});
-		expect(
-			m.shellWidth,
-			`got shell width ${m.shellWidth}, want <= ${m.innerWidth}`
-		).toBeLessThanOrEqual(m.innerWidth);
-		expect(
-			m.scrollWidth,
-			`got scrollWidth ${m.scrollWidth}, want <= innerWidth ${m.innerWidth}`
-		).toBeLessThanOrEqual(m.innerWidth);
-	});
+	test(
+		'app shell fits the project viewport without horizontal scroll',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			await gotoCollecting(page);
+			const shell = page.getByTestId('app-shell');
+			await expect(shell).toHaveCount(1);
+			const m = await page.evaluate(() => {
+				const el = document.querySelector('[data-testid="app-shell"]')!;
+				return {
+					shellWidth: el.getBoundingClientRect().width,
+					innerWidth: window.innerWidth,
+					scrollWidth: document.documentElement.scrollWidth
+				};
+			});
+			expect(
+				m.shellWidth,
+				`got shell width ${m.shellWidth}, want <= ${m.innerWidth}`
+			).toBeLessThanOrEqual(m.innerWidth);
+			expect(
+				m.scrollWidth,
+				`got scrollWidth ${m.scrollWidth}, want <= innerWidth ${m.innerWidth}`
+			).toBeLessThanOrEqual(m.innerWidth);
+		}
+	);
 });
 
 test.describe('self-hosted fonts', () => {
@@ -103,19 +111,23 @@ test.describe('self-hosted fonts', () => {
 		expect(foreign, `got third-party requests ${JSON.stringify(foreign)}, want none`).toEqual([]);
 	});
 
-	test('fonts are requested same-origin and as woff2 only', async ({ page, baseURL }) => {
-		const requests = await gotoCollecting(page);
-		const own = originOf(baseURL!);
-		const fonts = requests.filter((r) => r.resourceType() === 'font').map((r) => r.url());
-		expect(fonts.length, 'got no font requests, want at least one').toBeGreaterThan(0);
-		for (const url of fonts) {
-			expect(url.startsWith('data:'), `got inlined font ${url.slice(0, 60)}, want a file`).toBe(
-				false
-			);
-			expect(originOf(url), `got font origin ${originOf(url)}, want ${own}`).toBe(own);
-			expect(new URL(url).pathname, `got font ${url}, want a .woff2 file`).toMatch(/\.woff2$/);
+	test(
+		'fonts are requested same-origin and as woff2 only',
+		{ tag: '@cross-browser' },
+		async ({ page, baseURL }) => {
+			const requests = await gotoCollecting(page);
+			const own = originOf(baseURL!);
+			const fonts = requests.filter((r) => r.resourceType() === 'font').map((r) => r.url());
+			expect(fonts.length, 'got no font requests, want at least one').toBeGreaterThan(0);
+			for (const url of fonts) {
+				expect(url.startsWith('data:'), `got inlined font ${url.slice(0, 60)}, want a file`).toBe(
+					false
+				);
+				expect(originOf(url), `got font origin ${originOf(url)}, want ${own}`).toBe(own);
+				expect(new URL(url).pathname, `got font ${url}, want a .woff2 file`).toMatch(/\.woff2$/);
+			}
 		}
-	});
+	);
 
 	test('head preloads exactly the two primary faces, and both load', async ({ page, request }) => {
 		await gotoCollecting(page);
@@ -151,83 +163,95 @@ test.describe('self-hosted fonts', () => {
 		}
 	});
 
-	test('Archivo and Instrument Serif are loaded and usable', async ({ page }) => {
-		await gotoCollecting(page);
-		const r = await page.evaluate(async () => {
-			const serif = await document.fonts.load('16px "Instrument Serif"', 'Asadorov');
-			const text = await document.fonts.load('16px "Archivo"', 'Asadorov');
-			return {
-				serifLoaded: serif.length,
-				textLoaded: text.length,
-				archivo: document.fonts.check('16px "Archivo"', 'Asadorov'),
-				instrument: document.fonts.check('16px "Instrument Serif"', 'Asadorov')
-			};
-		});
-		expect(r.textLoaded, `got ${r.textLoaded} Archivo faces loaded, want >= 1`).toBeGreaterThan(0);
-		expect(
-			r.serifLoaded,
-			`got ${r.serifLoaded} Instrument Serif faces loaded, want >= 1`
-		).toBeGreaterThan(0);
-		expect(r.archivo, 'got fonts.check("Archivo") false, want true').toBe(true);
-		expect(r.instrument, 'got fonts.check("Instrument Serif") false, want true').toBe(true);
-	});
-
-	test('Cyrillic fallbacks Golos Text and Cormorant Garamond load for Cyrillic text', async ({
-		page
-	}) => {
-		await gotoCollecting(page);
-		const r = await page.evaluate(async () => ({
-			golos: (await document.fonts.load('16px "Golos Text"', 'Привет')).length,
-			cormorant: (await document.fonts.load('500 16px "Cormorant Garamond"', 'Привет')).length
-		}));
-		expect(r.golos, `got ${r.golos} Golos Text faces for Cyrillic, want >= 1`).toBeGreaterThan(0);
-		expect(
-			r.cormorant,
-			`got ${r.cormorant} Cormorant Garamond faces for Cyrillic, want >= 1`
-		).toBeGreaterThan(0);
-	});
-
-	test('declares exactly the D-FE0-1 faces, weights and subsets', async ({ page }) => {
-		await gotoCollecting(page);
-		const faces = await page.evaluate(() =>
-			[...document.fonts].map((f) => ({
-				family: f.family.replace(/["']/g, ''),
-				weight: f.weight,
-				style: f.style,
-				unicodeRange: f.unicodeRange
-			}))
-		);
-
-		const families = [...new Set(faces.map((f) => f.family))].sort();
-		expect(families, `got families ${JSON.stringify(families)}`).toEqual([
-			'Archivo',
-			'Cormorant Garamond',
-			'Golos Text',
-			'Instrument Serif'
-		]);
-		for (const f of faces) {
-			expect(f.style, `got style ${f.style} for ${f.family} ${f.weight}, want normal`).toBe(
-				'normal'
+	test(
+		'Archivo and Instrument Serif are loaded and usable',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await gotoCollecting(page);
+			const r = await page.evaluate(async () => {
+				const serif = await document.fonts.load('16px "Instrument Serif"', 'Asadorov');
+				const text = await document.fonts.load('16px "Archivo"', 'Asadorov');
+				return {
+					serifLoaded: serif.length,
+					textLoaded: text.length,
+					archivo: document.fonts.check('16px "Archivo"', 'Asadorov'),
+					instrument: document.fonts.check('16px "Instrument Serif"', 'Asadorov')
+				};
+			});
+			expect(r.textLoaded, `got ${r.textLoaded} Archivo faces loaded, want >= 1`).toBeGreaterThan(
+				0
 			);
+			expect(
+				r.serifLoaded,
+				`got ${r.serifLoaded} Instrument Serif faces loaded, want >= 1`
+			).toBeGreaterThan(0);
+			expect(r.archivo, 'got fonts.check("Archivo") false, want true').toBe(true);
+			expect(r.instrument, 'got fonts.check("Instrument Serif") false, want true').toBe(true);
 		}
+	);
 
-		const want: { family: string; weights: string[]; subsets: 'latin' | 'cyrillic' }[] = [
-			{ family: 'Instrument Serif', weights: ['400'], subsets: 'latin' },
-			{ family: 'Archivo', weights: ['400', '500', '600', '700'], subsets: 'latin' },
-			{ family: 'Cormorant Garamond', weights: ['500'], subsets: 'cyrillic' },
-			{ family: 'Golos Text', weights: ['400', '500', '600', '700'], subsets: 'cyrillic' }
-		];
-		for (const w of want) {
-			const ofFamily = faces.filter((f) => f.family === w.family);
-			const weights = [...new Set(ofFamily.map((f) => f.weight))].sort();
-			expect(weights, `got ${w.family} weights ${JSON.stringify(weights)}`).toEqual(w.weights);
-			for (const weight of w.weights) {
-				const set = ofFamily.filter((f) => f.weight === weight).map((f) => f.unicodeRange);
-				const label = `${w.family} ${weight} unicode-ranges ${JSON.stringify(set)}`;
-				expectSubsets(set, w.subsets, label);
+	test(
+		'Cyrillic fallbacks Golos Text and Cormorant Garamond load for Cyrillic text',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await gotoCollecting(page);
+			const r = await page.evaluate(async () => ({
+				golos: (await document.fonts.load('16px "Golos Text"', 'Привет')).length,
+				cormorant: (await document.fonts.load('500 16px "Cormorant Garamond"', 'Привет')).length
+			}));
+			expect(r.golos, `got ${r.golos} Golos Text faces for Cyrillic, want >= 1`).toBeGreaterThan(0);
+			expect(
+				r.cormorant,
+				`got ${r.cormorant} Cormorant Garamond faces for Cyrillic, want >= 1`
+			).toBeGreaterThan(0);
+		}
+	);
+
+	test(
+		'declares exactly the D-FE0-1 faces, weights and subsets',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await gotoCollecting(page);
+			const faces = await page.evaluate(() =>
+				[...document.fonts].map((f) => ({
+					family: f.family.replace(/["']/g, ''),
+					weight: f.weight,
+					style: f.style,
+					unicodeRange: f.unicodeRange
+				}))
+			);
+
+			const families = [...new Set(faces.map((f) => f.family))].sort();
+			expect(families, `got families ${JSON.stringify(families)}`).toEqual([
+				'Archivo',
+				'Cormorant Garamond',
+				'Golos Text',
+				'Instrument Serif'
+			]);
+			for (const f of faces) {
+				expect(f.style, `got style ${f.style} for ${f.family} ${f.weight}, want normal`).toBe(
+					'normal'
+				);
+			}
+
+			const want: { family: string; weights: string[]; subsets: 'latin' | 'cyrillic' }[] = [
+				{ family: 'Instrument Serif', weights: ['400'], subsets: 'latin' },
+				{ family: 'Archivo', weights: ['400', '500', '600', '700'], subsets: 'latin' },
+				{ family: 'Cormorant Garamond', weights: ['500'], subsets: 'cyrillic' },
+				{ family: 'Golos Text', weights: ['400', '500', '600', '700'], subsets: 'cyrillic' }
+			];
+			for (const w of want) {
+				const ofFamily = faces.filter((f) => f.family === w.family);
+				const weights = [...new Set(ofFamily.map((f) => f.weight))].sort();
+				expect(weights, `got ${w.family} weights ${JSON.stringify(weights)}`).toEqual(w.weights);
+				for (const weight of w.weights) {
+					const set = ofFamily.filter((f) => f.weight === weight).map((f) => f.unicodeRange);
+					const label = `${w.family} ${weight} unicode-ranges ${JSON.stringify(set)}`;
+					expectSubsets(set, w.subsets, label);
+				}
 			}
 		}
-	});
+	);
 });
 
 // Latin faces ship latin + latin-ext only; Cyrillic fallbacks ship cyrillic only.
@@ -310,13 +334,17 @@ test.describe('error page layout', () => {
 		expect(got.box!.x, `got left ${got.box!.x}, want ${wantLeft}`).toBe(wantLeft);
 	});
 
-	test('pads the error content with --desktop-side-padding from 860px', async ({ page }) => {
-		const got = await errorLayout(page);
-		test.skip(got.viewport < DESKTOP_MIN, 'mobile project: screens set their own padding');
-		const want = Math.min(Math.max(0.028 * got.viewport, 24), 40);
-		expect(got.paddingLeft, `got padding-left ${got.paddingLeft}, want ${want}`).toBeCloseTo(
-			want,
-			1
-		);
-	});
+	test(
+		'pads the error content with --desktop-side-padding from 860px',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			const got = await errorLayout(page);
+			test.skip(got.viewport < DESKTOP_MIN, 'mobile project: screens set their own padding');
+			const want = Math.min(Math.max(0.028 * got.viewport, 24), 40);
+			expect(got.paddingLeft, `got padding-left ${got.paddingLeft}, want ${want}`).toBeCloseTo(
+				want,
+				1
+			);
+		}
+	);
 });

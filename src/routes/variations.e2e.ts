@@ -133,33 +133,39 @@ test.describe('Variations page: sticky top bar on window scroll', () => {
 	for (const lang of VARIATIONS_LOCALES) {
 		const name = TORTILLA_PAGE[lang].name;
 
-		test(`${lang}: title and hairline appear past ${VARIATIONS_THRESHOLD_PX}px, the bar stays stuck`, async ({
-			page
-		}) => {
-			await gotoHydrated(page, `/${lang}/dishes/tortilla`);
-			await expectBar(page, lang, name, false);
-			expect(await scrollWindowTo(page, VARIATIONS_THRESHOLD_PX)).toBe(VARIATIONS_THRESHOLD_PX);
-			await expectBar(page, lang, name, false);
-			expect(await scrollWindowTo(page, PAST_THRESHOLD_PX)).toBe(PAST_THRESHOLD_PX);
-			await expectBar(page, lang, name, true);
-			await scrollWindowTo(page, FAR_DOWN_PX);
-			await expectBarStuckAtTop(page, lang);
-			await scrollWindowTo(page, 0);
-			await expectBar(page, lang, name, false);
-		});
+		// Sticky is an engine check too, once per engine (en).
+		const tag = lang === 'en' ? ['@layout', '@cross-browser'] : ['@layout'];
+		test(
+			`${lang}: title and hairline appear past ${VARIATIONS_THRESHOLD_PX}px, the bar stays stuck`,
+			{ tag },
+			async ({ page }) => {
+				await gotoHydrated(page, `/${lang}/dishes/tortilla`);
+				await expectBar(page, lang, name, false);
+				expect(await scrollWindowTo(page, VARIATIONS_THRESHOLD_PX)).toBe(VARIATIONS_THRESHOLD_PX);
+				await expectBar(page, lang, name, false);
+				expect(await scrollWindowTo(page, PAST_THRESHOLD_PX)).toBe(PAST_THRESHOLD_PX);
+				await expectBar(page, lang, name, true);
+				await scrollWindowTo(page, FAR_DOWN_PX);
+				await expectBarStuckAtTop(page, lang);
+				await scrollWindowTo(page, 0);
+				await expectBar(page, lang, name, false);
+			}
+		);
 	}
 
-	test('after the page push from home: starts at the top, then tracks window scroll', async ({
-		page
-	}) => {
-		await gotoHydrated(page, '/en/?tab=popular');
-		await seeAllFromSheet(page, 'en', 'tortilla');
-		expect(await windowScrollY(page), 'want the page to start at the top').toBe(0);
-		await expectBar(page, 'en', TORTILLA_PAGE.en.name, false);
-		expect(await scrollWindowTo(page, FAR_DOWN_PX)).toBe(FAR_DOWN_PX);
-		await expectBar(page, 'en', TORTILLA_PAGE.en.name, true);
-		await expectBarStuckAtTop(page, 'en');
-	});
+	test(
+		'after the page push from home: starts at the top, then tracks window scroll',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await gotoHydrated(page, '/en/?tab=popular');
+			await seeAllFromSheet(page, 'en', 'tortilla');
+			expect(await windowScrollY(page), 'want the page to start at the top').toBe(0);
+			await expectBar(page, 'en', TORTILLA_PAGE.en.name, false);
+			expect(await scrollWindowTo(page, FAR_DOWN_PX)).toBe(FAR_DOWN_PX);
+			await expectBar(page, 'en', TORTILLA_PAGE.en.name, true);
+			await expectBarStuckAtTop(page, 'en');
+		}
+	);
 });
 
 test.describe('Variations page: back button', () => {
@@ -174,25 +180,29 @@ test.describe('Variations page: back button', () => {
 		});
 	}
 
-	test('from home it returns to the exact home URL, sheet open, list scroll restored', async ({
-		page
-	}) => {
-		const home = await leaveScrolledHome(page);
-		await markDocument(page);
-		const entries = await historyLength(page);
-		await backLink(page, 'en').click();
-		await expectHomeRestored(page, home);
-		expect(await historyLength(page), 'want history.back(), not a new entry').toBe(entries);
-		await expectSameDocument(page, 'back from the Variations page');
-	});
+	test(
+		'from home it returns to the exact home URL, sheet open, list scroll restored',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			const home = await leaveScrolledHome(page);
+			await markDocument(page);
+			const entries = await historyLength(page);
+			await backLink(page, 'en').click();
+			await expectHomeRestored(page, home);
+			expect(await historyLength(page), 'want history.back(), not a new entry').toBe(entries);
+			await expectSameDocument(page, 'back from the Variations page');
+		}
+	);
 
-	test('browser Back does the same: exact home URL, sheet open, list scroll restored', async ({
-		page
-	}) => {
-		const home = await leaveScrolledHome(page);
-		await page.goBack();
-		await expectHomeRestored(page, home);
-	});
+	test(
+		'browser Back does the same: exact home URL, sheet open, list scroll restored',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			const home = await leaveScrolledHome(page);
+			await page.goBack();
+			await expectHomeRestored(page, home);
+		}
+	);
 
 	test('home → Variations → Recipe → Back → back button restores the home', async ({ page }) => {
 		const home = await leaveScrolledHome(page);
@@ -231,7 +241,7 @@ test.describe('Variations page: cards open the recipe', () => {
 });
 
 test.describe('Variations page: page push from home', () => {
-	test('slides in (a push mark)', async ({ page }) => {
+	test('slides in (a push mark)', { tag: '@cross-browser' }, async ({ page }) => {
 		await gotoHydrated(page, '/en/?tab=popular');
 		await recordPagePushMarks(page);
 		await seeAllFromSheet(page, 'en', 'tortilla');
@@ -245,7 +255,7 @@ test.describe('Variations page: page push from home', () => {
 	test.describe('under reduced motion', () => {
 		test.use({ reducedMotion: 'reduce' });
 
-		test('only fades', async ({ page }) => {
+		test('only fades', { tag: '@cross-browser' }, async ({ page }) => {
 			await gotoHydrated(page, '/en/?tab=popular');
 			await recordPagePushMarks(page);
 			await seeAllFromSheet(page, 'en', 'tortilla');
@@ -256,15 +266,20 @@ test.describe('Variations page: page push from home', () => {
 	});
 });
 
-const AXE_PROJECT = 'chromium-mobile-390';
+// stack.md F4: one axe pass per engine; WebKit runs the @cross-browser scan.
+const AXE_PROJECTS = ['chromium-mobile-390', 'webkit-iphone'];
 
 function onlyInAxeProject(testInfo: TestInfo) {
-	test.skip(testInfo.project.name !== AXE_PROJECT, `axe runs in ${AXE_PROJECT}`);
+	test.skip(
+		!AXE_PROJECTS.includes(testInfo.project.name),
+		`axe runs in ${AXE_PROJECTS.join(', ')}`
+	);
 }
 
 test.describe('axe: WCAG 2.2 AA on the Variations page', () => {
 	for (const url of ['/en/dishes/tortilla', '/ru/dishes/tortilla', '/es/dishes/paella']) {
-		test(`${url} has no violations`, async ({ page }, testInfo) => {
+		const tag = url === '/en/dishes/tortilla' ? ['@cross-browser'] : [];
+		test(`${url} has no violations`, { tag }, async ({ page }, testInfo) => {
 			onlyInAxeProject(testInfo);
 			await gotoHydrated(page, url);
 			await expect(variationCards(page).first()).toBeVisible();

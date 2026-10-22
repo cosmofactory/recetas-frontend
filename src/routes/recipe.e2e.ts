@@ -150,14 +150,20 @@ test.describe('Recipe page without JavaScript', () => {
 		});
 	}
 
-	test(`hero photo ${HERO_PX}px; the eyebrow is upper-cased by CSS`, async ({ page }) => {
-		await page.goto(BETANZOS_EN);
-		// No MEDIA_BASE_URL in E2E: the hero <Photo> is its placeholder box.
-		const hero = await page.locator('.placeholder').first().boundingBox();
-		expect(hero?.height, 'got no hero box').toBe(HERO_PX);
-		const eyebrow = page.getByTestId(RECIPE_TEST_IDS.eyebrow);
-		expect((await computedStyle(eyebrow, ['text-transform']))['text-transform']).toBe('uppercase');
-	});
+	test(
+		`hero photo ${HERO_PX}px; the eyebrow is upper-cased by CSS`,
+		{ tag: '@layout' },
+		async ({ page }) => {
+			await page.goto(BETANZOS_EN);
+			// No MEDIA_BASE_URL in E2E: the hero <Photo> is its placeholder box.
+			const hero = await page.locator('.placeholder').first().boundingBox();
+			expect(hero?.height, 'got no hero box').toBe(HERO_PX);
+			const eyebrow = page.getByTestId(RECIPE_TEST_IDS.eyebrow);
+			expect((await computedStyle(eyebrow, ['text-transform']))['text-transform']).toBe(
+				'uppercase'
+			);
+		}
+	);
 
 	test('the controls do nothing: + leaves 2 servings and the base quantities', async ({ page }) => {
 		await page.goto(BETANZOS_EN);
@@ -239,16 +245,20 @@ test.describe('Recipe page: servings stepper', () => {
 		await expectServings(page, 4);
 	});
 
-	test(`− and + each answer hits over ${HIT_MIN_PX}px, on both axes`, async ({ page }) => {
-		await gotoHydrated(page, BETANZOS_EN);
-		for (const [name, button] of [
-			['−', fewerButton(page, 'en')],
-			['+', moreButton(page, 'en')]
-		] as const) {
-			const hits = await hitsAround(button, HIT_REACH_PX);
-			expect(hits, `want ${name} hit ${HIT_REACH_PX}px around its centre`).toBe(true);
+	test(
+		`− and + each answer hits over ${HIT_MIN_PX}px, on both axes`,
+		{ tag: '@layout' },
+		async ({ page }) => {
+			await gotoHydrated(page, BETANZOS_EN);
+			for (const [name, button] of [
+				['−', fewerButton(page, 'en')],
+				['+', moreButton(page, 'en')]
+			] as const) {
+				const hits = await hitsAround(button, HIT_REACH_PX);
+				expect(hits, `want ${name} hit ${HIT_REACH_PX}px around its centre`).toBe(true);
+			}
 		}
-	});
+	);
 
 	test('changing servings adds no history entry and leaves the URL alone', async ({ page }) => {
 		await gotoHydrated(page, BETANZOS_EN);
@@ -339,39 +349,43 @@ test.describe('Recipe page: ingredient and step ticks', () => {
 });
 
 test.describe('Recipe page: another recipe starts fresh', () => {
-	test('a client navigation to another recipe resets servings and ticks, at the top', async ({
-		page
-	}) => {
-		await gotoHydrated(page, BETANZOS_EN);
-		await markDocument(page);
-		await tickAndScale(page);
-		await scrollToEnd(page);
-		await clientNavigate(page, recipePath('en', 'tortilla', TORTILLA_AST.regionKey));
-		await expectUrl(page, recipePath('en', 'tortilla', TORTILLA_AST.regionKey));
-		await expect(page.getByRole('heading', { level: 1 })).toHaveText(TORTILLA_AST.name);
-		await expectSameDocument(page, 'to another recipe');
-		await expectServings(page, TORTILLA_AST.baseServings);
-		await expectNothingTicked(page);
-		await expect.poll(() => windowScrollY(page), { message: 'want the top' }).toBe(0);
-	});
+	test(
+		'a client navigation to another recipe resets servings and ticks, at the top',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await gotoHydrated(page, BETANZOS_EN);
+			await markDocument(page);
+			await tickAndScale(page);
+			await scrollToEnd(page);
+			await clientNavigate(page, recipePath('en', 'tortilla', TORTILLA_AST.regionKey));
+			await expectUrl(page, recipePath('en', 'tortilla', TORTILLA_AST.regionKey));
+			await expect(page.getByRole('heading', { level: 1 })).toHaveText(TORTILLA_AST.name);
+			await expectSameDocument(page, 'to another recipe');
+			await expectServings(page, TORTILLA_AST.baseServings);
+			await expectNothingTicked(page);
+			await expect.poll(() => windowScrollY(page), { message: 'want the top' }).toBe(0);
+		}
+	);
 
-	test('Back to Variations and into another card: base servings, nothing ticked', async ({
-		page
-	}) => {
-		await gotoHydrated(page, variationsPath('en', 'tortilla'));
-		await variationCards(page).first().click();
-		await expectUrl(page, BETANZOS_EN);
-		await waitForPagePushEnd(page);
-		await tickAndScale(page);
-		await page.goBack();
-		await expectUrl(page, variationsPath('en', 'tortilla'));
-		await variationCards(page).nth(1).click();
-		await expectUrl(page, recipePath('en', 'tortilla', TORTILLA_AST.regionKey));
-		await waitForPagePushEnd(page);
-		await expectServings(page, TORTILLA_AST.baseServings);
-		await expectNothingTicked(page);
-		expect(await windowScrollY(page), 'want the top').toBe(0);
-	});
+	test(
+		'Back to Variations and into another card: base servings, nothing ticked',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await gotoHydrated(page, variationsPath('en', 'tortilla'));
+			await variationCards(page).first().click();
+			await expectUrl(page, BETANZOS_EN);
+			await waitForPagePushEnd(page);
+			await tickAndScale(page);
+			await page.goBack();
+			await expectUrl(page, variationsPath('en', 'tortilla'));
+			await variationCards(page).nth(1).click();
+			await expectUrl(page, recipePath('en', 'tortilla', TORTILLA_AST.regionKey));
+			await waitForPagePushEnd(page);
+			await expectServings(page, TORTILLA_AST.baseServings);
+			await expectNothingTicked(page);
+			expect(await windowScrollY(page), 'want the top').toBe(0);
+		}
+	);
 
 	test('the same recipe opened again from Variations starts fresh too', async ({ page }) => {
 		await gotoHydrated(page, variationsPath('en', 'tortilla'));
@@ -393,77 +407,95 @@ test.describe('Recipe page: sticky top bar on window scroll', () => {
 	for (const lang of RECIPE_LOCALES) {
 		const url = recipePath(lang, PAELLA_VAL.dishKey, PAELLA_VAL.regionKey);
 
-		test(`${url}: the title appears past ${RECIPE_THRESHOLD_PX}px, not at it; the bar stays stuck`, async ({
-			page
-		}) => {
-			await gotoHydrated(page, url);
-			await expectBar(page, lang, PAELLA_VAL.name, false);
-			expect(await scrollWindowTo(page, RECIPE_THRESHOLD_PX)).toBe(RECIPE_THRESHOLD_PX);
-			await expectBar(page, lang, PAELLA_VAL.name, false);
-			expect(await scrollWindowTo(page, RECIPE_THRESHOLD_PX + 1)).toBe(RECIPE_THRESHOLD_PX + 1);
-			await expectBar(page, lang, PAELLA_VAL.name, true);
-			await scrollToEnd(page);
-			await expectBarStuckAtTop(page, lang);
-			await scrollWindowTo(page, 0);
-			await expectBar(page, lang, PAELLA_VAL.name, false);
-		});
+		// Sticky is an engine check too, once per engine (en).
+		const tag = lang === 'en' ? ['@layout', '@cross-browser'] : ['@layout'];
+		test(
+			`${url}: the title appears past ${RECIPE_THRESHOLD_PX}px, not at it; the bar stays stuck`,
+			{ tag },
+			async ({ page }) => {
+				await gotoHydrated(page, url);
+				await expectBar(page, lang, PAELLA_VAL.name, false);
+				expect(await scrollWindowTo(page, RECIPE_THRESHOLD_PX)).toBe(RECIPE_THRESHOLD_PX);
+				await expectBar(page, lang, PAELLA_VAL.name, false);
+				expect(await scrollWindowTo(page, RECIPE_THRESHOLD_PX + 1)).toBe(RECIPE_THRESHOLD_PX + 1);
+				await expectBar(page, lang, PAELLA_VAL.name, true);
+				await scrollToEnd(page);
+				await expectBarStuckAtTop(page, lang);
+				await scrollWindowTo(page, 0);
+				await expectBar(page, lang, PAELLA_VAL.name, false);
+			}
+		);
 	}
 
-	test('after the page push from Variations: starts at the top', async ({ page }) => {
-		await gotoHydrated(page, variationsPath('en', 'tortilla'));
-		await scrollWindowTo(page, SCROLL_PAST_END_PX);
-		await variationCards(page).last().click();
-		await page.waitForURL((u) => /^\/en\/dishes\/tortilla\/[a-z]+$/.test(u.pathname));
-		await waitForPagePushEnd(page);
-		expect(await windowScrollY(page), 'want the recipe to start at the top').toBe(0);
-	});
+	test(
+		'after the page push from Variations: starts at the top',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await gotoHydrated(page, variationsPath('en', 'tortilla'));
+			await scrollWindowTo(page, SCROLL_PAST_END_PX);
+			await variationCards(page).last().click();
+			await page.waitForURL((u) => /^\/en\/dishes\/tortilla\/[a-z]+$/.test(u.pathname));
+			await waitForPagePushEnd(page);
+			expect(await windowScrollY(page), 'want the recipe to start at the top').toBe(0);
+		}
+	);
 });
 
 test.describe('Recipe page: back button', () => {
 	for (const lang of RECIPE_LOCALES) {
-		test(`${lang}: on a direct entry it goes to ${variationsPath(lang, 'tortilla')}`, async ({
-			page
-		}) => {
-			await gotoHydrated(page, betanzosPath(lang));
-			const entries = await historyLength(page);
-			await backLink(page, lang).click();
-			await expectUrl(page, variationsPath(lang, 'tortilla'));
-			expect(await historyLength(page), 'want a new entry (the href)').toBe(entries + 1);
-		});
+		// One locale per engine: history doesn't change with the language.
+		const tag = lang === 'en' ? ['@cross-browser'] : [];
+		test(
+			`${lang}: on a direct entry it goes to ${variationsPath(lang, 'tortilla')}`,
+			{ tag },
+			async ({ page }) => {
+				await gotoHydrated(page, betanzosPath(lang));
+				const entries = await historyLength(page);
+				await backLink(page, lang).click();
+				await expectUrl(page, variationsPath(lang, 'tortilla'));
+				expect(await historyLength(page), 'want a new entry (the href)').toBe(entries + 1);
+			}
+		);
 	}
 
-	test('from Variations it goes back in history, Variations scroll restored', async ({ page }) => {
-		await gotoHydrated(page, variationsPath('en', 'tortilla'));
-		const card = variationCards(page).nth(3);
-		await card.scrollIntoViewIfNeeded();
-		const offset = await windowScrollY(page);
-		expect(offset, 'want the Variations page scrolled before leaving').toBeGreaterThan(0);
-		await markDocument(page);
-		await card.click();
-		await page.waitForURL((u) => /^\/en\/dishes\/tortilla\/[a-z]+$/.test(u.pathname));
-		await waitForPagePushEnd(page);
-		const entries = await historyLength(page);
-		await backLink(page, 'en').click();
-		await expectUrl(page, variationsPath('en', 'tortilla'));
-		expect(await historyLength(page), 'want history.back(), not a new entry').toBe(entries);
-		await expectSameDocument(page, 'back from the Recipe page');
-		await expect
-			.poll(async () => Math.abs((await windowScrollY(page)) - offset), {
-				message: `want the Variations page back at ${offset}px`
-			})
-			.toBeLessThanOrEqual(SCROLL_TOLERANCE_PX);
-	});
+	test(
+		'from Variations it goes back in history, Variations scroll restored',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await gotoHydrated(page, variationsPath('en', 'tortilla'));
+			const card = variationCards(page).nth(3);
+			await card.scrollIntoViewIfNeeded();
+			const offset = await windowScrollY(page);
+			expect(offset, 'want the Variations page scrolled before leaving').toBeGreaterThan(0);
+			await markDocument(page);
+			await card.click();
+			await page.waitForURL((u) => /^\/en\/dishes\/tortilla\/[a-z]+$/.test(u.pathname));
+			await waitForPagePushEnd(page);
+			const entries = await historyLength(page);
+			await backLink(page, 'en').click();
+			await expectUrl(page, variationsPath('en', 'tortilla'));
+			expect(await historyLength(page), 'want history.back(), not a new entry').toBe(entries);
+			await expectSameDocument(page, 'back from the Recipe page');
+			await expect
+				.poll(async () => Math.abs((await windowScrollY(page)) - offset), {
+					message: `want the Variations page back at ${offset}px`
+				})
+				.toBeLessThanOrEqual(SCROLL_TOLERANCE_PX);
+		}
+	);
 
-	test('direct entry → its back link → Variations back goes home, not into the Recipe', async ({
-		page
-	}) => {
-		await gotoHydrated(page, BETANZOS_EN);
-		await backLink(page, 'en').click();
-		await expectUrl(page, variationsPath('en', 'tortilla'));
-		await waitForPagePushEnd(page);
-		await backLink(page, 'en').click();
-		await expectUrl(page, backFallback('en', 'tortilla'));
-	});
+	test(
+		'direct entry → its back link → Variations back goes home, not into the Recipe',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await gotoHydrated(page, BETANZOS_EN);
+			await backLink(page, 'en').click();
+			await expectUrl(page, variationsPath('en', 'tortilla'));
+			await waitForPagePushEnd(page);
+			await backLink(page, 'en').click();
+			await expectUrl(page, backFallback('en', 'tortilla'));
+		}
+	);
 });
 
 test.describe('Acceptance: home → Variations → Recipe → back → back', () => {
@@ -477,19 +509,21 @@ test.describe('Acceptance: home → Variations → Recipe → back → back', ()
 		await ingredientRows(page).first().click();
 	}
 
-	test('the back buttons return the exact home: tab, filters, sheet, list scroll', async ({
-		page
-	}) => {
-		const home = await leaveScrolledHome(page);
-		await intoRecipe(page);
-		await backLink(page, 'en').click();
-		await expectUrl(page, variationsPath('en', LOWEST_DISH));
-		await waitForPagePushEnd(page);
-		await backLink(page, 'en').click();
-		await expectHomeRestored(page, home);
-	});
+	test(
+		'the back buttons return the exact home: tab, filters, sheet, list scroll',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			const home = await leaveScrolledHome(page);
+			await intoRecipe(page);
+			await backLink(page, 'en').click();
+			await expectUrl(page, variationsPath('en', LOWEST_DISH));
+			await waitForPagePushEnd(page);
+			await backLink(page, 'en').click();
+			await expectHomeRestored(page, home);
+		}
+	);
 
-	test('browser Back twice does the same', async ({ page }) => {
+	test('browser Back twice does the same', { tag: '@cross-browser' }, async ({ page }) => {
 		const home = await leaveScrolledHome(page);
 		await intoRecipe(page);
 		await page.goBack();
@@ -503,7 +537,9 @@ test.describe('axe: WCAG 2.2 AA on the Recipe page', () => {
 	for (const lang of RECIPE_LOCALES) {
 		const url = betanzosPath(lang);
 
-		test(`${url} has no violations`, async ({ page }) => {
+		// stack.md F4: one axe pass per engine (en).
+		const tag = lang === 'en' ? ['@cross-browser'] : [];
+		test(`${url} has no violations`, { tag }, async ({ page }) => {
 			await gotoHydrated(page, url);
 			await expect(servingsValue(page)).toBeVisible();
 			await expectNoViolations(page, url);

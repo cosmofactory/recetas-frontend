@@ -8,6 +8,15 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      e2e-matrix:
+        description: 'E2E projects: "tiered" (core + tagged tests) or "full" (every test on all 9)'
+        type: choice
+        options: [tiered, full]
+        default: tiered
+  # specs/stack.md F4 "Tiered E2E matrix": the full matrix runs nightly.
+  schedule:
+    - cron: '17 3 * * *'
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -104,6 +113,7 @@ jobs:
         # Actions resets HOME to /github/home for every step.
         env:
           HOME: /root
+          E2E_MATRIX: ${{ (github.event_name == 'schedule' || inputs.e2e-matrix == 'full') && 'full' || 'tiered' }}
         run: pnpm test:e2e --shard=${{ matrix.shard }}/${{ strategy.job-total }}
 
       - name: Upload Playwright traces

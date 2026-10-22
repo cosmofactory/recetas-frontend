@@ -231,20 +231,24 @@ test.describe('Popular (mobile): nothing matches', () => {
 	// and to the result count on desktop. FE-5 PR 3 keeps the count: it is
 	// where the empty state was, it reads the restored total, and the next
 	// Tab reaches the first card (the sidebar's own Clear all keeps focus).
-	test('Clear all replaces the entry and moves focus (mobile: Filters, desktop: the count)', async ({
-		page
-	}) => {
-		await openPopular(page, 'en', '&f=desserts&f=summer');
-		await markDocument(page);
-		const before = await historyLength(page);
-		await noMatch(page).getByRole('link', { name: POPULAR_COPY.en.clearAll, exact: true }).click();
-		await expectUrl(page, '/en/?tab=popular');
-		await expectDishes(page, DISH_KEYS, 'after Clear all');
-		expect(await historyLength(page), 'want the entry replaced, not pushed').toBe(before);
-		await expectSameDocument(page, 'after Clear all');
-		const target = isDesktopPage(page) ? resultCount(page) : filtersButton(page);
-		await expect(target).toBeFocused();
-	});
+	test(
+		'Clear all replaces the entry and moves focus (mobile: Filters, desktop: the count)',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await openPopular(page, 'en', '&f=desserts&f=summer');
+			await markDocument(page);
+			const before = await historyLength(page);
+			await noMatch(page)
+				.getByRole('link', { name: POPULAR_COPY.en.clearAll, exact: true })
+				.click();
+			await expectUrl(page, '/en/?tab=popular');
+			await expectDishes(page, DISH_KEYS, 'after Clear all');
+			expect(await historyLength(page), 'want the entry replaced, not pushed').toBe(before);
+			await expectSameDocument(page, 'after Clear all');
+			const target = isDesktopPage(page) ? resultCount(page) : filtersButton(page);
+			await expect(target).toBeFocused();
+		}
+	);
 
 	test('reached by chips: Desserts then Summer empties the list', async ({ page }) => {
 		skipOnDesktop(page);
@@ -259,57 +263,66 @@ test.describe('Popular (mobile): nothing matches', () => {
 });
 
 test.describe('Popular (mobile): screen frame', () => {
-	test('the list scrolls in its own container; the page never scrolls', async ({ page }) => {
-		skipOnDesktop(page);
-		await openPopular(page, 'en');
-		const scroller = await listScroller(page);
-		expect(scroller.found, 'got no scrolling ancestor for the card list').toBe(true);
-		expect(scroller.scrollHeight, 'want seven cards to overflow the list').toBeGreaterThan(
-			scroller.clientHeight
-		);
-		const barBefore = await boxOf(filterBar(page), 'the filter bar');
-		await scrollListToEnd(page);
-		await expect(dishCards(page).last()).toBeInViewport();
-		const scrolled = await page.evaluate(() => {
-			window.scrollTo(0, 5000);
-			return {
-				y: window.scrollY,
-				overflow: document.scrollingElement!.scrollHeight - window.innerHeight
-			};
-		});
-		expect(scrolled.y, 'got the page scrolled').toBe(0);
-		expect(scrolled.overflow, 'got a page taller than the viewport').toBeLessThanOrEqual(0);
-		const barAfter = await boxOf(filterBar(page), 'the filter bar');
-		expect(barAfter.y, 'got the filter bar scrolled away with the list').toBe(barBefore.y);
-	});
+	test(
+		'the list scrolls in its own container; the page never scrolls',
+		{ tag: ['@layout', '@cross-browser'] },
+		async ({ page }) => {
+			skipOnDesktop(page);
+			await openPopular(page, 'en');
+			const scroller = await listScroller(page);
+			expect(scroller.found, 'got no scrolling ancestor for the card list').toBe(true);
+			expect(scroller.scrollHeight, 'want seven cards to overflow the list').toBeGreaterThan(
+				scroller.clientHeight
+			);
+			const barBefore = await boxOf(filterBar(page), 'the filter bar');
+			await scrollListToEnd(page);
+			await expect(dishCards(page).last()).toBeInViewport();
+			const scrolled = await page.evaluate(() => {
+				window.scrollTo(0, 5000);
+				return {
+					y: window.scrollY,
+					overflow: document.scrollingElement!.scrollHeight - window.innerHeight
+				};
+			});
+			expect(scrolled.y, 'got the page scrolled').toBe(0);
+			expect(scrolled.overflow, 'got a page taller than the viewport').toBeLessThanOrEqual(0);
+			const barAfter = await boxOf(filterBar(page), 'the filter bar');
+			expect(barAfter.y, 'got the filter bar scrolled away with the list').toBe(barBefore.y);
+		}
+	);
 
-	test('ru at 360px: chip labels whole, the row scrolls sideways with no scrollbar', async ({
-		page
-	}, testInfo) => {
-		test.skip(testInfo.project.name !== 'chromium-mobile-360', 'the narrow ru check runs at 360px');
-		await openPopular(page, 'ru', '&f=quick');
-		const report = await filterBar(page).evaluate((bar) => {
-			const buttons = [...bar.querySelectorAll('button')];
-			let row: HTMLElement | null = buttons[0].parentElement;
-			while (row && !buttons.every((b) => row!.contains(b))) row = row.parentElement;
-			return {
-				clipped: buttons
-					.filter(
-						(b) =>
-							b.scrollWidth > b.clientWidth + 1 || getComputedStyle(b).textOverflow === 'ellipsis'
-					)
-					.map((b) => b.textContent?.trim()),
-				overflowX: row ? getComputedStyle(row).overflowX : 'none',
-				scrollbar: row ? row.offsetHeight - row.clientHeight : -1,
-				pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
-			};
-		});
-		expect(report.clipped, 'got clipped chip labels').toEqual([]);
-		expect(['auto', 'scroll']).toContain(report.overflowX);
-		expect(report.scrollbar, 'got a visible scrollbar under the chips').toBe(0);
-		expect(report.pageOverflow, 'got the chips widening the page').toBeLessThanOrEqual(0);
-		await expect(quickChip(page, 'ru', 'summer')).toHaveText(POPULAR_COPY.ru.quick.summer);
-	});
+	test(
+		'ru at 360px: chip labels whole, the row scrolls sideways with no scrollbar',
+		{ tag: '@layout' },
+		async ({ page }, testInfo) => {
+			test.skip(
+				testInfo.project.name !== 'chromium-mobile-360',
+				'the narrow ru check runs at 360px'
+			);
+			await openPopular(page, 'ru', '&f=quick');
+			const report = await filterBar(page).evaluate((bar) => {
+				const buttons = [...bar.querySelectorAll('button')];
+				let row: HTMLElement | null = buttons[0].parentElement;
+				while (row && !buttons.every((b) => row!.contains(b))) row = row.parentElement;
+				return {
+					clipped: buttons
+						.filter(
+							(b) =>
+								b.scrollWidth > b.clientWidth + 1 || getComputedStyle(b).textOverflow === 'ellipsis'
+						)
+						.map((b) => b.textContent?.trim()),
+					overflowX: row ? getComputedStyle(row).overflowX : 'none',
+					scrollbar: row ? row.offsetHeight - row.clientHeight : -1,
+					pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+				};
+			});
+			expect(report.clipped, 'got clipped chip labels').toEqual([]);
+			expect(['auto', 'scroll']).toContain(report.overflowX);
+			expect(report.scrollbar, 'got a visible scrollbar under the chips').toBe(0);
+			expect(report.pageOverflow, 'got the chips widening the page').toBeLessThanOrEqual(0);
+			await expect(quickChip(page, 'ru', 'summer')).toHaveText(POPULAR_COPY.ru.quick.summer);
+		}
+	);
 });
 
 test.describe('Popular: the panel has its own heading (mobile and desktop)', () => {

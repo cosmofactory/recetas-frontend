@@ -17,6 +17,20 @@ const desktop = [
 	{ name: 'desktop-1440', viewport: { width: 1440, height: 900 } }
 ];
 
+// specs/stack.md F4 "Tiered E2E matrix": the core projects run every test;
+// the other widths only run @layout tests and the other engines only
+// @cross-browser ones. E2E_MATRIX=full (nightly, on demand) runs everything
+// everywhere.
+const CORE_PROJECTS = new Set(['chromium-mobile-390', 'chromium-desktop-1280']);
+const LAYOUT_TAG = /@layout/;
+const CROSS_BROWSER_TAG = /@cross-browser/;
+const fullMatrix = process.env.E2E_MATRIX === 'full';
+
+function tier(name: string, crossBrowser: boolean): { grep?: RegExp } {
+	if (fullMatrix || CORE_PROJECTS.has(name)) return {};
+	return { grep: crossBrowser ? CROSS_BROWSER_TAG : LAYOUT_TAG };
+}
+
 export default defineConfig({
 	testMatch: '**/*.e2e.{ts,js}',
 	forbidOnly: !!process.env.CI,
@@ -41,19 +55,23 @@ export default defineConfig({
 	projects: [
 		...mobile.map((p) => ({
 			name: `chromium-${p.name}`,
+			...tier(`chromium-${p.name}`, false),
 			use: { ...devices['Desktop Chrome'], viewport: p.viewport, isMobile: true, hasTouch: true }
 		})),
 		...desktop.map((p) => ({
 			name: `chromium-${p.name}`,
+			...tier(`chromium-${p.name}`, false),
 			use: { ...devices['Desktop Chrome'], viewport: p.viewport }
 		})),
-		{ name: 'webkit-iphone', use: { ...devices['iPhone 13'] } },
+		{ name: 'webkit-iphone', ...tier('webkit-iphone', true), use: { ...devices['iPhone 13'] } },
 		{
 			name: 'webkit-desktop-1440',
+			...tier('webkit-desktop-1440', true),
 			use: { ...devices['Desktop Safari'], viewport: { width: 1440, height: 900 } }
 		},
 		{
 			name: 'firefox-desktop-1280',
+			...tier('firefox-desktop-1280', true),
 			use: { ...devices['Desktop Firefox'], viewport: { width: 1280, height: 800 } }
 		}
 	]

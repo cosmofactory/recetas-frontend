@@ -137,7 +137,7 @@ test.describe('tab state in the URL', () => {
 		await expect(visibleMap(page)).toHaveCount(1);
 	});
 
-	test('Back and Forward restore the tab', async ({ page }) => {
+	test('Back and Forward restore the tab', { tag: '@cross-browser' }, async ({ page }) => {
 		await gotoHydrated(page, '/en/');
 		await tab(page, en.popular).click();
 		await page.waitForURL((url) => url.search === '?tab=popular');
@@ -169,30 +169,38 @@ test.describe('tab state in the URL', () => {
 
 	// SegmentedSwitch selects on arrow keys (automatic activation); the
 	// navigation must not take focus away from the tab the user moved to.
-	test('ArrowRight on Regional navigates to Popular and keeps focus on it', async ({ page }) => {
-		await gotoHydrated(page, '/en/');
-		await tab(page, en.regional).focus();
-		await page.keyboard.press('ArrowRight');
-		await page.waitForURL((url) => url.search === '?tab=popular');
-		await expect(tab(page, en.popular)).toHaveAttribute('aria-selected', 'true');
-		await expect(tab(page, en.popular), 'got focus moved off the Popular tab').toBeFocused();
-	});
+	test(
+		'ArrowRight on Regional navigates to Popular and keeps focus on it',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await gotoHydrated(page, '/en/');
+			await tab(page, en.regional).focus();
+			await page.keyboard.press('ArrowRight');
+			await page.waitForURL((url) => url.search === '?tab=popular');
+			await expect(tab(page, en.popular)).toHaveAttribute('aria-selected', 'true');
+			await expect(tab(page, en.popular), 'got focus moved off the Popular tab').toBeFocused();
+		}
+	);
 
 	// Stage FE-4 -> Small decisions, "Tabs are links": "A click adds a
 	// history entry; arrow-key activation replaces it." So Back after arrow
 	// keys skips every tab the keys passed through.
-	test('arrow-key activation replaces the history entry', async ({ page }) => {
-		await gotoHydrated(page, '/en/regions/gal');
-		await gotoHydrated(page, '/en/');
-		await tab(page, en.regional).focus();
-		await page.keyboard.press('ArrowRight');
-		await page.waitForURL((url) => url.search === '?tab=popular');
-		await page.goBack();
-		await page.waitForURL((url) => url.pathname !== '/en/' || url.search !== '?tab=popular');
-		expect(pathAndQuery(page), 'want Back to skip the arrow-key tab change').toBe(
-			'/en/regions/gal'
-		);
-	});
+	test(
+		'arrow-key activation replaces the history entry',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await gotoHydrated(page, '/en/regions/gal');
+			await gotoHydrated(page, '/en/');
+			await tab(page, en.regional).focus();
+			await page.keyboard.press('ArrowRight');
+			await page.waitForURL((url) => url.search === '?tab=popular');
+			await page.goBack();
+			await page.waitForURL((url) => url.pathname !== '/en/' || url.search !== '?tab=popular');
+			expect(pathAndQuery(page), 'want Back to skip the arrow-key tab change').toBe(
+				'/en/regions/gal'
+			);
+		}
+	);
 
 	test('arrow keys back and forth leave one entry: Back leaves the home', async ({ page }) => {
 		await gotoHydrated(page, '/en/regions/gal');

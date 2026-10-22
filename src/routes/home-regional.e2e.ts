@@ -198,14 +198,20 @@ async function measureMobile(page: Page, locale: (typeof LOCALES)[number] = 'en'
 test.describe('meta row: eyebrow and hint per layout', () => {
 	for (const locale of LOCALES) {
 		const copy = HOME_COPY[locale];
-		test(`/${locale}/ shows "${copy.regionsCount}" and this layout's hint`, async ({ page }) => {
-			await gotoHydrated(page, `/${locale}/`);
-			const shown = isDesktopPage(page) ? copy.clickRegion : copy.tapRegion;
-			const hidden = isDesktopPage(page) ? copy.tapRegion : copy.clickRegion;
-			await expect(onlyVisible(page.getByText(copy.regionsCount, { exact: true }))).toHaveCount(1);
-			await expect(onlyVisible(page.getByText(shown, { exact: true }))).toHaveCount(1);
-			await expect(onlyVisible(page.getByText(hidden, { exact: true }))).toHaveCount(0);
-		});
+		test(
+			`/${locale}/ shows "${copy.regionsCount}" and this layout's hint`,
+			{ tag: '@layout' },
+			async ({ page }) => {
+				await gotoHydrated(page, `/${locale}/`);
+				const shown = isDesktopPage(page) ? copy.clickRegion : copy.tapRegion;
+				const hidden = isDesktopPage(page) ? copy.tapRegion : copy.clickRegion;
+				await expect(onlyVisible(page.getByText(copy.regionsCount, { exact: true }))).toHaveCount(
+					1
+				);
+				await expect(onlyVisible(page.getByText(shown, { exact: true }))).toHaveCount(1);
+				await expect(onlyVisible(page.getByText(hidden, { exact: true }))).toHaveCount(0);
+			}
+		);
 	}
 
 	test('the eyebrow reads upper-case on screen', async ({ page }) => {
@@ -216,20 +222,24 @@ test.describe('meta row: eyebrow and hint per layout', () => {
 });
 
 test.describe('mobile Regional layout (< 860px)', () => {
-	test('meta row: 14px under the switch, 16px side padding, 4px inner inset', async ({ page }) => {
-		skipUnlessMobile(page);
-		const m = await measureMobile(page);
-		const switchBox = present(m.tablist, 'switch').box;
-		const meta = present(m.meta, 'meta row');
-		expectPx(meta.box.y - bottom(switchBox), MOBILE.bodyTop, 'switch → meta row');
-		expectPx(meta.box.x, MOBILE.bodySide, 'meta row left');
-		expectPx(right(meta.box), m.clientWidth - MOBILE.bodySide, 'meta row right');
-		expectPx(present(m.eyebrow, 'eyebrow').box.x, MOBILE.bodySide + MOBILE.metaInset, 'eyebrow');
-		const hintRight = right(present(m.hint, 'hint').box);
-		expectPx(hintRight, m.clientWidth - MOBILE.bodySide - MOBILE.metaInset, 'hint right');
-		expect(meta.style['justify-content']).toBe('space-between');
-		expect(meta.style['align-items']).toBe('baseline');
-	});
+	test(
+		'meta row: 14px under the switch, 16px side padding, 4px inner inset',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			skipUnlessMobile(page);
+			const m = await measureMobile(page);
+			const switchBox = present(m.tablist, 'switch').box;
+			const meta = present(m.meta, 'meta row');
+			expectPx(meta.box.y - bottom(switchBox), MOBILE.bodyTop, 'switch → meta row');
+			expectPx(meta.box.x, MOBILE.bodySide, 'meta row left');
+			expectPx(right(meta.box), m.clientWidth - MOBILE.bodySide, 'meta row right');
+			expectPx(present(m.eyebrow, 'eyebrow').box.x, MOBILE.bodySide + MOBILE.metaInset, 'eyebrow');
+			const hintRight = right(present(m.hint, 'hint').box);
+			expectPx(hintRight, m.clientWidth - MOBILE.bodySide - MOBILE.metaInset, 'hint right');
+			expect(meta.style['justify-content']).toBe('space-between');
+			expect(meta.style['align-items']).toBe('baseline');
+		}
+	);
 
 	test('eyebrow: 11px/600, .1em, upper-case, --ink-eyebrow', async ({ page }) => {
 		skipUnlessMobile(page);
@@ -248,15 +258,19 @@ test.describe('mobile Regional layout (< 860px)', () => {
 		expect(style.color).toBe(await tokenValue(page, 'color', 'var(--ink-3)'));
 	});
 
-	test('map: 16px in from each side, 16px under the meta row, 14:11', async ({ page }) => {
-		skipUnlessMobile(page);
-		const m = await measureMobile(page);
-		const map = present(m.map, 'map').box;
-		expectPx(map.x, MOBILE.bodySide, 'map left');
-		expectPx(map.width, m.clientWidth - 2 * MOBILE.bodySide, 'map width');
-		expectPx(map.y - bottom(present(m.meta, 'meta row').box), MOBILE.metaToMap, 'meta → map');
-		expectPx(map.height, map.width * MAP_RATIO, 'map height', 1);
-	});
+	test(
+		'map: 16px in from each side, 16px under the meta row, 14:11',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			skipUnlessMobile(page);
+			const m = await measureMobile(page);
+			const map = present(m.map, 'map').box;
+			expectPx(map.x, MOBILE.bodySide, 'map left');
+			expectPx(map.width, m.clientWidth - 2 * MOBILE.bodySide, 'map width');
+			expectPx(map.y - bottom(present(m.meta, 'meta row').box), MOBILE.metaToMap, 'meta → map');
+			expectPx(map.height, map.width * MAP_RATIO, 'map height', 1);
+		}
+	);
 
 	// Stage FE-4 -> Small decisions: "On mobile the map is clamped to the
 	// frame height (prototype `max-height: 100%`), so it fits a landscape
@@ -286,52 +300,62 @@ test.describe('mobile Regional layout (< 860px)', () => {
 		await expect(title).toHaveCount(0);
 	});
 
-	test('every Russian map label lies within the viewport', async ({ page }) => {
-		skipUnlessMobile(page);
-		await gotoHydrated(page, '/ru/');
-		const labels = visibleMap(page).locator('[data-map-label]');
-		await expect(labels, 'want the 14 region labels on the visible map').toHaveCount(14);
-		const overhang = await page.evaluate(() => {
-			const width = document.documentElement.clientWidth;
-			const labels = [...document.querySelectorAll('[data-map-label]')].filter((l) =>
-				l.checkVisibility()
-			);
-			return labels
-				.map((l) => ({ text: l.textContent, r: l.getBoundingClientRect() }))
-				.filter(({ r }) => r.left < 0 || r.right > width)
-				.map(({ text, r }) => `${text} [${r.left.toFixed(1)}, ${r.right.toFixed(1)}] of ${width}`);
-		});
-		expect(overhang, `got labels past the screen edge: ${JSON.stringify(overhang)}`).toEqual([]);
-	});
+	test(
+		'every Russian map label lies within the viewport',
+		{ tag: ['@layout', '@cross-browser'] },
+		async ({ page }) => {
+			skipUnlessMobile(page);
+			await gotoHydrated(page, '/ru/');
+			const labels = visibleMap(page).locator('[data-map-label]');
+			await expect(labels, 'want the 14 region labels on the visible map').toHaveCount(14);
+			const overhang = await page.evaluate(() => {
+				const width = document.documentElement.clientWidth;
+				const labels = [...document.querySelectorAll('[data-map-label]')].filter((l) =>
+					l.checkVisibility()
+				);
+				return labels
+					.map((l) => ({ text: l.textContent, r: l.getBoundingClientRect() }))
+					.filter(({ r }) => r.left < 0 || r.right > width)
+					.map(
+						({ text, r }) => `${text} [${r.left.toFixed(1)}, ${r.right.toFixed(1)}] of ${width}`
+					);
+			});
+			expect(overhang, `got labels past the screen edge: ${JSON.stringify(overhang)}`).toEqual([]);
+		}
+	);
 
-	test('the home frame is the viewport, positioned, overflow hidden', async ({ page }) => {
-		skipUnlessMobile(page);
-		await gotoHydrated(page, '/en/');
-		const frame = await page.evaluate(() => {
-			const map = [...document.querySelectorAll('[data-testid="region-map"]')].find((el) =>
-				el.checkVisibility()
-			);
-			const clips = (v: string) => v === 'hidden' || v === 'clip';
-			for (let el = map?.parentElement; el && el !== document.body; el = el.parentElement) {
-				const cs = getComputedStyle(el);
-				if (!clips(cs.overflowX) || !clips(cs.overflowY) || cs.position === 'static') continue;
-				const r = el.getBoundingClientRect();
-				return { x: r.x, y: r.y, width: r.width, height: r.height };
-			}
-			return null;
-		});
-		expect(frame, 'got no positioned overflow-hidden ancestor of the map').not.toBeNull();
-		const size = await page.evaluate(() => ({
-			width: document.documentElement.clientWidth,
-			height: window.innerHeight
-		}));
-		expectPx(frame!.x, 0, 'frame left');
-		expectPx(frame!.y, 0, 'frame top');
-		expectPx(frame!.width, size.width, 'frame width');
-		expectPx(frame!.height, size.height, 'frame height', 1);
-	});
+	test(
+		'the home frame is the viewport, positioned, overflow hidden',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			skipUnlessMobile(page);
+			await gotoHydrated(page, '/en/');
+			const frame = await page.evaluate(() => {
+				const map = [...document.querySelectorAll('[data-testid="region-map"]')].find((el) =>
+					el.checkVisibility()
+				);
+				const clips = (v: string) => v === 'hidden' || v === 'clip';
+				for (let el = map?.parentElement; el && el !== document.body; el = el.parentElement) {
+					const cs = getComputedStyle(el);
+					if (!clips(cs.overflowX) || !clips(cs.overflowY) || cs.position === 'static') continue;
+					const r = el.getBoundingClientRect();
+					return { x: r.x, y: r.y, width: r.width, height: r.height };
+				}
+				return null;
+			});
+			expect(frame, 'got no positioned overflow-hidden ancestor of the map').not.toBeNull();
+			const size = await page.evaluate(() => ({
+				width: document.documentElement.clientWidth,
+				height: window.innerHeight
+			}));
+			expectPx(frame!.x, 0, 'frame left');
+			expectPx(frame!.y, 0, 'frame top');
+			expectPx(frame!.width, size.width, 'frame width');
+			expectPx(frame!.height, size.height, 'frame height', 1);
+		}
+	);
 
-	test('the mobile home does not scroll the document', async ({ page }) => {
+	test('the mobile home does not scroll the document', { tag: '@layout' }, async ({ page }) => {
 		skipUnlessMobile(page);
 		await gotoHydrated(page, '/ru/');
 		await expect(visibleMap(page), 'want the map on the Regional tab').toHaveCount(1);
