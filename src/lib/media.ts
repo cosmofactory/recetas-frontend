@@ -50,8 +50,11 @@ const FALLBACK_EXTENSION = 'jpg';
 // no extension, nothing that could point the URL somewhere else.
 const PREFIX_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*(\/[a-z0-9]+(-[a-z0-9]+)*)*$/;
 
+const variantUrl = (url: string, width: number, extension: string) =>
+	`${url}-${width}w.${extension}`;
+
 function widthLadder(url: string, role: PhotoRole, extension: string): string {
-	return ROLE_WIDTHS[role].map((w) => `${url}-${w}w.${extension} ${w}w`).join(', ');
+	return ROLE_WIDTHS[role].map((w) => `${variantUrl(url, w, extension)} ${w}w`).join(', ');
 }
 
 function assertValidPrefix(prefix: string): void {
@@ -60,12 +63,19 @@ function assertValidPrefix(prefix: string): void {
 	}
 }
 
+// The photo's URL without its width and extension; null when there is no
+// photo or no media origin configured.
+function photoUrl(baseUrl: string | undefined, prefix: string | null): string | null {
+	if (prefix === null || !baseUrl) return null;
+	assertValidPrefix(prefix);
+	return `${baseUrl.replace(/\/$/, '')}/${prefix}`;
+}
+
 // `dishes/tortilla/gal/hero-<hash>` -> AVIF, WebP and JPEG srcsets against the
 // media base URL; null when there is no photo or no media origin configured.
 export function imageSet({ baseUrl, prefix, role }: ImageSetOptions): ImageSet | null {
-	if (prefix === null || !baseUrl) return null;
-	assertValidPrefix(prefix);
-	const url = `${baseUrl.replace(/\/$/, '')}/${prefix}`;
+	const url = photoUrl(baseUrl, prefix);
+	if (url === null) return null;
 	return {
 		sources: SOURCE_FORMATS.map(({ type, extension }) => ({
 			type,
@@ -73,10 +83,17 @@ export function imageSet({ baseUrl, prefix, role }: ImageSetOptions): ImageSet |
 		})),
 		// Only a browser that ignores srcset reads src, so it gets the cheaper file.
 		fallback: {
-			src: `${url}-${ROLE_WIDTHS[role][0]}w.${FALLBACK_EXTENSION}`,
+			src: variantUrl(url, ROLE_WIDTHS[role][0], FALLBACK_EXTENSION),
 			srcset: widthLadder(url, role, FALLBACK_EXTENSION)
 		}
 	};
+}
+
+// The role's widest JPEG, for a consumer that takes one URL and may not read
+// AVIF or WebP (link-preview crawlers); null like imageSet.
+export function largestJpegUrl({ baseUrl, prefix, role }: ImageSetOptions): string | null {
+	const url = photoUrl(baseUrl, prefix);
+	return url === null ? null : variantUrl(url, Math.max(...ROLE_WIDTHS[role]), FALLBACK_EXTENSION);
 }
 
 // "https://d1abc.cloudfront.net/media/" -> "https://d1abc.cloudfront.net/media";

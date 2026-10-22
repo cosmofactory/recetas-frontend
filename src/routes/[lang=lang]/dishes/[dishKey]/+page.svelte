@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import PageHead from '#lib/components/PageHead.svelte';
 	import DishPagesTopBar from '#lib/components/dish/DishPagesTopBar.svelte';
 	import VariationsHeader from '#lib/components/dish/VariationsHeader.svelte';
 	import { variationsBackPill } from '#lib/components/dish/back-pill.ts';
@@ -11,6 +12,7 @@
 	import { recipeHref } from '#lib/i18n/localized-href.ts';
 	import { m } from '#lib/paraglide/messages.js';
 	import { popularDishHref } from '#lib/popular/filters.ts';
+	import { ogImageUrl } from '#lib/seo/og-image.ts';
 	import { originTab, type BackOrigin } from '#lib/ui/back-origin.ts';
 	import { inAppBack } from '#lib/ui/in-app-back.ts';
 	import type { PageProps } from './$types';
@@ -29,12 +31,16 @@
 	let origin = $state<BackOrigin | null>(null);
 	const back = inAppBack('variations-back', (next) => (origin = next));
 	const pill = $derived(variationsBackPill(origin, lang));
+	const image = $derived(
+		ogImageUrl({
+			origin: data.origin,
+			mediaBaseUrl: data.mediaBaseUrl,
+			heroPrefix: dish.photos.hero
+		})
+	);
 </script>
 
-<svelte:head>
-	<title>{variationsTitle(dish.name)}</title>
-	<meta name="description" content={dish.description} />
-</svelte:head>
+<PageHead title={variationsTitle(dish.name)} description={dish.description} {image} />
 
 <DishPagesTopBar {lang} tab={originTab(origin)} url={page.url} catalog={data} />
 <main class="variations page-container">

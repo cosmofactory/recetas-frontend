@@ -1,12 +1,16 @@
+import { APP_ENV } from '$app/env/private';
 import type { Handle, HandleServerError, ServerInit } from '@sveltejs/kit/hooks';
 import { INTERNAL_SERVER_ERROR } from '#lib/http-status.ts';
 import { localeFromPath } from '#lib/i18n/locales.ts';
 import { setErrorReporter } from '#lib/report-error.ts';
+import { isIndexable } from '#lib/server/app-env.ts';
 import { log } from '#lib/server/log.ts';
 import { withRequestLocale } from '#lib/server/request-locale.ts';
 
 // src/app.html carries this placeholder; it is replaced on every page.
 const HTML_LANG_PLACEHOLDER = '<html lang="%lang%">';
+const ROBOTS_HEADER = 'x-robots-tag';
+const NOINDEX = 'noindex';
 
 // Shared components (e.g. <Photo>) report server-side errors through the
 // structured logger, so those lines carry the trace ID too.
@@ -30,12 +34,21 @@ export const handleError: HandleServerError = ({ kind, error, event }) => {
 // The URL path alone decides the language (stack.md X6): /ru/... is Russian
 // whatever the cookie says; a path without a locale prefix (a 404 such as
 // /fr/) renders in en.
-export const handle: Handle = ({ event, resolve }) => {
+export const handle: Handle = async ({ event, resolve }) => {
 	const locale = localeFromPath(event.url.pathname);
-	return withRequestLocale(locale, () =>
+	const response = await withRequestLocale(locale, () =>
 		resolve(event, {
 			transformPageChunk: ({ html }) =>
 				html.replace(HTML_LANG_PLACEHOLDER, `<html lang="${locale}">`)
 		})
 	);
+	return withRobotsTag(response);
 };
+
+// Only prod may be indexed (stage FE-8). Every response the app resolves
+// says so, error pages and /healthz included; static files are served before
+// the hooks run, so Caddy covers those on demo (INF-2).
+function withRobotsTag(response: Response): Response {
+	if (!isIndexable(APP_ENV)) response.headers.set(ROBOTS_HEADER, NOINDEX);
+	return response;
+}

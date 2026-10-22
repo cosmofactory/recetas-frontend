@@ -4,7 +4,10 @@ declare global {
 	namespace App {
 		// interface Error {}
 		// interface Locals {}
-		// interface PageData {}
+		// The root layout's load (+layout.server.ts): every page has it.
+		interface PageData {
+			origin: string;
+		}
 		// interface PageState {}
 		// interface Platform {}
 	}

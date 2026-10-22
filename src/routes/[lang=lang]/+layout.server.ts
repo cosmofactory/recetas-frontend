@@ -1,4 +1,3 @@
-import { PUBLIC_ORIGIN } from '$app/env/private';
 import { MEDIA_BASE_URL } from '$app/env/public';
 import { catalog } from '#lib/server/catalog.ts';
 import { orHttpError } from '#lib/server/load-errors.ts';
@@ -13,5 +12,5 @@ export const load: LayoutServerLoad = async (event) => {
 		Promise.all([catalog().listRegions(lang), catalog().listDishes(lang)]),
 		event
 	);
-	return { origin: PUBLIC_ORIGIN, mediaBaseUrl: MEDIA_BASE_URL, regions, dishes };
+	return { mediaBaseUrl: MEDIA_BASE_URL, regions, dishes };
 };

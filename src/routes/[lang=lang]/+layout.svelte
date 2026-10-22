@@ -11,6 +11,7 @@
 <svelte:head>
 	{#if !page.error}
 		<link rel="canonical" href={links.canonical} />
+		<meta property="og:url" content={links.canonical} />
 		{#each links.alternates as alternate (alternate.hreflang)}
 			<link rel="alternate" hreflang={alternate.hreflang} href={alternate.href} />
 		{/each}

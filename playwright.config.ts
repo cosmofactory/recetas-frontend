@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { APP_ENV } from './src/testutil/e2e-app-env';
 import { PUBLIC_ORIGIN } from './src/testutil/e2e-origin';
 
 const PORT = 4173;
@@ -46,6 +47,8 @@ export default defineConfig({
 			HOST: '127.0.0.1',
 			// Canonical and hreflang URLs are built from this, not the request host.
 			PUBLIC_ORIGIN,
+			// Required outside `vite dev` (FE-8): demo, so the site is noindex.
+			APP_ENV,
 			// The vendored content bundle: E2E runs (and CI) need no backend.
 			DATA_SOURCE: 'mock'
 		},

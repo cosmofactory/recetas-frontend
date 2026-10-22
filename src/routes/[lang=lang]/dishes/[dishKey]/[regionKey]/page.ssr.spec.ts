@@ -6,6 +6,7 @@ import {
 	decodeAmp,
 	elementsWith,
 	headingTexts,
+	metaContents,
 	startTags,
 	visibleText,
 	type StartTag
@@ -376,5 +377,23 @@ describe('Recipe page: all variations equal', { timeout: COLD_COMPILE_TIMEOUT_MS
 	it('marks nothing as best, primary or featured', async () => {
 		const { body } = await renderPage({ lang: 'en' });
 		expect(body).not.toMatch(/\b(best|primary|featured|highlight)\b/i);
+	});
+});
+
+// FE-8 PR 1 (stage FE-8 -> SEO, meta tags: "an OG image from the hero photo
+// or a static fallback"): the page's head carries og:image, the recipe's hero as
+// its largest JPEG on the media origin (og-image.spec.ts), else the static
+// fallback on the page's origin (data.origin, PUBLIC_ORIGIN).
+describe('Recipe page og:image (FE-8)', () => {
+	it("is the recipe's hero photo when there is one", async () => {
+		const { head } = await renderPage({ lang: 'en', withPhotos: true });
+		const want = `${MEDIA_BASE_URL}/dishes/tortilla/gal/hero-1a2b-1600w.jpg`;
+		expect(metaContents(head, 'og:image'), `want og:image ${want}`).toEqual([want]);
+	});
+
+	it('is the static fallback without photos', async () => {
+		const { head } = await renderPage({ lang: 'es' });
+		const want = `${ORIGIN}/og-default.png`;
+		expect(metaContents(head, 'og:image'), `want og:image ${want}`).toEqual([want]);
 	});
 });

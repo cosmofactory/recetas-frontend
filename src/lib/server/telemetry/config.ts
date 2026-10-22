@@ -1,10 +1,9 @@
+import { parseAppEnv, type AppEnv } from '#lib/server/app-env.ts';
+
 // Server telemetry settings from the environment (stack.md B7; names as in
 // BE-1). No LOGFIRE_TOKEN means telemetry is off and nothing else is read, so
 // local dev needs no setup. With a token every other setting must be valid;
 // error messages name the variable but never echo the token.
-
-export const appEnvs = ['local', 'demo', 'prod'] as const;
-export type AppEnv = (typeof appEnvs)[number];
 
 export type TelemetryConfig =
 	| { enabled: false }
@@ -35,11 +34,6 @@ export function telemetryConfig(env: Env): TelemetryConfig {
 		serviceVersion: env.APP_VERSION || DEFAULT_SERVICE_VERSION,
 		environment: parseAppEnv(env.APP_ENV)
 	};
-}
-
-function parseAppEnv(value: string | undefined): AppEnv {
-	if ((appEnvs as readonly (string | undefined)[]).includes(value)) return value as AppEnv;
-	throw new Error(`APP_ENV must be one of ${appEnvs.join(', ')}, got ${JSON.stringify(value)}`);
 }
 
 // The token travels in a header, so the endpoint must be https.

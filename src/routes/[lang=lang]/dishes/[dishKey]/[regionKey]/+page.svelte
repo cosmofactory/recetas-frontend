@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import PageHead from '#lib/components/PageHead.svelte';
 	import DishPagesTopBar from '#lib/components/dish/DishPagesTopBar.svelte';
 	import { recipeBackPill } from '#lib/components/dish/back-pill.ts';
 	import { recipeTitle } from '#lib/components/dish/dish-head.ts';
@@ -9,6 +10,7 @@
 	import { localeFromPath } from '#lib/i18n/locales.ts';
 	import { variationsHref } from '#lib/i18n/localized-href.ts';
 	import { m } from '#lib/paraglide/messages.js';
+	import { ogImageUrl } from '#lib/seo/og-image.ts';
 	import { originTab, type BackOrigin } from '#lib/ui/back-origin.ts';
 	import { inAppBack } from '#lib/ui/in-app-back.ts';
 	import type { PageProps } from './$types';
@@ -28,12 +30,21 @@
 	let origin = $state<BackOrigin | null>(null);
 	const back = inAppBack('recipe-back', (next) => (origin = next));
 	const pill = $derived(recipeBackPill(origin, recipe, lang, data));
+	const image = $derived(
+		ogImageUrl({
+			origin: data.origin,
+			mediaBaseUrl: data.mediaBaseUrl,
+			heroPrefix: recipe.photos.hero
+		})
+	);
 </script>
 
-<svelte:head>
-	<title>{recipeTitle(recipe.dishName, recipe.name)}</title>
-	<meta name="description" content={recipe.description} />
-</svelte:head>
+<PageHead
+	title={recipeTitle(recipe.dishName, recipe.name)}
+	description={recipe.description}
+	{image}
+	type="article"
+/>
 
 <DishPagesTopBar {lang} tab={originTab(origin)} url={page.url} catalog={data} />
 <main class="recipe page-container">

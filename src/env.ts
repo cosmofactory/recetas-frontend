@@ -1,5 +1,6 @@
 import { dev, building } from '$app/env';
 import { defineEnvVars } from '@sveltejs/kit/env';
+import { DEFAULT_APP_ENV, parseAppEnv } from '#lib/server/app-env.ts';
 import { selectSource } from '#lib/server/data-source.ts';
 import { telemetryConfig } from '#lib/server/telemetry/config.ts';
 import { parseMediaBaseUrl } from '#lib/media.ts';
@@ -86,8 +87,11 @@ export const variables = defineEnvVars({
 	},
 	APP_ENV: {
 		description:
-			'`local`, `demo` or `prod`: the deployment.environment.name resource attribute. Required when LOGFIRE_TOKEN is set.',
-		schema: optional
+			'`local`, `demo` or `prod`. Only `prod` is indexable: anything else answers robots.txt `Disallow: /` and sends `X-Robots-Tag: noindex`. Also the deployment.environment.name telemetry attribute. Required outside `vite dev`.',
+		schema: (value) => {
+			if (!value && (dev || building)) return DEFAULT_APP_ENV;
+			return parseAppEnv(value);
+		}
 	},
 	APP_VERSION: {
 		description:
