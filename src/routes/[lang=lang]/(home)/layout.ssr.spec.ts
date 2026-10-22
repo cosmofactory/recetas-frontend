@@ -952,3 +952,35 @@ describe('(home) layout: ids in the server HTML', { timeout: COLD_COMPILE_TIMEOU
 		});
 	}
 });
+
+// FE-7 PR 2 review: the search overlay needs JavaScript, so it is mounted
+// only once hydrated and the server HTML has no search dialog (and so no
+// combobox): the region sheet stays the one dialog on the bare home.
+describe(
+	'(home) layout: no search dialog in the server HTML',
+	{ timeout: COLD_COMPILE_TIMEOUT_MS },
+	() => {
+		const paths: { lang: Lang; path: string }[] = [
+			{ lang: 'en', path: '/en/' },
+			{ lang: 'en', path: '/en/?tab=popular' },
+			{ lang: 'ru', path: '/ru/' }
+		];
+		for (const { lang, path } of paths) {
+			it(`${path}: no dialog named "${COPY[lang].search}" and no combobox`, async () => {
+				const tags = startTags(await renderHome({ lang, path }));
+				const search = tags.filter(
+					(t) => t.attrs.role === 'dialog' && t.attrs['aria-label'] === COPY[lang].search
+				);
+				expect(search.length, 'got a search dialog in the server HTML').toBe(0);
+				const comboboxes = tags.filter((t) => t.attrs.role === 'combobox');
+				expect(comboboxes.length, 'got a search combobox in the server HTML').toBe(0);
+			});
+		}
+
+		it('/en/: the region sheet is the only dialog', async () => {
+			const tags = startTags(await renderHome({ lang: 'en', path: '/en/' }));
+			const dialogs = tags.filter((t) => t.attrs.role === 'dialog');
+			expect(dialogs.map((t) => t.attrs['data-state'])).toEqual(['hidden']);
+		});
+	}
+);

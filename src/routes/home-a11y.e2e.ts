@@ -1,6 +1,8 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { expectNoViolations, loadAxe, summary, WCAG_AA_TAGS } from '../testutil/axe-e2e';
 import { gotoHydrated } from '../testutil/home-e2e';
+import { nothingFor, type SearchLocale } from '../testutil/search-copy';
+import { DISHES, resultGroup, resultOption, searchDialog, searchFor } from '../testutil/search-e2e';
 import {
 	dishCards,
 	filterSidebar,
@@ -147,6 +149,29 @@ test.describe('axe: WCAG 2.2 AA with the Popular sheets open', () => {
 		await openFiltersSheetByKeyboard(page, 'en');
 		await expectNoViolations(page, 'the Filters sheet over the dish sheet');
 	});
+});
+
+// FE-7 PR 2 review: the mobile search overlay open, with results (the
+// listbox, its groups and options) and with nothing found (the empty state).
+test.describe('axe: WCAG 2.2 AA with the search overlay open', () => {
+	const scans: { lang: SearchLocale; query: string; finds?: string; tag: string[] }[] = [
+		{ lang: 'en', query: 'tortilla', finds: 'Tortilla de patatas', tag: ['@cross-browser'] },
+		{ lang: 'ru', query: 'paella', finds: 'Блюда из риса', tag: [] },
+		{ lang: 'en', query: 'zzzz', tag: ['@cross-browser'] }
+	];
+	for (const { lang, query, finds, tag } of scans) {
+		const what = `/${lang}/ searching "${query}" (${finds ? 'results' : 'no results'})`;
+		test(`${what} has no violations`, { tag }, async ({ page }, testInfo) => {
+			onlyOnMobile(testInfo);
+			await gotoHydrated(page, `/${lang}/`);
+			await searchFor(page, lang, query);
+			const shown = finds
+				? resultOption(resultGroup(page, lang, DISHES), finds)
+				: searchDialog(page, lang).getByText(nothingFor(lang, query), { exact: true });
+			await expect(shown).toBeVisible();
+			await expectNoViolations(page, what);
+		});
+	}
 });
 
 // FE-4 PR 3 follow-up: axe can only say "incomplete" for text something else

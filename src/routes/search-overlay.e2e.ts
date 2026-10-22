@@ -138,6 +138,75 @@ test.describe('search overlay: opening and closing', () => {
 	});
 });
 
+// Chromium's DevTools protocol slows every animation on the page, so the
+// 350ms enter transition is still running when the next key arrives,
+// however fast the runner types (no reliance on timing).
+const SLOW_PLAYBACK_RATE = 0.1;
+
+async function setAnimationRate(page: Page, playbackRate: number) {
+	const cdp = await page.context().newCDPSession(page);
+	await cdp.send('Animation.enable');
+	await cdp.send('Animation.setPlaybackRate', { playbackRate });
+}
+
+// Whether focus is inside the dialog and its own transitions still run.
+const focusDuringEnter = (page: Page) =>
+	searchDialog(page, 'en').evaluate((dialog) => ({
+		inside: dialog.contains(document.activeElement),
+		focused: document.activeElement?.outerHTML.slice(0, 120) ?? null,
+		entering: dialog.getAnimations().length > 0
+	}));
+
+// FE-7 PR 2 review: the overlay is modal from the moment it opens, though
+// the input only takes focus once the enter transition ends (README: "Input
+// auto-focuses after the transition"). A Tab before then must not reach the
+// page under it, and Escape must still return focus to the search button.
+test.describe('search overlay: focus during the enter transition', () => {
+	test('Tab mid-transition stays in the dialog; Escape refocuses the button', async ({
+		page,
+		browserName
+	}) => {
+		test.skip(
+			browserName !== 'chromium',
+			'slows animations through the Chromium DevTools protocol'
+		);
+		await gotoHydrated(page, searchUrl('en'));
+		const button = searchButton(page, 'en');
+		await button.focus();
+		await setAnimationRate(page, SLOW_PLAYBACK_RATE);
+		await page.keyboard.press('Enter');
+		await page.keyboard.press('Tab');
+		const during = await focusDuringEnter(page);
+		expect(during.entering, 'got the enter transition already over').toBe(true);
+		expect(during.inside, `got focus outside the dialog mid-transition: ${during.focused}`).toBe(
+			true
+		);
+		await setAnimationRate(page, 1);
+		await page.keyboard.press('Escape');
+		await expect(searchDialog(page, 'en')).toBeHidden();
+		await expect(button).toBeFocused();
+	});
+});
+
+// The README's overlay is mobile only (desktop has inline search, FE-7 PR 4),
+// so crossing 860px closes it. Where focus lands then is PR 4's call.
+const DESKTOP_WIDTH = 1000;
+test.describe('search overlay: crossing 860px', () => {
+	test('widening to desktop closes the overlay and leaves it inert', async ({ page }) => {
+		await gotoHydrated(page, searchUrl('en'));
+		await searchFor(page, 'en', 'tortilla');
+		await page.setViewportSize({ width: DESKTOP_WIDTH, height: page.viewportSize()!.height });
+		const overlay = page.getByRole('dialog', {
+			name: SEARCH_COPY.en.dialog,
+			exact: true,
+			includeHidden: true
+		});
+		await expect(overlay).toBeHidden();
+		await expect(overlay).toHaveAttribute('inert');
+		await expect(overlay).not.toHaveAttribute('aria-modal');
+	});
+});
+
 test.describe('search overlay in every locale', () => {
 	for (const lang of SEARCH_LOCALES) {
 		test(`${lang}: placeholder, Cancel and the suggestions`, async ({ page }) => {
