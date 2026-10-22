@@ -14,10 +14,14 @@ import { loadNormalize, show } from '../../testutil/search';
 // - The result is NFC, so й comes back as the one code point U+0439 even when
 //   the input spelled it decomposed (и + U+0306).
 // - Every other combining mark goes, including a breve on any other letter
-//   (ă → a) and a combining acute over a Cyrillic letter (а́ → а).
+//   (ă → a) and a combining acute over a Cyrillic letter (а + U+0301 → а).
+// - A breve on и survives even when another mark is stacked on the same и, in
+//   either order (NFD sorts a dot below, U+0323, in front of the breve).
 // - normalize does not trim or collapse spaces; search() trims the query.
 
-const BREVE = '̆';
+const BREVE = '\u0306';
+const ACUTE = '\u0301';
+const DOT_BELOW = '\u0323';
 
 const SAME: [string, string, string][] = [
 	// [why, input, want]
@@ -36,13 +40,17 @@ const SAME: [string, string, string][] = [
 	['strips the circumflex and acute', 'CRÈME BRÛLÉE', 'creme brulee'],
 	['strips a breve that is not on и', 'Mămăligă', 'mamaliga'],
 	['strips a combining acute over a Cyrillic letter', `принг${'а\u0301'}`, 'принга'],
-	['strips an already decomposed accent', `Lac${'ó'}n`, 'lacon'],
+	['strips an already decomposed accent', `Lac${'o\u0301'}n`, 'lacon'],
 	['keeps й (D-FE7-1)', 'найти', 'найти'],
 	['keeps й from upper-case Й (stage case)', 'ЙОГУРТ', 'йогурт'],
 	['recomposes a decomposed й to one code point', `наи${BREVE}ти`, 'найти'],
 	['keeps punctuation and spaces', 'Escudella i carn d’olla', 'escudella i carn d’olla'],
 	['keeps the dash and spaces in Cyrillic', 'Кастилия — Ла-Манча', 'кастилия — ла-манча'],
 	['leaves plain ASCII lower-case alone', 'gazpacho', 'gazpacho'],
+	['keeps й with a dot below on the precomposed й', `\u0439${DOT_BELOW}`, 'й'],
+	['keeps й with a dot below after the breve', `и${BREVE}${DOT_BELOW}`, 'й'],
+	['keeps й with a dot below before the breve', `и${DOT_BELOW}${BREVE}`, 'й'],
+	['keeps й with an acute before the breve', `и${ACUTE}${BREVE}`, 'й'],
 	['returns the empty string unchanged', '', '']
 ];
 
