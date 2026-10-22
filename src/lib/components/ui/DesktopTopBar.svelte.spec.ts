@@ -63,6 +63,7 @@ type Language = {
 	code: string;
 	expanded: boolean;
 	controls?: string;
+	haspopup?: 'menu';
 	onclick: (event: MouseEvent) => void;
 };
 type DesktopTopBarProps = {
