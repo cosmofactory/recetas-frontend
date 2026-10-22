@@ -81,9 +81,9 @@ const CASES: { what: string; origin: BackOrigin | null; want: BackPillLink }[] =
 		want: { label: 'Andalucía', href: '/en/regions/and' }
 	},
 	{
-		what: 'the bare Regional home reads Regional (the home tab, prototype L860)',
+		what: 'the bare Regional home names its default panel region (FE-6)',
 		origin: { href: '/en/', from: 'home', tab: 'regional' },
-		want: { label: 'Regional', href: '/en/' }
+		want: { label: 'Andalucía', href: '/en/' }
 	}
 ];
 

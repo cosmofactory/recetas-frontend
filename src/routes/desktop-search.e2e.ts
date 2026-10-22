@@ -450,8 +450,17 @@ test.describe('desktop search: crossing 860px', () => {
 			const height = page.viewportSize()!.height;
 			await gotoHydrated(page, '/en/');
 			await typeInDesktopSearch(page, 'en', 'tortilla');
+			await expect(desktopSearchInput(page, 'en')).toHaveAttribute('aria-expanded', 'true');
+			// A handle, not a locator: below 860px the desktop top bar is hidden,
+			// so the visible-banner locator no longer finds the field.
+			const field = (await desktopSearchInput(page, 'en').elementHandle())!;
 			await page.setViewportSize({ width: MOBILE_WIDTH, height });
+			// The dropdown is CSS-hidden at once; aria-expanded="false" shows the
+			// page itself saw the narrowing before we widen again.
 			await expect(searchDropdown(page)).toBeHidden();
+			await expect
+				.poll(() => field.getAttribute('aria-expanded'), { message: 'want the page to close it' })
+				.toBe('false');
 			await page.setViewportSize({ width: DESKTOP_WIDTH, height });
 			await expectDropdownClosed(page, 'en');
 		}

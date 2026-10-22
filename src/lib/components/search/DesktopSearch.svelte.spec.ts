@@ -86,6 +86,7 @@ import {
 const DROPDOWN = { belowFieldTop: 54, width: 440, sideMargin: 48, maxHeight: '520px' };
 const FIELD_CONTENT_PX = 44;
 const FIELD_BORDER_PX = 1.5;
+const SOLID = 'border-style: solid';
 const OPEN_BORDER_COLOUR = 'rgba(43, 30, 22, 0.45)';
 const DROPDOWN_SHADOW = 'rgba(43, 30, 22, 0.2) 0px 18px 44px 0px';
 const DROPDOWN_RADIUS = '18px';
@@ -127,9 +128,12 @@ describe('DesktopSearch field', () => {
 	it(`is a ${FIELD_CONTENT_PX}px pill with a ${FIELD_BORDER_PX}px --border-field border on --bg-surface`, async () => {
 		const { root } = await renderDesktopSearch();
 		const box = fieldBox(root);
+		// A 1.5px border snaps to device pixels (1px at DPR 1), so the
+		// expected width and outer height come from the computed value.
+		const border = computed('border-top-width', `${FIELD_BORDER_PX}px`, SOLID);
 		const height = box.getBoundingClientRect().height;
-		expect(height, 'outer height').toBeCloseTo(FIELD_CONTENT_PX + 2 * FIELD_BORDER_PX, 1);
-		expect(style(box, 'border-top-width')).toBe(`${FIELD_BORDER_PX}px`);
+		expect(style(box, 'border-top-width')).toBe(border);
+		expect(height, 'outer height').toBeCloseTo(FIELD_CONTENT_PX + 2 * parseFloat(border), 1);
 		expect(style(box, 'border-top-color')).toBe(computed('color', 'var(--border-field)'));
 		expect(style(box, 'background-color')).toBe(computed('background-color', 'var(--bg-surface)'));
 		expect(style(box, 'border-top-left-radius')).toBe(
