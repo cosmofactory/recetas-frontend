@@ -167,31 +167,33 @@ const cardGrid = (page: Page): Locator => dishCards(page).first().locator('xpath
 test.describe('Popular (desktop): the grid', () => {
 	test.beforeEach(({ page }) => skipOnMobile(page));
 
-	test('grid 220px | minmax(0,1fr), fluid gap and side padding, 28px top, 64px bottom, in the 1440px cap', async ({
-		page
-	}) => {
-		await openPopular(page, 'en');
-		await expect(filterSidebar(page)).toBeVisible();
-		const want = await expectedGeometry(page);
-		const grid = await computedStyle(popularGrid(page), [
-			'display',
-			'align-items',
-			'padding-top',
-			'padding-bottom',
-			'padding-left'
-		]);
-		expect(grid.display).toBe('grid');
-		expect(grid['align-items'], 'sticky needs align-items: start').toBe('start');
-		expect(grid['padding-top']).toBe(`${GRID_PADDING_TOP_PX}px`);
-		expect(grid['padding-bottom']).toBe(`${GRID_PADDING_BOTTOM_PX}px`);
-		expectPx(parseFloat(grid['padding-left']), want.sidePad, 'grid side padding');
-		const sidebar = await boxOf(filterSidebar(page), 'the sidebar');
-		expectPx(sidebar.width, SIDEBAR_WIDTH_PX, 'sidebar width');
-		expectPx(sidebar.x, want.sidebarX, 'sidebar x');
-		const count = await boxOf(resultCount(page), 'the result count');
-		expectPx(count.x, want.resultsX, 'results column x');
-		expectPx(count.y, sidebar.y, 'results column top (same row as the sidebar)');
-	});
+	test(
+		'grid 220px | minmax(0,1fr), fluid gap and side padding, 28px top, 64px bottom, in the 1440px cap',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			await openPopular(page, 'en');
+			await expect(filterSidebar(page)).toBeVisible();
+			const want = await expectedGeometry(page);
+			const grid = await computedStyle(popularGrid(page), [
+				'display',
+				'align-items',
+				'padding-top',
+				'padding-bottom',
+				'padding-left'
+			]);
+			expect(grid.display).toBe('grid');
+			expect(grid['align-items'], 'sticky needs align-items: start').toBe('start');
+			expect(grid['padding-top']).toBe(`${GRID_PADDING_TOP_PX}px`);
+			expect(grid['padding-bottom']).toBe(`${GRID_PADDING_BOTTOM_PX}px`);
+			expectPx(parseFloat(grid['padding-left']), want.sidePad, 'grid side padding');
+			const sidebar = await boxOf(filterSidebar(page), 'the sidebar');
+			expectPx(sidebar.width, SIDEBAR_WIDTH_PX, 'sidebar width');
+			expectPx(sidebar.x, want.sidebarX, 'sidebar x');
+			const count = await boxOf(resultCount(page), 'the result count');
+			expectPx(count.x, want.resultsX, 'results column x');
+			expectPx(count.y, sidebar.y, 'results column top (same row as the sidebar)');
+		}
+	);
 
 	test('the grid has exactly two visible columns: the sidebar, then the results', async ({
 		page
@@ -213,21 +215,23 @@ test.describe('Popular (desktop): the grid', () => {
 		]);
 	});
 
-	test('result count, 18px, then the card grid: auto-fill minmax(250px, 1fr), gap 20px', async ({
-		page
-	}) => {
-		await openPopular(page, 'en');
-		const want = await expectedGeometry(page);
-		const grid = await computedStyle(cardGrid(page), ['display', 'column-gap', 'row-gap']);
-		expect(grid.display).toBe('grid');
-		expect(grid['column-gap']).toBe(`${CARD_GAP_PX}px`);
-		expect(grid['row-gap']).toBe(`${CARD_GAP_PX}px`);
-		const gridBox = await boxOf(cardGrid(page), 'the card grid');
-		const count = await boxOf(resultCount(page), 'the result count');
-		expectPx(gridBox.y - (count.y + count.height), COUNT_TO_GRID_GAP_PX, 'count → grid gap');
-		expectPx(gridBox.width, want.resultsWidth, 'card grid width');
-		await expectCardTracks(page, want);
-	});
+	test(
+		'result count, 18px, then the card grid: auto-fill minmax(250px, 1fr), gap 20px',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			await openPopular(page, 'en');
+			const want = await expectedGeometry(page);
+			const grid = await computedStyle(cardGrid(page), ['display', 'column-gap', 'row-gap']);
+			expect(grid.display).toBe('grid');
+			expect(grid['column-gap']).toBe(`${CARD_GAP_PX}px`);
+			expect(grid['row-gap']).toBe(`${CARD_GAP_PX}px`);
+			const gridBox = await boxOf(cardGrid(page), 'the card grid');
+			const count = await boxOf(resultCount(page), 'the result count');
+			expectPx(gridBox.y - (count.y + count.height), COUNT_TO_GRID_GAP_PX, 'count → grid gap');
+			expectPx(gridBox.width, want.resultsWidth, 'card grid width');
+			await expectCardTracks(page, want);
+		}
+	);
 
 	test('the result count: 11.5px/700, .1em, uppercase, --ink-3, padding-top 10px', async ({
 		page
@@ -288,30 +292,32 @@ test.describe('Popular (desktop): the sticky sidebar', () => {
 		expect(got).toEqual({ position: 'sticky', top: `${STICKY_TOP_PX}px` });
 	});
 
-	test('the window scrolls the grid; the sidebar stays 28px under the viewport top', async ({
-		page
-	}) => {
-		const width = page.viewportSize()!.width;
-		await page.setViewportSize({ width, height: SHORT_VIEWPORT_HEIGHT_PX });
-		await openPopular(page, 'en');
-		const sidebarBefore = await boxOf(filterSidebar(page), 'the sidebar');
-		const cardBefore = await boxOf(dishCards(page).first(), 'the first card');
-		const scrolled = await page.evaluate(() => {
-			window.scrollTo(0, document.scrollingElement!.scrollHeight);
-			return window.scrollY;
-		});
-		expect(
-			scrolled,
-			'want the window scrolled past the sidebar start (window scroll model)'
-		).toBeGreaterThan(sidebarBefore.y - STICKY_TOP_PX);
-		await expect
-			.poll(async () => (await boxOf(filterSidebar(page), 'the sidebar')).y, {
-				message: 'want the sidebar stuck 28px under the viewport top'
-			})
-			.toBeCloseTo(STICKY_TOP_PX, 0);
-		const cardAfter = await boxOf(dishCards(page).first(), 'the first card');
-		expectPx(cardAfter.y, cardBefore.y - scrolled, 'first card after the window scroll');
-	});
+	test(
+		'the window scrolls the grid; the sidebar stays 28px under the viewport top',
+		{ tag: ['@layout', '@cross-browser'] },
+		async ({ page }) => {
+			const width = page.viewportSize()!.width;
+			await page.setViewportSize({ width, height: SHORT_VIEWPORT_HEIGHT_PX });
+			await openPopular(page, 'en');
+			const sidebarBefore = await boxOf(filterSidebar(page), 'the sidebar');
+			const cardBefore = await boxOf(dishCards(page).first(), 'the first card');
+			const scrolled = await page.evaluate(() => {
+				window.scrollTo(0, document.scrollingElement!.scrollHeight);
+				return window.scrollY;
+			});
+			expect(
+				scrolled,
+				'want the window scrolled past the sidebar start (window scroll model)'
+			).toBeGreaterThan(sidebarBefore.y - STICKY_TOP_PX);
+			await expect
+				.poll(async () => (await boxOf(filterSidebar(page), 'the sidebar')).y, {
+					message: 'want the sidebar stuck 28px under the viewport top'
+				})
+				.toBeCloseTo(STICKY_TOP_PX, 0);
+			const cardAfter = await boxOf(dishCards(page).first(), 'the first card');
+			expectPx(cardAfter.y, cardBefore.y - scrolled, 'first card after the window scroll');
+		}
+	);
 
 	test('no scroll container around the cards on desktop (the window is the scroller)', async ({
 		page
@@ -329,41 +335,51 @@ test.describe('Popular (desktop): the sticky sidebar', () => {
 		expect(scroller, 'got an overflow ancestor; sticky would stick to it').toBeNull();
 	});
 
-	test('ru with every chip: the stuck sidebar fits in the window, all groups visible', async ({
-		page
-	}) => {
-		const query = FILTER_IDS.map((id) => `&f=${id}`).join('');
-		await openPopular(page, 'ru', query);
-		const sidebar = await boxOf(filterSidebar(page), 'the sidebar');
-		const height = page.viewportSize()!.height;
-		expect(
-			STICKY_TOP_PX + sidebar.height,
-			'got a stuck sidebar taller than the window'
-		).toBeLessThanOrEqual(height);
-		for (const key of GROUP_KEYS) await expect(sidebarGroup(page, 'ru', key)).toBeVisible();
-	});
+	test(
+		'ru with every chip: the stuck sidebar fits in the window, all groups visible',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			const query = FILTER_IDS.map((id) => `&f=${id}`).join('');
+			await openPopular(page, 'ru', query);
+			const sidebar = await boxOf(filterSidebar(page), 'the sidebar');
+			const height = page.viewportSize()!.height;
+			expect(
+				STICKY_TOP_PX + sidebar.height,
+				'got a stuck sidebar taller than the window'
+			).toBeLessThanOrEqual(height);
+			for (const key of GROUP_KEYS) await expect(sidebarGroup(page, 'ru', key)).toBeVisible();
+		}
+	);
 
 	// Review (WCAG 2.4.7): in a window shorter than the stuck sidebar, the
 	// sidebar scrolls itself (capped at the window like StickyPanel), so Tab
 	// never focuses a chip below the viewport.
-	test('ru with every chip in a short window: Tab reveals the last chip', async ({ page }) => {
-		await page.setViewportSize(SHORT_WINDOW);
-		await openPopular(page, 'ru', FILTER_IDS.map((id) => `&f=${id}`).join(''));
-		const last = sidebarChip(page, 'ru', 'all-year');
-		await clearAllInSidebar(page, 'ru').focus();
-		for (let i = 0; i < FILTER_IDS.length && !(await isFocused(last)); i++) {
-			await page.keyboard.press('Tab');
+	test(
+		'ru with every chip in a short window: Tab reveals the last chip',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await page.setViewportSize(SHORT_WINDOW);
+			await openPopular(page, 'ru', FILTER_IDS.map((id) => `&f=${id}`).join(''));
+			const last = sidebarChip(page, 'ru', 'all-year');
+			await clearAllInSidebar(page, 'ru').focus();
+			for (let i = 0; i < FILTER_IDS.length && !(await isFocused(last)); i++) {
+				await page.keyboard.press('Tab');
+			}
+			await expect(last).toBeFocused();
+			const chip = await boxOf(last, 'the last chip');
+			const sidebar = await filterSidebar(page).evaluate((el) =>
+				el.getBoundingClientRect().toJSON()
+			);
+			expect(chip.y, 'chip top in the window').toBeGreaterThanOrEqual(0);
+			expect(chip.y + chip.height, 'chip bottom in the window').toBeLessThanOrEqual(
+				SHORT_WINDOW.height
+			);
+			expect(chip.y, 'chip top in the sidebar').toBeGreaterThanOrEqual(sidebar.top);
+			expect(chip.y + chip.height, 'chip bottom in the sidebar').toBeLessThanOrEqual(
+				sidebar.bottom
+			);
 		}
-		await expect(last).toBeFocused();
-		const chip = await boxOf(last, 'the last chip');
-		const sidebar = await filterSidebar(page).evaluate((el) => el.getBoundingClientRect().toJSON());
-		expect(chip.y, 'chip top in the window').toBeGreaterThanOrEqual(0);
-		expect(chip.y + chip.height, 'chip bottom in the window').toBeLessThanOrEqual(
-			SHORT_WINDOW.height
-		);
-		expect(chip.y, 'chip top in the sidebar').toBeGreaterThanOrEqual(sidebar.top);
-		expect(chip.y + chip.height, 'chip bottom in the sidebar').toBeLessThanOrEqual(sidebar.bottom);
-	});
+	);
 });
 
 const SHORT_WINDOW = { width: 960, height: 520 };
@@ -409,17 +425,21 @@ test.describe('Popular (desktop): sidebar content', () => {
 		await expect(filterSidebar(page).getByTestId(TEST_IDS.filterGroups)).toBeVisible();
 	});
 
-	test('ru: every chip label whole, wrapping inside the 220px column', async ({ page }) => {
-		await openPopular(page, 'ru', '&f=easter');
-		const report = await filterSidebar(page).evaluate((sidebar) => ({
-			clipped: [...sidebar.querySelectorAll('button')]
-				.filter((b) => b.scrollWidth > b.clientWidth + 1)
-				.map((b) => b.textContent?.trim()),
-			wider: sidebar.scrollWidth - sidebar.clientWidth
-		}));
-		expect(report.clipped, 'got clipped chip labels').toEqual([]);
-		expect(report.wider, 'got chips wider than the sidebar').toBeLessThanOrEqual(0);
-	});
+	test(
+		'ru: every chip label whole, wrapping inside the 220px column',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await openPopular(page, 'ru', '&f=easter');
+			const report = await filterSidebar(page).evaluate((sidebar) => ({
+				clipped: [...sidebar.querySelectorAll('button')]
+					.filter((b) => b.scrollWidth > b.clientWidth + 1)
+					.map((b) => b.textContent?.trim()),
+				wider: sidebar.scrollWidth - sidebar.clientWidth
+			}));
+			expect(report.clipped, 'got clipped chip labels').toEqual([]);
+			expect(report.wider, 'got chips wider than the sidebar').toBeLessThanOrEqual(0);
+		}
+	);
 });
 
 test.describe('Popular (desktop): sidebar style (prototype)', () => {
@@ -512,21 +532,25 @@ test.describe('Popular (desktop): sidebar chips drive the URL', () => {
 	test.beforeEach(({ page }) => skipOnMobile(page));
 
 	for (const lang of LOCALES) {
-		test(`${lang}: Vegetarian writes f=vegetarian, replaces the entry, keeps focus, no reload`, async ({
-			page
-		}) => {
-			await openPopular(page, lang);
-			await markDocument(page);
-			const before = await historyLength(page);
-			await sidebarChip(page, lang, 'vegetarian').click();
-			await expectUrl(page, `/${lang}/?tab=popular&f=vegetarian`);
-			await expectDishes(page, VEGETARIAN_DISHES, 'vegetarian');
-			await expect(resultCount(page)).toHaveText(POPULAR_COPY[lang].dishes[3]);
-			await expect(sidebarChip(page, lang, 'vegetarian')).toHaveAttribute('aria-pressed', 'true');
-			await expect(sidebarChip(page, lang, 'vegetarian')).toBeFocused();
-			expect(await historyLength(page), 'want the entry replaced').toBe(before);
-			await expectSameDocument(page, 'after a sidebar chip');
-		});
+		// One locale per engine: focus and history don't change with the language.
+		const tag = lang === 'en' ? ['@cross-browser'] : [];
+		test(
+			`${lang}: Vegetarian writes f=vegetarian, replaces the entry, keeps focus, no reload`,
+			{ tag },
+			async ({ page }) => {
+				await openPopular(page, lang);
+				await markDocument(page);
+				const before = await historyLength(page);
+				await sidebarChip(page, lang, 'vegetarian').click();
+				await expectUrl(page, `/${lang}/?tab=popular&f=vegetarian`);
+				await expectDishes(page, VEGETARIAN_DISHES, 'vegetarian');
+				await expect(resultCount(page)).toHaveText(POPULAR_COPY[lang].dishes[3]);
+				await expect(sidebarChip(page, lang, 'vegetarian')).toHaveAttribute('aria-pressed', 'true');
+				await expect(sidebarChip(page, lang, 'vegetarian')).toBeFocused();
+				expect(await historyLength(page), 'want the entry replaced').toBe(before);
+				await expectSameDocument(page, 'after a sidebar chip');
+			}
+		);
 	}
 
 	test('OR within a group, AND across groups: Tapas + Mains, then Quick', async ({ page }) => {
@@ -663,23 +687,25 @@ test.describe('Popular (desktop): cards open the Variations page', () => {
 		});
 	}
 
-	test('a click goes straight to the Variations page (client-side), no sheet; Back restores the filters', async ({
-		page
-	}) => {
-		await openPopular(page, 'en', '&f=vegetarian');
-		await markDocument(page);
-		await dishCard(page, 'tortilla').click();
-		await expectUrl(page, '/en/dishes/tortilla');
-		await expect(
-			page.getByRole('heading', { level: 1, name: DISH_NAMES.en.tortilla })
-		).toBeVisible();
-		await expectSameDocument(page, 'after a card click');
-		await page.goBack();
-		await expectUrl(page, '/en/?tab=popular&f=vegetarian');
-		await expectDishes(page, VEGETARIAN_DISHES, 'restored list');
-		await expect(sidebarChip(page, 'en', 'vegetarian')).toHaveAttribute('aria-pressed', 'true');
-		await expect(onlyVisible(page.getByRole('dialog'))).toHaveCount(0);
-	});
+	test(
+		'a click goes straight to the Variations page (client-side), no sheet; Back restores the filters',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await openPopular(page, 'en', '&f=vegetarian');
+			await markDocument(page);
+			await dishCard(page, 'tortilla').click();
+			await expectUrl(page, '/en/dishes/tortilla');
+			await expect(
+				page.getByRole('heading', { level: 1, name: DISH_NAMES.en.tortilla })
+			).toBeVisible();
+			await expectSameDocument(page, 'after a card click');
+			await page.goBack();
+			await expectUrl(page, '/en/?tab=popular&f=vegetarian');
+			await expectDishes(page, VEGETARIAN_DISHES, 'restored list');
+			await expect(sidebarChip(page, 'en', 'vegetarian')).toHaveAttribute('aria-pressed', 'true');
+			await expect(onlyVisible(page.getByRole('dialog'))).toHaveCount(0);
+		}
+	);
 
 	test('Enter on a focused card opens the Variations page', async ({ page }) => {
 		await openPopular(page, 'ru');

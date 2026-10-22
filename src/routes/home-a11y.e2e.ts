@@ -29,7 +29,12 @@ import {
 
 const MOBILE_PROJECT = 'chromium-mobile-390';
 const DESKTOP_PROJECT = 'chromium-desktop-1280';
-const SCAN_PROJECTS = [MOBILE_PROJECT, DESKTOP_PROJECT];
+// stack.md F4: one axe pass per engine. WebKit and Firefox run the scans
+// tagged @cross-browser (every scan in the full matrix).
+const MOBILE_ENGINE_PROJECTS = ['webkit-iphone'];
+const DESKTOP_ENGINE_PROJECTS = ['webkit-desktop-1440', 'firefox-desktop-1280'];
+const MOBILE_SCAN_PROJECTS = [MOBILE_PROJECT, ...MOBILE_ENGINE_PROJECTS];
+const SCAN_PROJECTS = [...MOBILE_SCAN_PROJECTS, DESKTOP_PROJECT, ...DESKTOP_ENGINE_PROJECTS];
 
 function onlyInScanProjects(testInfo: TestInfo) {
 	test.skip(
@@ -39,7 +44,10 @@ function onlyInScanProjects(testInfo: TestInfo) {
 }
 
 function onlyOnMobile(testInfo: TestInfo) {
-	test.skip(testInfo.project.name !== MOBILE_PROJECT, `the sheet scan runs in ${MOBILE_PROJECT}`);
+	test.skip(
+		!MOBILE_SCAN_PROJECTS.includes(testInfo.project.name),
+		`the sheet scan runs in ${MOBILE_SCAN_PROJECTS.join(', ')}`
+	);
 }
 
 test.describe('axe: WCAG 2.2 AA on the home screens', () => {
@@ -57,8 +65,10 @@ test.describe('axe: WCAG 2.2 AA on the home screens', () => {
 		'/en/?tab=popular&dish=tortilla',
 		'/ru/?tab=popular&f=vegetarian&dish=gazpacho'
 	];
+	const engineScans = ['/en/', '/en/regions/gal', '/en/?tab=popular'];
 	for (const url of urls) {
-		test(`${url} has no violations`, async ({ page }, testInfo) => {
+		const tag = engineScans.includes(url) ? ['@cross-browser'] : [];
+		test(`${url} has no violations`, { tag }, async ({ page }, testInfo) => {
 			onlyInScanProjects(testInfo);
 			await gotoHydrated(page, url);
 			await expectNoViolations(page, url);
@@ -80,13 +90,17 @@ test.describe('axe: WCAG 2.2 AA on the home screens', () => {
 		await expectNoViolations(page, '/ru/regions/gal (expanded)');
 	});
 
-	test('/en/regions/gal with the sheet expanded has no violations', async ({ page }, testInfo) => {
-		onlyOnMobile(testInfo);
-		await gotoHydrated(page, '/en/regions/gal');
-		await regionSheet(page).getByRole('button', { name: HANDLE_LABEL_EN }).click();
-		await expectSheetExpanded(page, GALICIA_EN.name);
-		await expectNoViolations(page, '/en/regions/gal (expanded)');
-	});
+	test(
+		'/en/regions/gal with the sheet expanded has no violations',
+		{ tag: '@cross-browser' },
+		async ({ page }, testInfo) => {
+			onlyOnMobile(testInfo);
+			await gotoHydrated(page, '/en/regions/gal');
+			await regionSheet(page).getByRole('button', { name: HANDLE_LABEL_EN }).click();
+			await expectSheetExpanded(page, GALICIA_EN.name);
+			await expectNoViolations(page, '/en/regions/gal (expanded)');
+		}
+	);
 });
 
 // FE-5 PR 2: the dish sheet expanded and the Filters sheet open, on mobile.
@@ -113,12 +127,17 @@ test.describe('axe: WCAG 2.2 AA with the Popular sheets open', () => {
 	] as const;
 	for (const { lang, query } of filtersOpen) {
 		const url = `/${lang}/?tab=popular${query}`;
-		test(`${url} with the Filters sheet open has no violations`, async ({ page }, testInfo) => {
-			onlyOnMobile(testInfo);
-			await gotoHydrated(page, url);
-			await openFiltersSheet(page, lang);
-			await expectNoViolations(page, `${url} (Filters sheet)`);
-		});
+		const tag = lang === 'en' ? ['@cross-browser'] : [];
+		test(
+			`${url} with the Filters sheet open has no violations`,
+			{ tag },
+			async ({ page }, testInfo) => {
+				onlyOnMobile(testInfo);
+				await gotoHydrated(page, url);
+				await openFiltersSheet(page, lang);
+				await expectNoViolations(page, `${url} (Filters sheet)`);
+			}
+		);
 	}
 
 	test('the Filters sheet over the dish sheet has no violations', async ({ page }, testInfo) => {
@@ -178,7 +197,11 @@ test.describe('axe: contrast decided everywhere on the mobile home', () => {
 // which WCAG 1.4.3 exempts from contrast, so every other contrast must be
 // decided (nothing left incomplete). Then the same with a card hovered
 // (lifted, with its shadow).
-const DESKTOP_POPULAR_PROJECTS = ['chromium-desktop-860', DESKTOP_PROJECT];
+const DESKTOP_POPULAR_PROJECTS = [
+	'chromium-desktop-860',
+	DESKTOP_PROJECT,
+	...DESKTOP_ENGINE_PROJECTS
+];
 
 function onlyInDesktopPopularProjects(testInfo: TestInfo) {
 	test.skip(
@@ -187,7 +210,8 @@ function onlyInDesktopPopularProjects(testInfo: TestInfo) {
 	);
 }
 
-test.describe('axe: WCAG 2.2 AA on desktop Popular', () => {
+// @layout: the scans also run at the narrowest desktop width (860).
+test.describe('axe: WCAG 2.2 AA on desktop Popular', { tag: '@layout' }, () => {
 	const scans = [
 		{ url: '/en/?tab=popular', empty: false },
 		{ url: '/es/?tab=popular&f=vegetarian', empty: false },
@@ -196,17 +220,20 @@ test.describe('axe: WCAG 2.2 AA on desktop Popular', () => {
 		{ url: '/ru/?tab=popular&f=seafood&f=easter', empty: true }
 	];
 	for (const { url, empty } of scans) {
-		test(`${url}: sidebar and ${empty ? 'empty state' : 'cards'} have no violations`, async ({
-			page
-		}, testInfo) => {
-			onlyInDesktopPopularProjects(testInfo);
-			await gotoHydrated(page, url);
-			await expect(filterSidebar(page)).toBeVisible();
-			const results = empty ? noMatch(page) : dishCards(page).first();
-			await expect(results).toBeVisible();
-			await expectNoViolations(page, url);
-			await expectContrastDecided(page, url);
-		});
+		const tag = url === '/en/?tab=popular' ? ['@cross-browser'] : [];
+		test(
+			`${url}: sidebar and ${empty ? 'empty state' : 'cards'} have no violations`,
+			{ tag },
+			async ({ page }, testInfo) => {
+				onlyInDesktopPopularProjects(testInfo);
+				await gotoHydrated(page, url);
+				await expect(filterSidebar(page)).toBeVisible();
+				const results = empty ? noMatch(page) : dishCards(page).first();
+				await expect(results).toBeVisible();
+				await expectNoViolations(page, url);
+				await expectContrastDecided(page, url);
+			}
+		);
 	}
 
 	test('/en/?tab=popular with a card hovered has no violations', async ({ page }, testInfo) => {

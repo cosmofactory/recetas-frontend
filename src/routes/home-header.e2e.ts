@@ -79,15 +79,19 @@ function hitsAtCentreOffset(control: Locator, dy: number): Promise<boolean> {
 
 test.describe('exactly one header at every width', () => {
 	for (const locale of LOCALES) {
-		test(`/${locale}/ shows one logo, one switch and one language button`, async ({ page }) => {
-			const copy = HOME_COPY[locale];
-			await gotoHydrated(page, `/${locale}/`);
-			await expect(logo(page), 'want one visible "Asadorov" logo').toHaveCount(1);
-			await expect(page.getByRole('tablist'), 'want one visible switch').toHaveCount(1);
-			await expect(languageButton(page, copy.language)).toHaveCount(1);
-			await expect(tab(page, copy.regional)).toBeVisible();
-			await expect(tab(page, copy.popular)).toBeVisible();
-		});
+		test(
+			`/${locale}/ shows one logo, one switch and one language button`,
+			{ tag: '@layout' },
+			async ({ page }) => {
+				const copy = HOME_COPY[locale];
+				await gotoHydrated(page, `/${locale}/`);
+				await expect(logo(page), 'want one visible "Asadorov" logo').toHaveCount(1);
+				await expect(page.getByRole('tablist'), 'want one visible switch').toHaveCount(1);
+				await expect(languageButton(page, copy.language)).toHaveCount(1);
+				await expect(tab(page, copy.regional)).toBeVisible();
+				await expect(tab(page, copy.popular)).toBeVisible();
+			}
+		);
 	}
 
 	test('the language button is a placeholder until FE-7: not expanded', async ({ page }) => {
@@ -118,29 +122,37 @@ test.describe('mobile header (< 860px)', () => {
 		});
 	}
 
-	test('logo: Instrument Serif 28px in ink, 20px from the left', async ({ page }) => {
-		skipUnlessMobile(page);
-		await gotoHydrated(page, '/en/');
-		const style = await computedStyle(logo(page), ['font-size', 'font-family', 'color']);
-		expect(style['font-size']).toBe(`${LOGO_SIZE}px`);
-		expect(style['font-family'].replace(/["']/g, '')).toMatch(/^Instrument Serif\s*,/);
-		expect(style.color).toBe(await tokenValue(page, 'color', 'var(--ink)'));
-		expectPx((await boxOf(logo(page), 'the logo')).x, MOBILE_HEADER.side, 'logo left');
-	});
+	test(
+		'logo: Instrument Serif 28px in ink, 20px from the left',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			skipUnlessMobile(page);
+			await gotoHydrated(page, '/en/');
+			const style = await computedStyle(logo(page), ['font-size', 'font-family', 'color']);
+			expect(style['font-size']).toBe(`${LOGO_SIZE}px`);
+			expect(style['font-family'].replace(/["']/g, '')).toMatch(/^Instrument Serif\s*,/);
+			expect(style.color).toBe(await tokenValue(page, 'color', 'var(--ink)'));
+			expectPx((await boxOf(logo(page), 'the logo')).x, MOBILE_HEADER.side, 'logo left');
+		}
+	);
 
-	test('row: buttons 22px from the top, search 20px from the right, gap 8px', async ({ page }) => {
-		skipUnlessMobile(page);
-		await gotoHydrated(page, '/en/');
-		const language = await boxOf(languageButton(page, 'Language'), 'the language button');
-		const search = await boxOf(searchButton(page, 'Search'), 'the search button');
-		const width = await page.evaluate(() => document.documentElement.clientWidth);
-		expectPx(language.y, MOBILE_HEADER.top, 'language button top');
-		expectPx(search.y, MOBILE_HEADER.top, 'search button top');
-		expectPx(right(search), width - MOBILE_HEADER.side, 'search button right');
-		expectPx(search.x - right(language), RIGHT_GROUP_GAP, 'gap language → search');
-	});
+	test(
+		'row: buttons 22px from the top, search 20px from the right, gap 8px',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			skipUnlessMobile(page);
+			await gotoHydrated(page, '/en/');
+			const language = await boxOf(languageButton(page, 'Language'), 'the language button');
+			const search = await boxOf(searchButton(page, 'Search'), 'the search button');
+			const width = await page.evaluate(() => document.documentElement.clientWidth);
+			expectPx(language.y, MOBILE_HEADER.top, 'language button top');
+			expectPx(search.y, MOBILE_HEADER.top, 'search button top');
+			expectPx(right(search), width - MOBILE_HEADER.side, 'search button right');
+			expectPx(search.x - right(language), RIGHT_GROUP_GAP, 'gap language → search');
+		}
+	);
 
-	test('row: the logo is centred on the buttons', async ({ page }) => {
+	test('row: the logo is centred on the buttons', { tag: '@layout' }, async ({ page }) => {
 		skipUnlessMobile(page);
 		await gotoHydrated(page, '/en/');
 		const logoBox = await boxOf(logo(page), 'the logo');
@@ -231,25 +243,33 @@ test.describe('mobile header (< 860px)', () => {
 		}
 	});
 
-	test('switch: 16px under the row, spanning the header width', async ({ page }) => {
-		skipUnlessMobile(page);
-		await gotoHydrated(page, '/en/');
-		const search = await boxOf(searchButton(page, 'Search'), 'the search button');
-		const track = await boxOf(page.getByRole('tablist'), 'the switch');
-		const width = await page.evaluate(() => document.documentElement.clientWidth);
-		expectPx(track.y - bottom(search), MOBILE_HEADER.gap, 'row → switch gap');
-		expectPx(track.x, MOBILE_HEADER.side, 'switch left');
-		expectPx(right(track), width - MOBILE_HEADER.side, 'switch right');
-	});
-
-	test('Russian tab labels fit at this width (no truncation)', async ({ page }) => {
-		skipUnlessMobile(page);
-		await gotoHydrated(page, '/ru/');
-		for (const name of [HOME_COPY.ru.regional, HOME_COPY.ru.popular]) {
-			const fits = await tab(page, name).evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
-			expect(fits, `got "${name}" wider than its tab`).toBe(true);
+	test(
+		'switch: 16px under the row, spanning the header width',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			skipUnlessMobile(page);
+			await gotoHydrated(page, '/en/');
+			const search = await boxOf(searchButton(page, 'Search'), 'the search button');
+			const track = await boxOf(page.getByRole('tablist'), 'the switch');
+			const width = await page.evaluate(() => document.documentElement.clientWidth);
+			expectPx(track.y - bottom(search), MOBILE_HEADER.gap, 'row → switch gap');
+			expectPx(track.x, MOBILE_HEADER.side, 'switch left');
+			expectPx(right(track), width - MOBILE_HEADER.side, 'switch right');
 		}
-	});
+	);
+
+	test(
+		'Russian tab labels fit at this width (no truncation)',
+		{ tag: ['@layout', '@cross-browser'] },
+		async ({ page }) => {
+			skipUnlessMobile(page);
+			await gotoHydrated(page, '/ru/');
+			for (const name of [HOME_COPY.ru.regional, HOME_COPY.ru.popular]) {
+				const fits = await tab(page, name).evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
+				expect(fits, `got "${name}" wider than its tab`).toBe(true);
+			}
+		}
+	);
 });
 
 test.describe('desktop top bar (≥ 860px)', () => {
@@ -262,11 +282,15 @@ test.describe('desktop top bar (≥ 860px)', () => {
 		});
 	}
 
-	test('the visible header is the desktop top bar, 76px plus its hairline', async ({ page }) => {
-		skipUnlessDesktop(page);
-		await gotoHydrated(page, '/en/');
-		const header = onlyVisible(page.locator('header')).filter({ has: page.getByRole('tablist') });
-		await expect(header).toHaveCount(1);
-		expectPx((await boxOf(header, 'the top bar')).height, TOP_BAR_OUTER_HEIGHT, 'top bar height');
-	});
+	test(
+		'the visible header is the desktop top bar, 76px plus its hairline',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			skipUnlessDesktop(page);
+			await gotoHydrated(page, '/en/');
+			const header = onlyVisible(page.locator('header')).filter({ has: page.getByRole('tablist') });
+			await expect(header).toHaveCount(1);
+			expectPx((await boxOf(header, 'the top bar')).height, TOP_BAR_OUTER_HEIGHT, 'top bar height');
+		}
+	);
 });

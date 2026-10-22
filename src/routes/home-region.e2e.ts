@@ -93,17 +93,21 @@ test.describe('mobile region sheet: opening', () => {
 		await expect(selectedRegions(page)).toHaveCount(0);
 	});
 
-	test('tapping a region opens /en/regions/:key with its sheet in peek', async ({ page }) => {
-		await gotoHydrated(page, '/en/');
-		await markDocument(page);
-		await tapRegion(page, 'gal');
-		await expectSameDocument(page, 'tapping a region');
-		await expectSheetPeek(page, GALICIA_EN.name);
-		await expectSheetShows(page, 'en', GALICIA_EN);
-		await expect(regionLink(page, 'gal')).toHaveAttribute('aria-current', 'true');
-	});
+	test(
+		'tapping a region opens /en/regions/:key with its sheet in peek',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await gotoHydrated(page, '/en/');
+			await markDocument(page);
+			await tapRegion(page, 'gal');
+			await expectSameDocument(page, 'tapping a region');
+			await expectSheetPeek(page, GALICIA_EN.name);
+			await expectSheetShows(page, 'en', GALICIA_EN);
+			await expect(regionLink(page, 'gal')).toHaveAttribute('aria-current', 'true');
+		}
+	);
 
-	test('a region deep link opens its sheet in peek', async ({ page }) => {
+	test('a region deep link opens its sheet in peek', { tag: '@layout' }, async ({ page }) => {
 		await gotoHydrated(page, '/ru/regions/gal');
 		await expectSheetPeek(page, GALICIA_RU.name);
 		await expectSheetShows(page, 'ru', GALICIA_RU);
@@ -118,20 +122,24 @@ test.describe('mobile region sheet: opening', () => {
 test.describe('mobile region sheet: handle', () => {
 	test.beforeEach(({ page }) => skipUnlessMobile(page));
 
-	test('the handle toggles peek ↔ expanded; the URL and history stay', async ({ page }) => {
-		await gotoHydrated(page, '/en/regions/gal');
-		const entries = await historyLength(page);
-		const handle = regionSheet(page).getByRole('button', { name: HANDLE_LABEL_EN, exact: true });
-		await handle.click();
-		await expectSheetExpanded(page, GALICIA_EN.name);
-		expect(pathAndQuery(page), 'got the URL changed by expanding').toBe('/en/regions/gal');
-		await handle.click();
-		await expectSheetPeek(page, GALICIA_EN.name);
-		expect(pathAndQuery(page), 'got the URL changed by collapsing').toBe('/en/regions/gal');
-		expect(await historyLength(page), 'got a history entry for the handle').toBe(entries);
-	});
+	test(
+		'the handle toggles peek ↔ expanded; the URL and history stay',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			await gotoHydrated(page, '/en/regions/gal');
+			const entries = await historyLength(page);
+			const handle = regionSheet(page).getByRole('button', { name: HANDLE_LABEL_EN, exact: true });
+			await handle.click();
+			await expectSheetExpanded(page, GALICIA_EN.name);
+			expect(pathAndQuery(page), 'got the URL changed by expanding').toBe('/en/regions/gal');
+			await handle.click();
+			await expectSheetPeek(page, GALICIA_EN.name);
+			expect(pathAndQuery(page), 'got the URL changed by collapsing').toBe('/en/regions/gal');
+			expect(await historyLength(page), 'got a history entry for the handle').toBe(entries);
+		}
+	);
 
-	test('expanded traps focus in the sheet', async ({ page }) => {
+	test('expanded traps focus in the sheet', { tag: '@cross-browser' }, async ({ page }) => {
 		await gotoHydrated(page, '/en/regions/gal');
 		await regionSheet(page).getByRole('button', { name: HANDLE_LABEL_EN }).click();
 		await expectSheetExpanded(page, GALICIA_EN.name);
@@ -168,18 +176,20 @@ test.describe('mobile region sheet: closing', () => {
 		await expect(selectedRegions(page)).toHaveCount(0);
 	});
 
-	test('the scrim close is a new history entry: Back reopens the region in peek', async ({
-		page
-	}) => {
-		await gotoHydrated(page, '/en/regions/gal');
-		await expectSheetPeek(page, GALICIA_EN.name);
-		await tapScrim(page);
-		await page.waitForURL((url) => url.pathname === '/en/');
-		await page.goBack();
-		await page.waitForURL((url) => url.pathname === '/en/regions/gal');
-		await expectSheetPeek(page, GALICIA_EN.name);
-		await expectSheetShows(page, 'en', GALICIA_EN);
-	});
+	test(
+		'the scrim close is a new history entry: Back reopens the region in peek',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await gotoHydrated(page, '/en/regions/gal');
+			await expectSheetPeek(page, GALICIA_EN.name);
+			await tapScrim(page);
+			await page.waitForURL((url) => url.pathname === '/en/');
+			await page.goBack();
+			await page.waitForURL((url) => url.pathname === '/en/regions/gal');
+			await expectSheetPeek(page, GALICIA_EN.name);
+			await expectSheetShows(page, 'en', GALICIA_EN);
+		}
+	);
 
 	test('Escape closes like the scrim: /en/, hidden, and Back reopens', async ({ page }) => {
 		await gotoHydrated(page, '/en/regions/gal');
@@ -241,7 +251,7 @@ test.describe('mobile region sheet: switching regions', () => {
 	});
 });
 
-test.describe('mobile region sheet: focus return', () => {
+test.describe('mobile region sheet: focus return', { tag: '@cross-browser' }, () => {
 	test.beforeEach(({ page }) => skipUnlessMobile(page));
 
 	test('closing from peek returns focus to the map region that opened it', async ({ page }) => {
@@ -293,13 +303,17 @@ test.describe('mobile region sheet without JavaScript', () => {
 	test.use({ javaScriptEnabled: false });
 	test.beforeEach(({ page }) => skipUnlessMobile(page));
 
-	test('/ru/regions/gal: the server-rendered sheet rests in peek in Russian', async ({ page }) => {
-		await page.goto('/ru/regions/gal');
-		await expectSheetPeek(page, GALICIA_RU.name);
-		await expectSheetShows(page, 'ru', GALICIA_RU);
-		const first = regionSheet(page).getByText(GALICIA_RU.description, { exact: true });
-		await expect(first).toBeInViewport();
-	});
+	test(
+		'/ru/regions/gal: the server-rendered sheet rests in peek in Russian',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			await page.goto('/ru/regions/gal');
+			await expectSheetPeek(page, GALICIA_RU.name);
+			await expectSheetShows(page, 'ru', GALICIA_RU);
+			const first = regionSheet(page).getByText(GALICIA_RU.description, { exact: true });
+			await expect(first).toBeInViewport();
+		}
+	);
 
 	test('/en/: the server-rendered sheet is hidden', async ({ page }) => {
 		await page.goto('/en/');
@@ -351,14 +365,18 @@ test.describe('desktop region panel', () => {
 		await expect(selectedRegions(page)).toHaveCount(1);
 	});
 
-	test('Back from a region returns the panel to Andalucía', async ({ page }) => {
-		await gotoHydrated(page, '/en/');
-		await tapRegion(page, 'gal');
-		await page.goBack();
-		await page.waitForURL((url) => url.pathname === '/en/');
-		await expect(regionPanel(page, ANDALUCIA_EN.name)).toBeVisible();
-		await expect(regionLink(page, 'and')).toHaveAttribute('aria-current', 'true');
-	});
+	test(
+		'Back from a region returns the panel to Andalucía',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await gotoHydrated(page, '/en/');
+			await tapRegion(page, 'gal');
+			await page.goBack();
+			await page.waitForURL((url) => url.pathname === '/en/');
+			await expect(regionPanel(page, ANDALUCIA_EN.name)).toBeVisible();
+			await expect(regionLink(page, 'and')).toHaveAttribute('aria-current', 'true');
+		}
+	);
 
 	test('clicking a panel row opens that variation’s recipe', async ({ page }) => {
 		await gotoHydrated(page, '/en/regions/gal');
@@ -513,37 +531,45 @@ async function maxScrollTop(container: Locator): Promise<number> {
 }
 
 test.describe('region details start scrolled to the top', () => {
-	test('desktop: scroll Andalucía down, click Galicia → the panel is back at the top', async ({
-		page
-	}) => {
-		skipUnlessDesktop(page);
-		await page.setViewportSize({ width: 1280, height: 800 });
-		await gotoHydrated(page, '/en/');
-		const scrolled = await scrollToBottom(regionPanel(page, ANDALUCIA_EN.name));
-		expect(scrolled, 'want the Andalucía panel to scroll at 1280×800').toBeGreaterThan(0);
-		await tapRegion(page, 'gal');
-		const panel = regionPanel(page, GALICIA_EN.name);
-		await expect(panel).toBeVisible();
-		await expect.poll(() => maxScrollTop(panel), { message: 'want the panel at the top' }).toBe(0);
-		await expect(panel.getByRole('heading', { level: 2, name: GALICIA_EN.name })).toBeInViewport();
-	});
+	test(
+		'desktop: scroll Andalucía down, click Galicia → the panel is back at the top',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			skipUnlessDesktop(page);
+			await page.setViewportSize({ width: 1280, height: 800 });
+			await gotoHydrated(page, '/en/');
+			const scrolled = await scrollToBottom(regionPanel(page, ANDALUCIA_EN.name));
+			expect(scrolled, 'want the Andalucía panel to scroll at 1280×800').toBeGreaterThan(0);
+			await tapRegion(page, 'gal');
+			const panel = regionPanel(page, GALICIA_EN.name);
+			await expect(panel).toBeVisible();
+			await expect
+				.poll(() => maxScrollTop(panel), { message: 'want the panel at the top' })
+				.toBe(0);
+			await expect(
+				panel.getByRole('heading', { level: 2, name: GALICIA_EN.name })
+			).toBeInViewport();
+		}
+	);
 
-	test('mobile: scroll the Andalucía sheet down, switch to Galicia → its body is at the top', async ({
-		page
-	}) => {
-		skipUnlessMobile(page);
-		// A short frame, so the peek sheet body has to scroll.
-		await page.setViewportSize({ width: 390, height: 600 });
-		await gotoHydrated(page, '/en/regions/and');
-		await expectSheetPeek(page, ANDALUCIA_EN.name);
-		const scrolled = await scrollToBottom(regionSheet(page));
-		expect(scrolled, 'want the Andalucía sheet body to scroll').toBeGreaterThan(0);
-		await activateRegion(page, 'gal');
-		await expectSheetPeek(page, GALICIA_EN.name);
-		await expect
-			.poll(() => maxScrollTop(regionSheet(page)), { message: 'want the sheet body at the top' })
-			.toBe(0);
-	});
+	test(
+		'mobile: scroll the Andalucía sheet down, switch to Galicia → its body is at the top',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			skipUnlessMobile(page);
+			// A short frame, so the peek sheet body has to scroll.
+			await page.setViewportSize({ width: 390, height: 600 });
+			await gotoHydrated(page, '/en/regions/and');
+			await expectSheetPeek(page, ANDALUCIA_EN.name);
+			const scrolled = await scrollToBottom(regionSheet(page));
+			expect(scrolled, 'want the Andalucía sheet body to scroll').toBeGreaterThan(0);
+			await activateRegion(page, 'gal');
+			await expectSheetPeek(page, GALICIA_EN.name);
+			await expect
+				.poll(() => maxScrollTop(regionSheet(page)), { message: 'want the sheet body at the top' })
+				.toBe(0);
+		}
+	);
 });
 
 // FE-4 PR 3 review, Andalucía without JavaScript. The server can't know the
@@ -565,15 +591,19 @@ async function selectedCellCount(page: Page, regionKey: string | null): Promise<
 test.describe('the desktop default selection without JavaScript', () => {
 	test.use({ javaScriptEnabled: false });
 
-	test('≥ 860px /en/: Andalucía’s cells, and only those, are --region-selected', async ({
-		page
-	}) => {
-		skipUnlessDesktop(page);
-		await page.goto('/en/');
-		const andalucia = await regionLink(page, 'and').locator('[data-map-cell]').count();
-		expect(await selectedCellCount(page, 'and'), 'want every Andalucía cell ink').toBe(andalucia);
-		expect(await selectedCellCount(page, null), 'got other regions drawn selected').toBe(andalucia);
-	});
+	test(
+		'≥ 860px /en/: Andalucía’s cells, and only those, are --region-selected',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			skipUnlessDesktop(page);
+			await page.goto('/en/');
+			const andalucia = await regionLink(page, 'and').locator('[data-map-cell]').count();
+			expect(await selectedCellCount(page, 'and'), 'want every Andalucía cell ink').toBe(andalucia);
+			expect(await selectedCellCount(page, null), 'got other regions drawn selected').toBe(
+				andalucia
+			);
+		}
+	);
 
 	test('≥ 860px /en/: aria-current stays client-only', async ({ page }) => {
 		skipUnlessDesktop(page);
@@ -581,7 +611,7 @@ test.describe('the desktop default selection without JavaScript', () => {
 		await expect(selectedRegions(page)).toHaveCount(0);
 	});
 
-	test('< 860px /en/: no region looks selected', async ({ page }) => {
+	test('< 860px /en/: no region looks selected', { tag: '@layout' }, async ({ page }) => {
 		skipUnlessMobile(page);
 		await page.goto('/en/');
 		expect(await selectedCellCount(page, null), 'got a region drawn selected on mobile').toBe(0);

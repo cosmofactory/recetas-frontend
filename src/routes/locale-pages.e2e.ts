@@ -67,16 +67,17 @@ test.describe('the URL wins over cookie and Accept-Language', () => {
 		});
 	}
 
-	test('a browser with lang=es renders /ru/dishes/tortilla in Russian', async ({
-		page,
-		baseURL
-	}) => {
-		await page.context().addCookies([{ name: 'lang', value: 'es', url: baseURL! }]);
-		await page.goto('/ru/dishes/tortilla');
-		expect(new URL(page.url()).pathname).toBe('/ru/dishes/tortilla');
-		await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
-		await expect(page.locator('h1')).toHaveText(PAGES[2].text.ru);
-	});
+	test(
+		'a browser with lang=es renders /ru/dishes/tortilla in Russian',
+		{ tag: '@cross-browser' },
+		async ({ page, baseURL }) => {
+			await page.context().addCookies([{ name: 'lang', value: 'es', url: baseURL! }]);
+			await page.goto('/ru/dishes/tortilla');
+			expect(new URL(page.url()).pathname).toBe('/ru/dishes/tortilla');
+			await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
+			await expect(page.locator('h1')).toHaveText(PAGES[2].text.ru);
+		}
+	);
 });
 
 test.describe('head tags (server-rendered)', () => {
@@ -210,7 +211,9 @@ test.describe('localised 404', () => {
 // where that block is hidden, the shell picks its own.
 test.describe('smoke in every locale', () => {
 	for (const locale of LOCALES) {
-		test(`/${locale}/ renders its heading without horizontal scroll`, async ({ page }) => {
+		// ru (Cyrillic fallback fonts, the longest labels) is the engine check.
+		const tag = locale === 'ru' ? ['@layout', '@cross-browser'] : ['@layout'];
+		test(`/${locale}/ renders its heading without horizontal scroll`, { tag }, async ({ page }) => {
 			const res = await page.goto(`/${locale}/`);
 			expect(res?.status(), `got status ${res?.status()}, want 200`).toBe(200);
 			await expect(page.locator('html')).toHaveAttribute('lang', locale);

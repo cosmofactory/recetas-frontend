@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('home page renders', async ({ page }) => {
+test('home page renders', { tag: '@cross-browser' }, async ({ page }) => {
 	const response = await page.goto('/');
 	expect(response?.status()).toBe(200);
 	// The home renders both layouts; only one <h1> shows at a time (FE-4).

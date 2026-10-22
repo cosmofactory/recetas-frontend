@@ -78,7 +78,7 @@ test.describe('GET /', () => {
 test.describe('a browser with a Russian UI language', () => {
 	test.use({ locale: 'ru-RU' });
 
-	test('lands on the Russian home page from /', async ({ page }) => {
+	test('lands on the Russian home page from /', { tag: '@cross-browser' }, async ({ page }) => {
 		const res = await page.goto('/');
 		expect(res?.status(), `got status ${res?.status()}, want 200`).toBe(200);
 		expect(new URL(page.url()).pathname, `got ${page.url()}, want /ru/`).toBe('/ru/');

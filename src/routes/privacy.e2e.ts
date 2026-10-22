@@ -56,7 +56,9 @@ function installStorageSpy() {
 
 test.describe('no client-side storage', () => {
 	for (const url of [...PAGE_URLS, '/', '/fr/']) {
-		test(`${url} writes no cookie or storage`, async ({ page, context }) => {
+		// One locale per engine: the storage APIs don't change with the language.
+		const tag = url.startsWith('/en/') || url === '/' ? ['@cross-browser'] : [];
+		test(`${url} writes no cookie or storage`, { tag }, async ({ page, context }) => {
 			await page.addInitScript(installStorageSpy);
 			await page.goto(url, { waitUntil: 'networkidle' });
 			const writes = await page.evaluate(

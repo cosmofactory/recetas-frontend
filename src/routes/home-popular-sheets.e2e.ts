@@ -192,14 +192,18 @@ test.describe('Filters sheet (mobile): opening', () => {
 		});
 	}
 
-	test('opening moves focus into the sheet; the URL and the history stay', async ({ page }) => {
-		await openPopular(page, 'en', '&f=quick');
-		const entries = await historyLength(page);
-		await openFiltersSheet(page, 'en');
-		await expect.poll(() => focusIsIn(filtersSheet(page, 'en'))).toBe(true);
-		expect(pathAndQuery(page), 'got the URL changed by opening').toBe('/en/?tab=popular&f=quick');
-		expect(await historyLength(page), 'got a history entry for opening').toBe(entries);
-	});
+	test(
+		'opening moves focus into the sheet; the URL and the history stay',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await openPopular(page, 'en', '&f=quick');
+			const entries = await historyLength(page);
+			await openFiltersSheet(page, 'en');
+			await expect.poll(() => focusIsIn(filtersSheet(page, 'en'))).toBe(true);
+			expect(pathAndQuery(page), 'got the URL changed by opening').toBe('/en/?tab=popular&f=quick');
+			expect(await historyLength(page), 'got a history entry for opening').toBe(entries);
+		}
+	);
 
 	test('the sheet shows the URL filters as pressed chips', async ({ page }) => {
 		await openPopular(page, 'en', '&f=pork&f=winter&f=quick');
@@ -314,16 +318,18 @@ test.describe('Filters sheet (mobile): chips drive the URL', () => {
 test.describe('Filters sheet (mobile): closing', () => {
 	test.beforeEach(({ page }) => skipOnDesktop(page));
 
-	test('"Show results" closes it; focus returns to the Filters button; the URL stays', async ({
-		page
-	}) => {
-		await openPopular(page, 'en', '&f=quick');
-		await openFiltersSheet(page, 'en');
-		await showResults(page, 'en').click();
-		await expectFiltersSheetClosed(page, 'en');
-		await expect(filtersButton(page)).toBeFocused();
-		expect(pathAndQuery(page)).toBe('/en/?tab=popular&f=quick');
-	});
+	test(
+		'"Show results" closes it; focus returns to the Filters button; the URL stays',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await openPopular(page, 'en', '&f=quick');
+			await openFiltersSheet(page, 'en');
+			await showResults(page, 'en').click();
+			await expectFiltersSheetClosed(page, 'en');
+			await expect(filtersButton(page)).toBeFocused();
+			expect(pathAndQuery(page)).toBe('/en/?tab=popular&f=quick');
+		}
+	);
 
 	test('Escape closes it; focus returns to the Filters button', async ({ page }) => {
 		await openPopular(page, 'en');
@@ -336,13 +342,17 @@ test.describe('Filters sheet (mobile): closing', () => {
 		expect(pathAndQuery(page)).toBe('/en/?tab=popular');
 	});
 
-	test('a scrim tap closes it; focus returns to the Filters button', async ({ page }) => {
-		await openPopular(page, 'en');
-		await openFiltersSheet(page, 'en');
-		await tapTopScrim(page);
-		await expectFiltersSheetClosed(page, 'en');
-		await expect(filtersButton(page)).toBeFocused();
-	});
+	test(
+		'a scrim tap closes it; focus returns to the Filters button',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await openPopular(page, 'en');
+			await openFiltersSheet(page, 'en');
+			await tapTopScrim(page);
+			await expectFiltersSheetClosed(page, 'en');
+			await expect(filtersButton(page)).toBeFocused();
+		}
+	);
 
 	test('closing after a chip press: the list behind shows the new filters', async ({ page }) => {
 		await openPopular(page, 'en');
@@ -359,15 +369,19 @@ test.describe('Filters sheet (mobile): closing', () => {
 test.describe('Filters sheet (mobile): keyboard and layout', () => {
 	test.beforeEach(({ page }) => skipOnDesktop(page));
 
-	test('Tab and Shift+Tab stay inside the open sheet', async ({ page }) => {
-		await openPopular(page, 'en');
-		await openFiltersSheet(page, 'en');
-		const sheet = filtersSheet(page, 'en');
-		await expectTabStaysInside(page, sheet);
-		await page.keyboard.down('Shift');
-		await expectTabStaysInside(page, sheet);
-		await page.keyboard.up('Shift');
-	});
+	test(
+		'Tab and Shift+Tab stay inside the open sheet',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await openPopular(page, 'en');
+			await openFiltersSheet(page, 'en');
+			const sheet = filtersSheet(page, 'en');
+			await expectTabStaysInside(page, sheet);
+			await page.keyboard.down('Shift');
+			await expectTabStaysInside(page, sheet);
+			await page.keyboard.up('Shift');
+		}
+	);
 
 	test('header: "Filters" 23px Instrument Serif, "Clear all" 12px/600 accent text', async ({
 		page
@@ -390,38 +404,40 @@ test.describe('Filters sheet (mobile): keyboard and layout', () => {
 		expect(clear.color).toBe(await tokenValue(page, 'color', 'var(--accent-text)'));
 	});
 
-	test('"Show results": the compact primary button (padding 14px, 13.5px, radius 13px), full width', async ({
-		page
-	}) => {
-		await openPopular(page, 'en');
-		await openFiltersSheet(page, 'en');
-		const button = showResults(page, 'en');
-		const got = await computedStyle(button, [
-			'padding-top',
-			'padding-left',
-			'font-size',
-			'font-weight',
-			'border-top-left-radius',
-			'background-color'
-		]);
-		expect(got['padding-top']).toBe('14px');
-		expect(got['padding-left']).toBe('14px');
-		expect(got['font-size']).toBe('13.5px');
-		expect(got['font-weight']).toBe('600');
-		expect(got['border-top-left-radius']).toBe(
-			await tokenValue(page, 'border-top-left-radius', 'var(--radius-button-compact)')
-		);
-		expect(got['background-color']).toBe(
-			await tokenValue(page, 'background-color', 'var(--bg-button)')
-		);
-		const sheetBox = await filtersSheet(page, 'en').boundingBox();
-		const buttonBox = await button.boundingBox();
-		const inner = sheetBox!.width - 2 * 20;
-		expect(
-			Math.abs(buttonBox!.width - inner),
-			'want it the sheet width minus 20px each side'
-		).toBeLessThanOrEqual(1);
-	});
+	test(
+		'"Show results": the compact primary button (padding 14px, 13.5px, radius 13px), full width',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			await openPopular(page, 'en');
+			await openFiltersSheet(page, 'en');
+			const button = showResults(page, 'en');
+			const got = await computedStyle(button, [
+				'padding-top',
+				'padding-left',
+				'font-size',
+				'font-weight',
+				'border-top-left-radius',
+				'background-color'
+			]);
+			expect(got['padding-top']).toBe('14px');
+			expect(got['padding-left']).toBe('14px');
+			expect(got['font-size']).toBe('13.5px');
+			expect(got['font-weight']).toBe('600');
+			expect(got['border-top-left-radius']).toBe(
+				await tokenValue(page, 'border-top-left-radius', 'var(--radius-button-compact)')
+			);
+			expect(got['background-color']).toBe(
+				await tokenValue(page, 'background-color', 'var(--bg-button)')
+			);
+			const sheetBox = await filtersSheet(page, 'en').boundingBox();
+			const buttonBox = await button.boundingBox();
+			const inner = sheetBox!.width - 2 * 20;
+			expect(
+				Math.abs(buttonBox!.width - inner),
+				'want it the sheet width minus 20px each side'
+			).toBeLessThanOrEqual(1);
+		}
+	);
 
 	test('order: header, then the four groups, then "Show results" last', async ({ page }) => {
 		await openPopular(page, 'en');
@@ -454,26 +470,31 @@ test.describe('Filters sheet (mobile): keyboard and layout', () => {
 		expect(onButton, 'want the Filters sheet on top').toBe('Filters');
 	});
 
-	test('ru at 360px: every chip label whole, nothing wider than the screen', async ({
-		page
-	}, testInfo) => {
-		test.skip(testInfo.project.name !== 'chromium-mobile-360', 'the narrow ru check runs at 360px');
-		await openPopular(page, 'ru');
-		await openFiltersSheet(page, 'ru');
-		for (const id of FILTER_IDS) {
-			await expect(sheetChip(page, 'ru', id)).toHaveText(SHEET_COPY.ru.labels[id]);
+	test(
+		'ru at 360px: every chip label whole, nothing wider than the screen',
+		{ tag: '@layout' },
+		async ({ page }, testInfo) => {
+			test.skip(
+				testInfo.project.name !== 'chromium-mobile-360',
+				'the narrow ru check runs at 360px'
+			);
+			await openPopular(page, 'ru');
+			await openFiltersSheet(page, 'ru');
+			for (const id of FILTER_IDS) {
+				await expect(sheetChip(page, 'ru', id)).toHaveText(SHEET_COPY.ru.labels[id]);
+			}
+			const report = await filtersSheet(page, 'ru').evaluate((sheet) => ({
+				clipped: [...sheet.querySelectorAll('button')]
+					.filter((b) => b.scrollWidth > b.clientWidth + 1)
+					.map((b) => b.textContent?.trim()),
+				overflow: sheet.scrollWidth - sheet.clientWidth,
+				pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+			}));
+			expect(report.clipped, 'got clipped labels').toEqual([]);
+			expect(report.overflow, 'got the sheet scrolling sideways').toBeLessThanOrEqual(0);
+			expect(report.pageOverflow, 'got the page widened').toBeLessThanOrEqual(0);
 		}
-		const report = await filtersSheet(page, 'ru').evaluate((sheet) => ({
-			clipped: [...sheet.querySelectorAll('button')]
-				.filter((b) => b.scrollWidth > b.clientWidth + 1)
-				.map((b) => b.textContent?.trim()),
-			overflow: sheet.scrollWidth - sheet.clientWidth,
-			pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
-		}));
-		expect(report.clipped, 'got clipped labels').toEqual([]);
-		expect(report.overflow, 'got the sheet scrolling sideways').toBeLessThanOrEqual(0);
-		expect(report.pageOverflow, 'got the page widened').toBeLessThanOrEqual(0);
-	});
+	);
 });
 
 test.describe('dish sheet (mobile): opening', () => {
@@ -535,7 +556,7 @@ test.describe('dish sheet (mobile): opening', () => {
 		expect(resets).toEqual(DISH_KEYS.map(() => 'false'));
 	});
 
-	test('a deep link opens the sheet in peek', async ({ page }) => {
+	test('a deep link opens the sheet in peek', { tag: '@layout' }, async ({ page }) => {
 		await openPopular(page, 'ru', '&dish=tortilla');
 		await expectSheetPeek(page, TORTILLA_SHEET.ru.name);
 	});
@@ -587,20 +608,22 @@ test.describe('dish sheet (mobile): closing', () => {
 		await expectSameDocument(page, 'Back from the dish sheet');
 	});
 
-	test('a scrim tap drops ?dish, keeps the filters, as a new entry: Back reopens', async ({
-		page
-	}) => {
-		await openPopular(page, 'en', '&f=vegetarian&dish=tortilla');
-		await expectSheetPeek(page, TORTILLA_EN.name);
-		const entries = await historyLength(page);
-		await tapTopScrim(page);
-		await expectUrl(page, '/en/?tab=popular&f=vegetarian');
-		await expectSheetHidden(page);
-		expect(await historyLength(page), 'want a new entry for the close').toBe(entries + 1);
-		await page.goBack();
-		await expectUrl(page, '/en/?tab=popular&f=vegetarian&dish=tortilla');
-		await expectSheetPeek(page, TORTILLA_EN.name);
-	});
+	test(
+		'a scrim tap drops ?dish, keeps the filters, as a new entry: Back reopens',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await openPopular(page, 'en', '&f=vegetarian&dish=tortilla');
+			await expectSheetPeek(page, TORTILLA_EN.name);
+			const entries = await historyLength(page);
+			await tapTopScrim(page);
+			await expectUrl(page, '/en/?tab=popular&f=vegetarian');
+			await expectSheetHidden(page);
+			expect(await historyLength(page), 'want a new entry for the close').toBe(entries + 1);
+			await page.goBack();
+			await expectUrl(page, '/en/?tab=popular&f=vegetarian&dish=tortilla');
+			await expectSheetPeek(page, TORTILLA_EN.name);
+		}
+	);
 
 	test('Escape closes it like the scrim (peek)', async ({ page }) => {
 		await openPopular(page, 'en', '&dish=paella');
@@ -618,40 +641,48 @@ test.describe('dish sheet (mobile): closing', () => {
 		await expectSheetHidden(page);
 	});
 
-	test('closing from peek returns focus to the card that opened it', async ({ page }) => {
-		await openPopular(page, 'en');
-		await activateCard(page, 'croquetas');
-		await expectSheetPeek(page, 'Croquetas');
-		await expect(dishCard(page, 'croquetas'), 'want focus kept on the card').toBeFocused();
-		await page.keyboard.press('Escape');
-		await expectUrl(page, '/en/?tab=popular');
-		await expectSheetHidden(page);
-		await expect(dishCard(page, 'croquetas'), 'want focus back on the card').toBeFocused();
-	});
+	test(
+		'closing from peek returns focus to the card that opened it',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await openPopular(page, 'en');
+			await activateCard(page, 'croquetas');
+			await expectSheetPeek(page, 'Croquetas');
+			await expect(dishCard(page, 'croquetas'), 'want focus kept on the card').toBeFocused();
+			await page.keyboard.press('Escape');
+			await expectUrl(page, '/en/?tab=popular');
+			await expectSheetHidden(page);
+			await expect(dishCard(page, 'croquetas'), 'want focus back on the card').toBeFocused();
+		}
+	);
 
 	// WebKit doesn't focus a link on tap, so after a pointer open the sheet
 	// must return focus to the tapped card without relying on it. Chromium
 	// does focus it, so the test cancels mousedown (no focus move, the click
 	// still navigates) to stand in for WebKit.
-	test('closing after a pointer tap returns focus to the tapped card', async ({ page }) => {
-		await openPopular(page, 'en');
-		const card = dishCard(page, 'gazpacho');
-		await card.evaluate((link) =>
-			link.addEventListener('mousedown', (event) => event.preventDefault())
-		);
-		await page.evaluate(() => document.activeElement?.setAttribute('data-focus-before-tap', ''));
-		await tapCard(page, 'gazpacho');
-		await expectSheetPeek(page, 'Cold soups');
-		await expect(card, 'want the tap to leave focus alone').not.toBeFocused();
-		const kept = await page.evaluate(
-			() => document.activeElement?.hasAttribute('data-focus-before-tap') ?? false
-		);
-		expect(kept, 'want focus still where it was before the tap').toBe(true);
-		await page.keyboard.press('Escape');
-		await expectUrl(page, '/en/?tab=popular');
-		await expectSheetHidden(page);
-		await expect(card, 'want focus back on the tapped card').toBeFocused();
-	});
+	test(
+		'closing after a pointer tap returns focus to the tapped card',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await openPopular(page, 'en');
+			const card = dishCard(page, 'gazpacho');
+			await card.evaluate((link) =>
+				link.addEventListener('mousedown', (event) => event.preventDefault())
+			);
+			await page.evaluate(() => document.activeElement?.setAttribute('data-focus-before-tap', ''));
+			await tapCard(page, 'gazpacho');
+			await expectSheetPeek(page, 'Cold soups');
+			await expect(card, 'want the tap to leave focus alone').not.toBeFocused();
+			const kept = await page.evaluate(
+				() => document.activeElement?.hasAttribute('data-focus-before-tap') ?? false
+			);
+			expect(kept, 'want focus still where it was before the tap').toBe(true);
+			await page.keyboard.press('Escape');
+			await expectUrl(page, '/en/?tab=popular');
+			await expectSheetHidden(page);
+			await expect(card, 'want focus back on the tapped card').toBeFocused();
+		}
+	);
 
 	test('closing from expanded returns focus to the card too', async ({ page }) => {
 		await openPopular(page, 'en');
@@ -693,25 +724,29 @@ test.describe('dish sheet (mobile): Back from the Variations page', () => {
 
 	for (const lang of LOCALES) {
 		const want = TORTILLA_SHEET[lang];
-		test(`${lang}: See all → /${lang}/dishes/tortilla, Back restores tab, filters and sheet`, async ({
-			page
-		}) => {
-			await openPopular(page, lang, '&f=vegetarian');
-			await tapCard(page, 'tortilla');
-			await expandDishSheet(page, want.name, lang);
-			await seeAllLink(page, lang).click();
-			await expectUrl(page, `/${lang}/dishes/tortilla`);
-			await expect(page.getByRole('heading', { level: 1, name: want.name })).toBeVisible();
-			await page.goBack();
-			await expectUrl(page, `/${lang}/?tab=popular&f=vegetarian&dish=tortilla`);
-			await expectSheetPeek(page, want.name);
-			await expect(tab(page, HOME_COPY[lang].popular).first()).toHaveAttribute(
-				'aria-selected',
-				'true'
-			);
-			await expect(quickChip(page, lang, 'vegetarian')).toHaveAttribute('aria-pressed', 'true');
-			await expectDishes(page, VEGETARIAN_DISHES, 'restored list');
-		});
+		// One locale per engine: history doesn't change with the language.
+		const tag = lang === 'en' ? ['@cross-browser'] : [];
+		test(
+			`${lang}: See all → /${lang}/dishes/tortilla, Back restores tab, filters and sheet`,
+			{ tag },
+			async ({ page }) => {
+				await openPopular(page, lang, '&f=vegetarian');
+				await tapCard(page, 'tortilla');
+				await expandDishSheet(page, want.name, lang);
+				await seeAllLink(page, lang).click();
+				await expectUrl(page, `/${lang}/dishes/tortilla`);
+				await expect(page.getByRole('heading', { level: 1, name: want.name })).toBeVisible();
+				await page.goBack();
+				await expectUrl(page, `/${lang}/?tab=popular&f=vegetarian&dish=tortilla`);
+				await expectSheetPeek(page, want.name);
+				await expect(tab(page, HOME_COPY[lang].popular).first()).toHaveAttribute(
+					'aria-selected',
+					'true'
+				);
+				await expect(quickChip(page, lang, 'vegetarian')).toHaveAttribute('aria-pressed', 'true');
+				await expectDishes(page, VEGETARIAN_DISHES, 'restored list');
+			}
+		);
 	}
 });
 
@@ -719,15 +754,17 @@ test.describe('dish sheet (mobile) without JavaScript', () => {
 	test.use({ javaScriptEnabled: false });
 	test.beforeEach(({ page }) => skipOnDesktop(page));
 
-	test('/ru/?tab=popular&dish=tortilla: the server-rendered sheet rests in peek in Russian', async ({
-		page
-	}) => {
-		await page.goto('/ru/?tab=popular&dish=tortilla');
-		await expectSheetPeek(page, TORTILLA_SHEET.ru.name);
-		await expect(
-			dishSheet(page).getByText(TORTILLA_SHEET.ru.description, { exact: true })
-		).toBeInViewport();
-	});
+	test(
+		'/ru/?tab=popular&dish=tortilla: the server-rendered sheet rests in peek in Russian',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			await page.goto('/ru/?tab=popular&dish=tortilla');
+			await expectSheetPeek(page, TORTILLA_SHEET.ru.name);
+			await expect(
+				dishSheet(page).getByText(TORTILLA_SHEET.ru.description, { exact: true })
+			).toBeInViewport();
+		}
+	);
 });
 
 test.describe('stacking: the Filters sheet over the dish sheet (mobile)', () => {
@@ -750,18 +787,22 @@ test.describe('stacking: the Filters sheet over the dish sheet (mobile)', () => 
 		expect(top, 'want the Filters sheet over the dish sheet').toBe('Filters');
 	});
 
-	test('Escape closes the Filters sheet first, then the dish sheet', async ({ page }) => {
-		await openBoth(page);
-		await page.keyboard.press('Escape');
-		await expectFiltersSheetClosed(page, 'en');
-		await expectSheetPeek(page, TORTILLA_EN.name);
-		expect(pathAndQuery(page), 'got the dish sheet closed by the first Escape').toBe(
-			'/en/?tab=popular&dish=tortilla'
-		);
-		await page.keyboard.press('Escape');
-		await expectUrl(page, '/en/?tab=popular');
-		await expectSheetHidden(page);
-	});
+	test(
+		'Escape closes the Filters sheet first, then the dish sheet',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await openBoth(page);
+			await page.keyboard.press('Escape');
+			await expectFiltersSheetClosed(page, 'en');
+			await expectSheetPeek(page, TORTILLA_EN.name);
+			expect(pathAndQuery(page), 'got the dish sheet closed by the first Escape').toBe(
+				'/en/?tab=popular&dish=tortilla'
+			);
+			await page.keyboard.press('Escape');
+			await expectUrl(page, '/en/?tab=popular');
+			await expectSheetHidden(page);
+		}
+	);
 
 	test('a filter pressed in the Filters sheet closes the dish sheet under it', async ({ page }) => {
 		await openBoth(page);
@@ -775,15 +816,19 @@ test.describe('stacking: the Filters sheet over the dish sheet (mobile)', () => 
 test.describe('desktop (≥ 860px) ignores the mobile sheets', () => {
 	test.beforeEach(({ page }) => skipUnlessDesktop(page));
 
-	test('?dish=tortilla opens no sheet or panel; Escape changes nothing', async ({ page }) => {
-		await openPopular(page, 'en', '&dish=tortilla');
-		await expect(onlyVisible(page.getByRole('dialog'))).toHaveCount(0);
-		await expect(onlyVisible(page.getByTestId('dish-details'))).toHaveCount(0);
-		await page.keyboard.press('Escape');
-		expect(pathAndQuery(page)).toBe('/en/?tab=popular&dish=tortilla');
-	});
+	test(
+		'?dish=tortilla opens no sheet or panel; Escape changes nothing',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			await openPopular(page, 'en', '&dish=tortilla');
+			await expect(onlyVisible(page.getByRole('dialog'))).toHaveCount(0);
+			await expect(onlyVisible(page.getByTestId('dish-details'))).toHaveCount(0);
+			await page.keyboard.press('Escape');
+			expect(pathAndQuery(page)).toBe('/en/?tab=popular&dish=tortilla');
+		}
+	);
 
-	test('no Filters button and no Filters sheet', async ({ page }) => {
+	test('no Filters button and no Filters sheet', { tag: '@layout' }, async ({ page }) => {
 		await openPopular(page, 'en');
 		await expect(
 			onlyVisible(page.getByRole('button', { name: 'Filters', exact: true }))
