@@ -19,9 +19,10 @@ const MENU_IDS: Record<Layout, string> = {
 
 // One header's language button and menu (APG menu button). The menu is in
 // memory; the server renders the button as a <summary> (LanguageButton
-// `summary`) so the menu opens without JavaScript, and hydration swaps in the
-// real button. The menu closes when its header is hidden by the 860px
-// switch. Create during component init.
+// `summary`) so the menu opens without JavaScript, with plain links for
+// rows; hydration swaps in the real button and the menu roles. The menu
+// closes when its header is hidden by the 860px switch. Create during
+// component init.
 export class LanguageMenuState {
 	hydrated = $state(false);
 	open = $state(false);
@@ -62,7 +63,8 @@ export class LanguageMenuState {
 			onClose: this.#close,
 			opener: this.opener,
 			size: this.#layout,
-			initialFocus: this.focus
+			initialFocus: this.focus,
+			hydrated: this.hydrated
 		};
 	}
 

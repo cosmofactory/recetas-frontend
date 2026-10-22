@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { localeNames, locales, type Locale } from '#lib/i18n/locales.ts';
 	import { languageSwitchHref, type PageLocation } from '#lib/i18n/set-lang.ts';
 	import { m } from '#lib/paraglide/messages.js';
-	import { menuItemIndex, type MenuFocus } from '#lib/ui/menu-keys.ts';
+	import { menuKeyboard } from '#lib/ui/menu-keyboard.svelte.ts';
+	import type { MenuFocus } from '#lib/ui/menu-keys.ts';
 	import { motionFor, prefersReducedMotion } from '#lib/ui/motion.svelte.ts';
-	import { sheetKeyboard } from '#lib/ui/sheet-keyboard.svelte.ts';
+	import OutsideTapLayer from './OutsideTapLayer.svelte';
 
 	// The header's language menu (both READMEs -> Overlay — Language menu),
 	// an APG menu of links to /set-lang, controlled like OverlaySheet: `open`
@@ -13,7 +13,9 @@
 	// returns to `opener` once it hides. lang: the page's locale (the ✓
 	// row); url: the page URL, which every row keeps in its own locale.
 	// initialFocus: the row focused on opening (ArrowUp on the button opens
-	// on the last). Without JavaScript a <details> around it shows it.
+	// on the last). hydrated: false in the server HTML, where a <details>
+	// around it shows it and the rows are plain links in the Tab order (no
+	// menu roles, no tabindex="-1", never inert).
 	type Props = {
 		id: string;
 		open: boolean;
@@ -23,6 +25,7 @@
 		opener?: HTMLElement;
 		size?: 'mobile' | 'desktop';
 		initialFocus?: MenuFocus;
+		hydrated?: boolean;
 	};
 
 	let {
@@ -33,7 +36,8 @@
 		onClose,
 		opener,
 		size = 'mobile',
-		initialFocus = 'first'
+		initialFocus = 'first',
+		hydrated = true
 	}: Props = $props();
 
 	const labelId = $derived(`${id}-label`);
@@ -47,44 +51,24 @@
 	);
 
 	let menu: HTMLElement | undefined = $state();
-	// The server HTML is never inert, so the links work without JavaScript.
-	let hydrated = $state(false);
 	const fade = $derived(motionFor(prefersReducedMotion.current) === 'fade');
+	// Spread: the roles exist only once hydrated (the server HTML is plain
+	// links), which the compiler's static a11y checks can't follow.
+	const menuRole = $derived(
+		hydrated ? { role: 'menu', tabindex: -1, 'aria-labelledby': labelId } : {}
+	);
+	const itemRole = $derived(hydrated ? { role: 'menuitem', tabindex: -1 } : {});
 
-	onMount(() => {
-		hydrated = true;
-	});
-
-	sheetKeyboard({
-		sheet: () => menu,
-		kind: 'menu',
-		shown: () => open,
-		modal: () => false,
-		onEscape: () => onClose(),
+	const onkeydown = menuKeyboard({
+		menu: () => menu,
+		open: () => open,
+		initialFocus: () => initialFocus,
+		onClose: () => onClose(),
 		opener: () => opener
 	});
-
-	const items = () => [...(menu?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
-
-	$effect(() => {
-		if (!open) return;
-		const all = items();
-		all[initialFocus === 'last' ? all.length - 1 : 0]?.focus();
-	});
-
-	// Tab leaves the menu (and closes it); the arrows, Home and End move focus.
-	function onkeydown(event: KeyboardEvent) {
-		if (event.key === 'Tab') return onClose();
-		const all = items();
-		const current = all.indexOf(document.activeElement as HTMLElement);
-		const next = menuItemIndex(event.key, current, all.length);
-		if (next === undefined) return;
-		event.preventDefault();
-		all[next].focus();
-	}
 </script>
 
-<div class="catch" class:open aria-hidden="true" onclick={onClose}></div>
+<OutsideTapLayer {open} onclick={onClose} />
 <div
 	bind:this={menu}
 	{id}
@@ -92,9 +76,7 @@
 	class:open
 	class:desktop={size === 'desktop'}
 	class:fade
-	role="menu"
-	tabindex="-1"
-	aria-labelledby={labelId}
+	{...menuRole}
 	inert={hydrated && !open}
 	{onkeydown}
 >
@@ -103,8 +85,7 @@
 		<a
 			class="row"
 			class:current={row.current}
-			role="menuitem"
-			tabindex="-1"
+			{...itemRole}
 			lang={row.code}
 			href={row.href}
 			aria-current={row.current ? 'true' : undefined}
@@ -121,18 +102,6 @@
 </div>
 
 <style>
-	/* "A transparent full-screen layer behind it closes it on outside tap." */
-	.catch {
-		position: fixed;
-		inset: 0;
-		z-index: var(--z-menu);
-		display: none;
-	}
-
-	.catch.open {
-		display: block;
-	}
-
 	/*
 	 * Mobile README: "top 70px in 2a …; right 16px), width 200px, bg surface,
 	 * 1px --border-card, radius 14px, shadow …, padding 6px. Opens with

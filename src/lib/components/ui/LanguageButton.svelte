@@ -62,14 +62,18 @@
 	 * 1.5px --border-chip, 12px/700, letter-spacing .08em: current code + small
 	 * ▾ (9px, opacity .55)"; the prototype adds "gap:6px" and the search
 	 * button's hover. 40px is the outer height, like the IconButton beside it.
+	 * The <summary> and the <button> also share the UA-dependent box and text
+	 * styles, so hydration swapping one for the other shifts nothing.
 	 */
 	.language-button {
 		position: relative;
+		appearance: none;
 		display: flex;
 		flex: none;
 		align-items: center;
 		gap: 6px;
 		height: 40px;
+		margin: 0;
 		padding: 0 12px 0 14px;
 		border: 1.5px solid var(--border-chip);
 		border-radius: var(--radius-pill);
@@ -77,6 +81,10 @@
 		color: var(--ink);
 		font: 700 12px var(--font-text);
 		letter-spacing: 0.08em;
+		text-align: center;
+		text-indent: 0;
+		text-transform: none;
+		word-spacing: normal;
 		cursor: pointer;
 		transition: background-color var(--dur-colour);
 	}
