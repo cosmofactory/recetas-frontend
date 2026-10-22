@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { MediaQuery } from 'svelte/reactivity';
 	import { desktopQuery } from '#lib/ui/breakpoints.ts';
+	import { scrollSnapshot } from '#lib/ui/scroll-snapshot.ts';
 	import FilterBar from './FilterBar.svelte';
 	import FiltersSheet from './FiltersSheet.svelte';
 
@@ -23,6 +24,9 @@
 	});
 
 	let filterBar: ReturnType<typeof FilterBar> | undefined = $state();
+
+	// The bar's sideways-scrolled chips come back with the entry (D-FE6-1).
+	scrollSnapshot('home-filter-bar', () => filterBar?.chipRow());
 
 	export function focusFiltersButton() {
 		filterBar?.focusFiltersButton();

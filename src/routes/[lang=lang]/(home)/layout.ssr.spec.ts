@@ -3,6 +3,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import bundle from '#lib/server/mock/content.bundle.json';
 import { buildView } from '#lib/server/mock/bundle-mapping.ts';
 import { loadExport } from '../../../testutil/load-export';
+import {
+	decodeAmp,
+	elementHtml,
+	headingTexts,
+	startTags,
+	visibleText,
+	type StartTag
+} from '../../../testutil/html';
 import type { Lang, Region } from '../../../testutil/map';
 
 // FE-4 PR 2, the home shell rendered on the server (svelte/server). Stage
@@ -98,15 +106,6 @@ afterEach(() => {
 	vi.doUnmock('$app/state');
 	vi.doUnmock('$app/navigation');
 });
-
-// The text a reader sees: no tags, no hydration comments, collapsed spaces.
-function visibleText(html: string): string {
-	return html
-		.replace(/<!--[\s\S]*?-->/g, '')
-		.replace(/<[^>]+>/g, ' ')
-		.replace(/\s+/g, ' ')
-		.trim();
-}
 
 type Tab = { tag: string; href: string | null; selected: boolean; label: string };
 
@@ -327,18 +326,6 @@ describe('(home) layout: tabs are links', { timeout: COLD_COMPILE_TIMEOUT_MS }, 
 // hidden (inert) and the panel shows Andalucía. The region name is an <h2>
 // (the page's <h1>s stay the logo and the about title).
 
-type StartTag = { name: string; attrs: Record<string, string> };
-
-function startTags(html: string): StartTag[] {
-	const tags = html.replace(/<!--[\s\S]*?-->/g, '').match(/<[a-zA-Z][^>]*>/g) ?? [];
-	return tags.map((tag) => ({
-		name: /^<([a-zA-Z0-9-]+)/.exec(tag)![1].toLowerCase(),
-		attrs: Object.fromEntries(
-			[...tag.matchAll(/\s([a-zA-Z:-]+)(?:="([^"]*)")?/g)].map((m) => [m[1], m[2] ?? ''])
-		)
-	}));
-}
-
 function sheetTag(html: string): StartTag {
 	const dialogs = startTags(html).filter((t) => t.attrs.role === 'dialog');
 	expect(dialogs.length, 'want one region sheet (role="dialog") in the HTML').toBe(1);
@@ -360,11 +347,6 @@ function panelNames(html: string): string[] {
 	return startTags(html)
 		.filter((t) => t.name === 'section' && t.attrs['aria-label'] !== undefined)
 		.map((t) => t.attrs['aria-label']);
-}
-
-function headingTexts(html: string, level: 1 | 2 | 3): string[] {
-	const pattern = new RegExp(`<h${level}\\b[^>]*>([\\s\\S]*?)</h${level}>`, 'g');
-	return [...html.matchAll(pattern)].map((m) => visibleText(m[1]));
 }
 
 const GALICIA_RU = {
@@ -526,8 +508,6 @@ describe('(home) layout: one <main> landmark', { timeout: COLD_COMPILE_TIMEOUT_M
 //   the empty state is desktop.noMatch plus a "Clear all" action.
 // - The Popular panel has its own <h2>, the tab label (home.popular): the
 //   desktop <h1> lives in the Regional panel, which is hidden on Popular.
-
-const decodeAmp = (href: string) => href.replaceAll('&amp;', '&');
 
 // From the Popular panel's start tag to the end of <main> (it is the last panel).
 function popularPanel(html: string): string {
@@ -702,34 +682,6 @@ function dishSheetTag(html: string, name: string): StartTag {
 	);
 	expect(sheets.length, `want one dialog named "${name}"`).toBe(1);
 	return sheets[0];
-}
-
-const VOID_TAGS = new Set([
-	'area',
-	'br',
-	'col',
-	'hr',
-	'img',
-	'input',
-	'link',
-	'meta',
-	'source',
-	'wbr'
-]);
-const TAG = /<!--[\s\S]*?-->|<\/?([a-zA-Z][a-zA-Z0-9-]*)\b[^>]*?(\/?)>/g;
-
-// The HTML of the element whose start tag begins at `start`, up to its
-// matching end tag (void and self-closed tags don't nest).
-function elementHtml(html: string, start: number): string {
-	TAG.lastIndex = start;
-	let depth = 0;
-	for (let match = TAG.exec(html); match; match = TAG.exec(html)) {
-		const [tag, name, selfClosed] = match;
-		if (!name || selfClosed || VOID_TAGS.has(name.toLowerCase())) continue;
-		depth += tag.startsWith('</') ? -1 : 1;
-		if (depth === 0) return html.slice(start, TAG.lastIndex);
-	}
-	throw new Error('got an unclosed element in the HTML');
 }
 
 // The HTML inside the dialog named `name`.

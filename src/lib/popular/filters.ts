@@ -1,4 +1,5 @@
 import type { components } from '#lib/api/schema.d.ts';
+import { localizedHref } from '#lib/i18n/localized-href.ts';
 import { POPULAR, TAB_PARAM } from '#lib/ui/home-tab.ts';
 
 type Dish = components['schemas']['Dish'];
@@ -103,6 +104,11 @@ export const clearFiltersHref = (url: FilterUrl): string => popularHref(url.path
 // A dish card's link: the same filtered list with that dish's sheet open.
 export const dishSheetHref = (url: FilterUrl, dishKey: string): string =>
 	popularHref(url.pathname, parseFilters(url), [[DISH_PARAM, dishKey]]);
+
+// A dish's sheet over the unfiltered Popular list, /:lang/?tab=popular&dish=<key>:
+// where the Variations page's back button goes on a direct entry (stage FE-6).
+export const popularDishHref = (lang: string, dishKey: string): string =>
+	popularHref(localizedHref('/', lang), [], [[DISH_PARAM, dishKey]]);
 
 // The dish whose sheet the URL opens, if any (the key may be unknown).
 export const openDishKey = (url: DishUrl) => url.searchParams.get(DISH_PARAM) ?? undefined;

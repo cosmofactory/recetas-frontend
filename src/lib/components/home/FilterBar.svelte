@@ -26,10 +26,17 @@
 	export function focusFiltersButton() {
 		filtersButton?.focus();
 	}
+
+	let row: HTMLDivElement | undefined = $state();
+
+	// The sideways-scrolling row, for a screen that keeps its offset.
+	export function chipRow(): HTMLDivElement | undefined {
+		return row;
+	}
 </script>
 
 <div class="filter-bar" data-testid="filter-bar">
-	<ChipRow>
+	<ChipRow bind:element={row}>
 		<button
 			bind:this={filtersButton}
 			type="button"
