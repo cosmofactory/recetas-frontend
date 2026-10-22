@@ -1,4 +1,5 @@
 import { goto } from '$app/navigation';
+import { page } from '$app/state';
 import type { Locale } from '#lib/i18n/locales.ts';
 import { searchResultHref } from '#lib/search/result-href.ts';
 import type { SearchEntry } from '#lib/search/search-index.ts';
@@ -17,10 +18,17 @@ export async function goToSearchResult(entry: SearchEntry, { lang, tab }: Search
 	// The hrefs go through localizedHref; the app has no paths.base to resolve().
 	// eslint-disable-next-line svelte/no-navigation-without-resolve
 	if (entry.group === 'region') return goto(href, { reset: false });
-	if (tab !== POPULAR) {
-		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		await goto(tabHref(POPULAR, lang), { replace: true, reset: false });
-	}
+	if (tab !== POPULAR && !(await replaceWithPopular(lang))) return;
 	// eslint-disable-next-line svelte/no-navigation-without-resolve
 	return goto(href);
+}
+
+// Whether the replace landed. A newer navigation that supersedes it makes
+// Kit resolve goto rather than reject it, so only the URL tells; pushing
+// Variations on top of that newer page would be wrong.
+async function replaceWithPopular(lang: Locale): Promise<boolean> {
+	const popularHref = tabHref(POPULAR, lang);
+	// eslint-disable-next-line svelte/no-navigation-without-resolve
+	await goto(popularHref, { replace: true, reset: false });
+	return page.url.href === new URL(popularHref, page.url.href).href;
 }

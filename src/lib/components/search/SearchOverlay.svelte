@@ -43,10 +43,11 @@
 		modal: () => open,
 		onEscape: () => onClose(),
 		opener: () => opener,
-		focusOnModal: false
+		initialFocus: 'container'
 	});
 
-	// README: "Input auto-focuses after the transition".
+	// README: "Input auto-focuses after the transition"; until then the trap
+	// holds focus on the dialog itself.
 	$effect(() => {
 		if (!open || !dialog) return;
 		let current = true;

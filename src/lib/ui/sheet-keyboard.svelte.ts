@@ -1,6 +1,6 @@
 import { untrack } from 'svelte';
 import { pushEscapeLayer, type EscapeLayerKind } from './escape-layers.ts';
-import { rememberFocus, trapFocus } from './focus-trap.ts';
+import { rememberFocus, trapFocus, type InitialFocus } from './focus-trap.ts';
 
 type SheetKeyboardOptions = {
 	sheet: () => HTMLElement | undefined;
@@ -14,8 +14,8 @@ type SheetKeyboardOptions = {
 	// The control that opened it, when the screen knows (WebKit doesn't focus
 	// a link on click); otherwise the focused element.
 	opener?: () => HTMLElement | undefined;
-	// false: going modal doesn't move focus in; the layer does it itself.
-	focusOnModal?: boolean;
+	// Where focus moves when it goes modal (trapFocus's initialFocus).
+	initialFocus?: InitialFocus;
 };
 
 // Another sheet (role="dialog"), whose own focus return moves focus here.
@@ -62,6 +62,6 @@ export function sheetKeyboard(options: SheetKeyboardOptions) {
 	$effect(() => {
 		const sheet = options.sheet();
 		if (!modal || !sheet) return;
-		return trapFocus(sheet, { moveFocus: options.focusOnModal ?? true });
+		return trapFocus(sheet, { initialFocus: options.initialFocus });
 	});
 }
