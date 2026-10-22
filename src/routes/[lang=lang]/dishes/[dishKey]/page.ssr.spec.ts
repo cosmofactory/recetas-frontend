@@ -113,6 +113,18 @@ function cardHrefs(html: string): string[] {
 	return cardsIn(html).map((card) => decodeAmp(startTags(card)[0].attrs.href ?? ''));
 }
 
+const LANGUAGE_MENU_IDS = ['language-menu-desktop', 'language-menu-mobile'];
+
+// The body with each language menu element cut out (its current-language
+// row legitimately carries aria-current).
+function withoutLanguageMenus(html: string): string {
+	let rest = html;
+	for (const id of LANGUAGE_MENU_IDS) {
+		for (const menu of elementsWith(rest, ` id="${id}"`)) rest = rest.replace(menu, '');
+	}
+	return rest;
+}
+
 function linkTags(html: string) {
 	return startTags(html).filter((t) => t.name === 'a');
 }
@@ -251,6 +263,16 @@ describe(
 				);
 			}
 			expect(body).not.toMatch(/\b(best|primary|featured|highlight)\b/i);
+		});
+
+		it('has no aria-current anywhere outside the language menu', async () => {
+			// Catches a highlight on a wrapper around the cards, not only on a card.
+			const rest = withoutLanguageMenus((await renderPage({ lang: 'en' })).body);
+			const marked = startTags(rest).filter((t) => 'aria-current' in t.attrs);
+			expect(
+				marked.map((t) => `<${t.name}>`),
+				'got aria-current outside the menu'
+			).toEqual([]);
 		});
 
 		it('renders no map', async () => {

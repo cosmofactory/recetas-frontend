@@ -13,6 +13,7 @@ import {
 	expectPx
 } from '../testutil/home-e2e';
 import { expectUrl } from '../testutil/home-flow-e2e';
+import { elementsWith, startTags } from '../testutil/html';
 import {
 	CURRENT_MARK,
 	LANGUAGE_ROWS,
@@ -415,7 +416,43 @@ test.describe('language menu without JavaScript', () => {
 			await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
 		}
 	);
+
+	// The no-JS form is plain links inside <details>: Tab from the opened
+	// summary must reach them (a tabindex="-1" row is skipped).
+	test(
+		'keyboard: Enter opens it, Tab reaches the first row, Enter on Русский switches',
+		{ tag: ['@cross-browser'] },
+		async ({ page }) => {
+			const rest = '/regions/gal';
+			await page.goto(`/es${rest}`);
+			await noJsButton(page).focus();
+			await page.keyboard.press('Enter');
+			await page.keyboard.press('Tab');
+			const focused = await focusedHref(page);
+			expect(focused, `got focus on ${focused}`).toBe(switchHref(LANGUAGE_ROWS[0].code, rest));
+			await tabTo(page, switchHref('ru', rest));
+			await page.keyboard.press('Enter');
+			await expectUrl(page, `/ru${rest}`);
+			await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
+		}
+	);
 });
+
+// The focused element's href (decoded), or its tag when it is not a link.
+function focusedHref(page: Page): Promise<string> {
+	return page.evaluate(() => {
+		const el = document.activeElement;
+		return el?.getAttribute('href') ?? `(focus on <${el?.tagName.toLowerCase()}>)`;
+	});
+}
+
+async function tabTo(page: Page, href: string) {
+	for (let i = 0; i < LANGUAGE_ROWS.length; i++) {
+		if ((await focusedHref(page)) === href) return;
+		await page.keyboard.press('Tab');
+	}
+	expect(await focusedHref(page), `want Tab to reach ${href}`).toBe(href);
+}
 
 test.describe('language menu: server HTML', () => {
 	const pages = [
@@ -435,5 +472,33 @@ test.describe('language menu: server HTML', () => {
 				expect(html.includes(`href="${href}"`), `want a link to ${href}`).toBe(true);
 			}
 		});
+
+		// Before hydration the menu is plain links in a <details>; menu roles and
+		// roving tabindex="-1" would take the rows out of the no-JS Tab order.
+		test(`${url}: the server menu is plain links, no menu roles or tabindex -1`, async ({
+			request
+		}, testInfo) => {
+			onlyInHtmlProject(testInfo);
+			const menus = serverMenus(await (await getRaw(request, url)).text());
+			expect(menus.length, 'got no language menu in the server HTML').toBeGreaterThan(0);
+			for (const menu of menus) {
+				const tags = startTags(menu);
+				const id = tags[0].attrs.id;
+				const roles = tags.map((t) => t.attrs.role).filter((r) => MENU_ROLES.has(r));
+				expect(roles, `${id}: got menu roles`).toEqual([]);
+				const rows = tags.filter((t) => t.name === 'a');
+				expect(rows.length, `${id}: want a link per language`).toBe(LANGUAGE_ROWS.length);
+				const minusOne = rows.filter((t) => t.attrs.tabindex === '-1').map((t) => t.attrs.lang);
+				expect(minusOne, `${id}: got rows with tabindex="-1"`).toEqual([]);
+			}
+		});
 	}
 });
+
+const SERVER_MENU_IDS = ['language-menu-mobile', 'language-menu-desktop'];
+const MENU_ROLES = new Set(['menu', 'menuitem']);
+
+// Each language menu element in the page HTML.
+function serverMenus(html: string): string[] {
+	return SERVER_MENU_IDS.flatMap((id) => elementsWith(html, ` id="${id}"`));
+}

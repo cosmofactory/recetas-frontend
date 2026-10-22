@@ -334,6 +334,24 @@ describe('LanguageMenu keyboard', () => {
 		});
 	}
 
+	// Focus can sit on the menu itself (tabindex -1), e.g. after a click on its
+	// padding or eyebrow: ArrowUp then goes to the last row, ArrowDown to the first.
+	const fromContainer = [
+		{ key: '{ArrowUp}', want: 'Русский' },
+		{ key: '{ArrowDown}', want: 'English' }
+	];
+	for (const { key, want } of fromContainer) {
+		it(`${key} from the menu container focuses ${want}`, async () => {
+			const { frame, onClose } = await renderMenu();
+			const menu = menuIn(frame);
+			menu.focus();
+			expect(document.activeElement, 'got the menu not focusable').toBe(menu);
+			await userEvent.keyboard(key);
+			expect(focusedRowName(frame)).toBe(want);
+			expect(onClose).not.toHaveBeenCalled();
+		});
+	}
+
 	it('asks to close on Escape', async () => {
 		const { frame, onClose } = await renderMenu();
 		await focusRow(frame, 1);
