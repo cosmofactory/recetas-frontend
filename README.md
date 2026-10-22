@@ -23,9 +23,9 @@ pnpm test:e2e
 
 ```bash
 pnpm build
-# PUBLIC_ORIGIN is required (src/env.ts); so is BACKEND_API_BASE_URL unless DATA_SOURCE=mock.
-PUBLIC_ORIGIN=http://localhost:3000 BACKEND_API_BASE_URL=http://localhost:8080 pnpm start
-PUBLIC_ORIGIN=http://localhost:3000 DATA_SOURCE=mock pnpm start   # no backend: the vendored content bundle
+# PUBLIC_ORIGIN and APP_ENV are required (src/env.ts); so is BACKEND_API_BASE_URL unless DATA_SOURCE=mock.
+APP_ENV=local PUBLIC_ORIGIN=http://localhost:3000 BACKEND_API_BASE_URL=http://localhost:8080 pnpm start
+APP_ENV=local PUBLIC_ORIGIN=http://localhost:3000 DATA_SOURCE=mock pnpm start   # no backend: the vendored content bundle
 ```
 
 | Variable                      | Required                 | Notes                                                                        |
@@ -36,7 +36,7 @@ PUBLIC_ORIGIN=http://localhost:3000 DATA_SOURCE=mock pnpm start   # no backend: 
 | `MEDIA_BASE_URL`              | no (until INF-4)         | CloudFront base for photos, https with an optional path; unset: placeholders |
 | `LOGFIRE_TOKEN`               | no                       | Logfire write token; unset: server telemetry off (stack.md B7)               |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | with `LOGFIRE_TOKEN`     | Logfire regional OTLP base URL, https; traces go to `<url>/v1/traces`        |
-| `APP_ENV`                     | with `LOGFIRE_TOKEN`     | `local`, `demo` or `prod` (`deployment.environment.name`)                    |
+| `APP_ENV`                     | yes (outside `vite dev`) | `local`, `demo` or `prod`; only `prod` is indexable (robots, X-Robots-Tag)   |
 | `OTEL_SERVICE_NAME`           | no                       | default `recetas-frontend`                                                   |
 | `APP_VERSION`                 | no                       | `service.version`; the Dockerfile sets it from the image tag (default `dev`) |
 

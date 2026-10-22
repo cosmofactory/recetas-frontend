@@ -36,6 +36,10 @@ LABEL org.opencontainers.image.source="https://github.com/cosmofactory/recetas-f
 #                  hreflang URLs are built from it (src/env.ts); the server
 #                  refuses to start without it. adapter-node 6 no longer reads
 #                  ORIGIN; the request origin comes from the Host header.
+#   APP_ENV        required, `local`, `demo` or `prod` (src/env.ts). Only prod
+#                  is indexable: anything else answers robots.txt
+#                  `Disallow: /` and sends `X-Robots-Tag: noindex` (FE-8). It
+#                  is also the telemetry deployment.environment.name.
 #   BACKEND_API_BASE_URL  required, the internal API origin, e.g.
 #                  http://backend:8080 (never public, stack.md X4).
 #   DATA_SOURCE    optional, `api` (default) or `mock` (tests only).
@@ -44,9 +48,8 @@ LABEL org.opencontainers.image.source="https://github.com/cosmofactory/recetas-f
 #                  every photo renders as the placeholder.
 #   LOGFIRE_TOKEN  optional, the Logfire write token (INF-3). Unset: server
 #                  telemetry is off. Set: OTEL_EXPORTER_OTLP_ENDPOINT (https,
-#                  the Logfire regional base URL) and APP_ENV (local, demo or
-#                  prod) are required too; the server refuses to start
-#                  without them (stack.md B7).
+#                  the Logfire regional base URL) is required too; the
+#                  server refuses to start without it (stack.md B7).
 #   OTEL_SERVICE_NAME optional, default recetas-frontend.
 #   APP_VERSION    baked in from the VERSION build arg (service.version).
 ARG VERSION=dev

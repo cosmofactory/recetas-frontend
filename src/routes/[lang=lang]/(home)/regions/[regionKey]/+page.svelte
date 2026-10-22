@@ -1,5 +1,7 @@
 <script lang="ts">
+	import PageHead from '#lib/components/PageHead.svelte';
 	import { regionTitle } from '#lib/components/home/home-head.ts';
+	import { ogImageUrl } from '#lib/seo/og-image.ts';
 	import type { PageProps } from './$types';
 
 	// The region renders in the (home) layout (map selection, sheet and
@@ -7,7 +9,8 @@
 	let { data }: PageProps = $props();
 </script>
 
-<svelte:head>
-	<title>{regionTitle(data.region.name)}</title>
-	<meta name="description" content={data.region.description} />
-</svelte:head>
+<PageHead
+	title={regionTitle(data.region.name)}
+	description={data.region.description}
+	image={ogImageUrl({ origin: data.origin })}
+/>
