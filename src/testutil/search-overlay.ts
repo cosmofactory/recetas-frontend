@@ -130,9 +130,14 @@ export async function renderSearch(spec: RenderSpec = {}) {
 }
 
 // The overlay's dialog (named like the header's search button).
+const SEARCH_DIALOG_NAMES = new Set(Object.values(SEARCH_COPY).map((copy) => copy.dialog));
+
+// Found by its accessible name, so another dialog (the Filters sheet) earlier
+// in the DOM can't be mistaken for it.
 export function searchDialog(frame: HTMLElement): HTMLElement {
-	const dialog = frame.querySelector<HTMLElement>('[role="dialog"]');
-	expect(dialog, 'got no role="dialog" element').not.toBeNull();
+	const dialogs = [...frame.querySelectorAll<HTMLElement>('[role="dialog"]')];
+	const dialog = dialogs.find((el) => SEARCH_DIALOG_NAMES.has(accessibleNameOf(el)));
+	expect(dialog, 'got no role="dialog" named as the search').toBeDefined();
 	return dialog!;
 }
 

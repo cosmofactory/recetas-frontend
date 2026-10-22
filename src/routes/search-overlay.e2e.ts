@@ -2,7 +2,12 @@ import { expect, test, type Page } from '@playwright/test';
 import { gotoHydrated, onlyVisible, pathAndQuery } from '../testutil/home-e2e';
 import { expectUrl, HOME_WITH_FILTERS } from '../testutil/home-flow-e2e';
 import { skipOnDesktop } from '../testutil/popular-e2e';
-import { expectSheetPeek, historyLength } from '../testutil/region-e2e';
+import {
+	expectSheetHidden,
+	expectSheetPeek,
+	historyLength,
+	tapScrim
+} from '../testutil/region-e2e';
 import {
 	nothingFor,
 	SEARCH_COPY,
@@ -58,6 +63,22 @@ test.beforeEach(({ page }) =>
 	skipOnDesktop(page, 'the mobile search overlay (desktop is FE-7 PR 4)')
 );
 
+async function expectCoversScreen(page: Page) {
+	const { width, height } = page.viewportSize()!;
+	const points = [
+		[4, 4],
+		[width / 2, height / 2],
+		[width - 4, height - 4]
+	];
+	const covered = await searchDialog(page, 'en').evaluate(
+		(dialog, pts) => pts.map(([x, y]) => dialog.contains(document.elementFromPoint(x, y))),
+		points
+	);
+	expect(covered, `got points outside the overlay: ${JSON.stringify(points)}`).toEqual(
+		points.map(() => true)
+	);
+}
+
 async function pickResult(page: Page, lang: SearchLocale, group: 0 | 1 | 2, title: string) {
 	await resultOption(resultGroup(page, lang, group), title).click();
 }
@@ -74,28 +95,21 @@ test.describe('search overlay: opening and closing', () => {
 		await expect(button).toHaveAttribute('aria-expanded', 'true');
 	});
 
-	test(
-		'covers the whole screen, above an open region sheet',
-		{ tag: ['@layout'] },
-		async ({ page }) => {
-			await gotoHydrated(page, '/en/regions/gal');
-			await expectSheetPeek(page, 'Galicia');
-			await openSearch(page, 'en');
-			const { width, height } = page.viewportSize()!;
-			const points = [
-				[4, 4],
-				[width / 2, height / 2],
-				[width - 4, height - 4]
-			];
-			const covered = await searchDialog(page, 'en').evaluate(
-				(dialog, pts) => pts.map(([x, y]) => dialog.contains(document.elementFromPoint(x, y))),
-				points
-			);
-			expect(covered, `got points outside the overlay: ${JSON.stringify(points)}`).toEqual(
-				points.map(() => true)
-			);
-		}
-	);
+	// Over home content only: every other home layer (the region sheet's
+	// scrim, the modal Filters sheet) covers the header, search button included.
+	for (const url of ['/en/', '/en/?tab=popular']) {
+		test(
+			`covers the whole screen, above the home content at ${url}`,
+			{
+				tag: ['@layout']
+			},
+			async ({ page }) => {
+				await gotoHydrated(page, url);
+				await openSearch(page, 'en');
+				await expectCoversScreen(page);
+			}
+		);
+	}
 
 	test(
 		'works from the keyboard: Enter opens, Escape closes and refocuses the button',
@@ -189,6 +203,10 @@ test.describe('search overlay: selecting a result', () => {
 
 	test("the Variations page's back link also lands on Popular", async ({ page }) => {
 		await gotoHydrated(page, '/en/regions/gal');
+		await expectSheetPeek(page, 'Galicia');
+		// The sheet's scrim covers the header: hide the sheet to reach search.
+		await tapScrim(page);
+		await expectSheetHidden(page);
 		await searchFor(page, 'en', 'tortilla');
 		await pickResult(page, 'en', DISHES, 'Tortilla de patatas');
 		await expectUrl(page, '/en/dishes/tortilla');
