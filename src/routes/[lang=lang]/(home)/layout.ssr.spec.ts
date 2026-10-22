@@ -954,8 +954,9 @@ describe('(home) layout: ids in the server HTML', { timeout: COLD_COMPILE_TIMEOU
 });
 
 // FE-7 PR 2 review: the search overlay needs JavaScript, so it is mounted
-// only once hydrated and the server HTML has no search dialog (and so no
-// combobox): the region sheet stays the one dialog on the bare home.
+// only once hydrated and the server HTML has no search dialog: the region
+// sheet stays the one dialog on the bare home. The one combobox in the server
+// HTML is the desktop field, disabled until hydration enables it.
 describe(
 	'(home) layout: no search dialog in the server HTML',
 	{ timeout: COLD_COMPILE_TIMEOUT_MS },
@@ -966,14 +967,17 @@ describe(
 			{ lang: 'ru', path: '/ru/' }
 		];
 		for (const { lang, path } of paths) {
-			it(`${path}: no dialog named "${COPY[lang].search}" and no combobox`, async () => {
+			it(`${path}: no dialog named "${COPY[lang].search}"; one disabled combobox`, async () => {
 				const tags = startTags(await renderHome({ lang, path }));
 				const search = tags.filter(
 					(t) => t.attrs.role === 'dialog' && t.attrs['aria-label'] === COPY[lang].search
 				);
 				expect(search.length, 'got a search dialog in the server HTML').toBe(0);
 				const comboboxes = tags.filter((t) => t.attrs.role === 'combobox');
-				expect(comboboxes.length, 'got a search combobox in the server HTML').toBe(0);
+				expect(comboboxes.length, 'want only the desktop field as a combobox').toBe(1);
+				expect(comboboxes[0].attrs, 'want the server-rendered field disabled').toHaveProperty(
+					'disabled'
+				);
 			});
 		}
 

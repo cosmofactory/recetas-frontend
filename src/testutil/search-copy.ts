@@ -71,3 +71,14 @@ export const RESULT_TEST_IDS = {
 	subtitle: 'search-result-subtitle',
 	field: 'search-field'
 } as const;
+
+// FE-7 PR 4, the desktop top-bar field: strings.json desktop.ph (the
+// mobile overlay's search.placeholder is shorter).
+export const DESKTOP_PLACEHOLDER: Record<SearchLocale, string> = {
+	en: 'Search dishes, variations, regions',
+	es: 'Busca platos, variantes, regiones',
+	ru: 'Поиск блюд, вариантов, регионов'
+};
+
+// Test id on the desktop search's dropdown (FE-7 PR 4 contract).
+export const DROPDOWN_TEST_ID = 'search-dropdown';

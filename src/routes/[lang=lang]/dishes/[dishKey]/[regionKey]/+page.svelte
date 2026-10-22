@@ -27,7 +27,7 @@
 	const recipeId = $derived(`${recipe.dishKey}/${recipe.regionKey}`);
 	let origin = $state<BackOrigin | null>(null);
 	const back = inAppBack('recipe-back', (next) => (origin = next));
-	const pill = $derived(recipeBackPill(origin, recipe, lang));
+	const pill = $derived(recipeBackPill(origin, recipe, lang, data));
 </script>
 
 <svelte:head>
@@ -35,7 +35,7 @@
 	<meta name="description" content={recipe.description} />
 </svelte:head>
 
-<DishPagesTopBar {lang} tab={originTab(origin)} url={page.url} />
+<DishPagesTopBar {lang} tab={originTab(origin)} url={page.url} catalog={data} />
 <main class="recipe page-container">
 	<div class="top-bar-slot mobile-only">
 		<StickyTopBar

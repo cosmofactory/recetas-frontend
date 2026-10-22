@@ -6,6 +6,8 @@
 	import MobileHeader from '#lib/components/home/MobileHeader.svelte';
 	import PopularTab from '#lib/components/home/PopularTab.svelte';
 	import RegionalTab from '#lib/components/home/RegionalTab.svelte';
+	import DesktopSearch from '#lib/components/search/DesktopSearch.svelte';
+	import { DesktopSearchState } from '#lib/components/search/desktop-search.svelte.ts';
 	import SearchOverlay from '#lib/components/search/SearchOverlay.svelte';
 	import { tabOptions } from '#lib/components/home/home-header.ts';
 	import DesktopTopBar from '#lib/components/ui/DesktopTopBar.svelte';
@@ -58,11 +60,17 @@
 
 	const toggleFilter = (id: string) => void replaceFilters(toggleFilterHref(page.url, id));
 
-	const search = new HomeSearch({ catalog: () => data, lang: () => lang, tab: () => tab });
+	const desktopSearch = new DesktopSearchState({ catalog: () => data, lang: () => lang });
+	const mobileSearch = new HomeSearch({
+		catalog: () => data,
+		lang: () => lang,
+		tab: () => tab,
+		onWiden: () => desktopSearch.focusField()
+	});
 	const searchButton = $derived({
 		label: m.a11y_search(),
-		expanded: search.open,
-		onclick: search.openFrom
+		expanded: mobileSearch.open,
+		onclick: mobileSearch.openFrom
 	});
 
 	const tabs = $derived({ value: tab, label: m.a11y_homeTabs(), onChange: replaceTab });
@@ -85,6 +93,9 @@
 		tabs={{ ...tabs, options: tabOptions(lang, false) }}
 		language={desktopLanguage.button(lang)}
 	>
+		{#snippet search()}
+			<DesktopSearch {...desktopSearch.props} bind:input={desktopSearch.field} />
+		{/snippet}
 		{#snippet languageMenu()}
 			<LanguageMenu {...desktopLanguage.menu(lang, page.url)} />
 		{/snippet}
@@ -113,13 +124,13 @@
 		</HomeTabPanel>
 	</main>
 	{@render children()}
-	{#if search.hydrated}
+	{#if mobileSearch.hydrated}
 		<SearchOverlay
-			open={search.open}
-			index={search.index}
-			onClose={search.close}
-			onSelect={search.select}
-			opener={search.opener}
+			open={mobileSearch.open}
+			index={mobileSearch.index}
+			onClose={mobileSearch.close}
+			onSelect={mobileSearch.select}
+			opener={mobileSearch.opener}
 		/>
 	{/if}
 </div>

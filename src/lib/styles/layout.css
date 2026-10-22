@@ -86,6 +86,14 @@
 	--radius-search-thumb: 9px;
 
 	/*
+	 * Desktop search (desktop README -> Top bar): the dropdown's "shadow 0
+	 * 18px 44px rgba(43,30,22,.2)"; the prototype's field border while it is
+	 * open (searchBd) is rgba(43,30,22,.45).
+	 */
+	--shadow-search-dropdown: 0 18px 44px rgba(43, 30, 22, 0.2);
+	--border-field-open: rgba(43, 30, 22, 0.45);
+
+	/*
 	 * Language menu (both READMEs -> Overlay — Language menu): "shadow 0 14px
 	 * 34px rgba(43,30,22,.18) … opacity 0→1 (180ms) and translateY −6px→0
 	 * (220ms --ease)". It and its outside-tap layer sit above a peeking
