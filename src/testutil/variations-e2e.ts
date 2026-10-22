@@ -1,15 +1,9 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
-import { isDesktopPage, tokenValue } from './home-e2e';
+import { expect, type Locator, type Page } from '@playwright/test';
+import { tokenValue } from './home-e2e';
 import { PAGE_COPY, VARIATION_CARD_TEST_ID, type VariationsLocale } from './variations-copy';
 
 // Shared fixtures for the FE-6 Variations page Playwright specs. Content is
 // the vendored mock bundle (DATA_SOURCE=mock); copy is in variations-copy.ts.
-
-// Stage FE-6 -> Small decisions: until PR 4 desktop renders the mobile
-// layout, and desktop checks start in PR 4.
-export function skipOnDesktopUntilPr4(page: Page) {
-	test.skip(isDesktopPage(page), 'desktop Variations layout is FE-6 PR 4');
-}
 
 export const variationCards = (page: Page): Locator => page.getByTestId(VARIATION_CARD_TEST_ID);
 

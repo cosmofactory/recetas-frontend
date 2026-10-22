@@ -119,4 +119,44 @@
 		text-wrap: pretty;
 		transition: color var(--dur-colour);
 	}
+
+	/*
+	 * Desktop README -> Recipe page: "steps use 42px number circles and 18px
+	 * text (lh 1.6, max 640px)"; the prototype: heading 34px, no list gap,
+	 * rows "gap:22px; padding:24px 0" over a --border-card line, the number
+	 * 15px and the text's padding-top 7px.
+	 */
+	@media (min-width: 860px) {
+		.method,
+		.steps {
+			gap: 0;
+		}
+
+		.method {
+			padding: 0;
+		}
+
+		.heading {
+			font-size: 34px;
+		}
+
+		.step {
+			gap: 22px;
+			padding: 24px 0;
+			border-bottom-color: var(--border-card);
+		}
+
+		.number {
+			width: 42px;
+			height: 42px;
+			font-size: 15px;
+		}
+
+		.text {
+			max-width: 640px;
+			padding-top: 7px;
+			font-size: 18px;
+			line-height: 1.6;
+		}
+	}
 </style>

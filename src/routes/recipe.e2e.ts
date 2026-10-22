@@ -12,6 +12,7 @@ import {
 	gotoHydrated,
 	markDocument
 } from '../testutil/home-e2e';
+import { skipOnDesktop } from '../testutil/popular-e2e';
 import { historyLength } from '../testutil/region-e2e';
 import {
 	BETANZOS,
@@ -40,7 +41,6 @@ import {
 	ingredientRows,
 	moreButton,
 	servingsValue,
-	skipRecipeOnDesktop,
 	stepRows,
 	stepServingsTo
 } from '../testutil/recipe-e2e';
@@ -78,7 +78,10 @@ import {
 // - Servings and ticks are component state in memory only (X6): no URL
 //   change, no history entry, gone on reload, reset on another recipe
 //   (even when SvelteKit reuses the page component), scroll back at the top.
-// - Desktop renders the mobile layout until PR 4 and is not checked here.
+// - Desktop (FE-6 PR 4) shares the content, the 404, the stepper, the ticks
+//   and the reset; its pill, layout and sticky card are recipe-desktop.e2e.ts
+//   and desktop-navigation.e2e.ts. The StickyTopBar, the mobile sizes and the
+//   home flows are mobile only.
 
 const HIT_MIN_PX = 44;
 const HIT_REACH_PX = (HIT_MIN_PX - 1) / 2;
@@ -88,7 +91,8 @@ const SCROLL_TOLERANCE_PX = 1;
 const BETANZOS_EN = recipePath('en', 'tortilla', 'gal');
 const PAELLA_EN = recipePath('en', PAELLA_VAL.dishKey, PAELLA_VAL.regionKey);
 
-test.beforeEach(({ page }) => skipRecipeOnDesktop(page));
+const MOBILE_ONLY = 'the mobile Recipe layout (< 860px)';
+const skipMobileOnly = ({ page }: { page: Page }) => skipOnDesktop(page, MOBILE_ONLY);
 
 const betanzosPath = (lang: RecipeLocale) => recipePath(lang, 'tortilla', 'gal');
 
@@ -145,6 +149,7 @@ test.describe('Recipe page without JavaScript', () => {
 		});
 
 		test(`${url}: the back link goes to ${variationsPath(lang, 'tortilla')}`, async ({ page }) => {
+			skipOnDesktop(page, MOBILE_ONLY);
 			await page.goto(url);
 			await expect(backLink(page, lang)).toHaveAttribute('href', variationsPath(lang, 'tortilla'));
 		});
@@ -154,6 +159,7 @@ test.describe('Recipe page without JavaScript', () => {
 		`hero photo ${HERO_PX}px; the eyebrow is upper-cased by CSS`,
 		{ tag: '@layout' },
 		async ({ page }) => {
+			skipOnDesktop(page, MOBILE_ONLY);
 			await page.goto(BETANZOS_EN);
 			// No MEDIA_BASE_URL in E2E: the hero <Photo> is its placeholder box.
 			const hero = await page.locator('.placeholder').first().boundingBox();
@@ -388,6 +394,7 @@ test.describe('Recipe page: another recipe starts fresh', () => {
 	);
 
 	test('the same recipe opened again from Variations starts fresh too', async ({ page }) => {
+		skipOnDesktop(page, MOBILE_ONLY);
 		await gotoHydrated(page, variationsPath('en', 'tortilla'));
 		await variationCards(page).first().click();
 		await expectUrl(page, BETANZOS_EN);
@@ -404,6 +411,8 @@ test.describe('Recipe page: another recipe starts fresh', () => {
 });
 
 test.describe('Recipe page: sticky top bar on window scroll', () => {
+	test.beforeEach(skipMobileOnly);
+
 	for (const lang of RECIPE_LOCALES) {
 		const url = recipePath(lang, PAELLA_VAL.dishKey, PAELLA_VAL.regionKey);
 
@@ -442,6 +451,8 @@ test.describe('Recipe page: sticky top bar on window scroll', () => {
 });
 
 test.describe('Recipe page: back button', () => {
+	test.beforeEach(skipMobileOnly);
+
 	for (const lang of RECIPE_LOCALES) {
 		// One locale per engine: history doesn't change with the language.
 		const tag = lang === 'en' ? ['@cross-browser'] : [];
@@ -499,6 +510,8 @@ test.describe('Recipe page: back button', () => {
 });
 
 test.describe('Acceptance: home → Variations → Recipe → back → back', () => {
+	test.beforeEach(skipMobileOnly);
+
 	const recipeOfLowest = new RegExp(`^/en/dishes/${LOWEST_DISH}/[a-z]+$`);
 
 	async function intoRecipe(page: Page) {
@@ -534,6 +547,8 @@ test.describe('Acceptance: home → Variations → Recipe → back → back', ()
 });
 
 test.describe('axe: WCAG 2.2 AA on the Recipe page', () => {
+	test.beforeEach(skipMobileOnly);
+
 	for (const lang of RECIPE_LOCALES) {
 		const url = betanzosPath(lang);
 

@@ -25,11 +25,12 @@
 	 * split by a hairline", "eyebrow + value (16px/600)"; the prototype gives
 	 * the cells' padding 12px 14px and gap 3px, the hairline
 	 * rgba(43,30,22,.1) and the eyebrow (10px/700, .1em, ink at .5, here the
-	 * --ink-3 AA override).
+	 * --ink-3 AA override). It closes the header's column, whose 8px gap and
+	 * 20px padding make up the README's margin.
 	 */
 	.info-strip {
 		display: flex;
-		margin: 18px 20px 0;
+		margin-top: 10px;
 		border: 1px solid var(--border-info-strip);
 		border-radius: var(--radius-info-strip);
 		background: var(--bg-surface);
@@ -58,5 +59,31 @@
 	.time {
 		font-size: 16px;
 		font-weight: 600;
+	}
+
+	/*
+	 * Desktop prototype (showRecipe): "margin-top:10px; max-width:440px;
+	 * border-radius:16px", cells "padding:14px 18px; gap:4px", the eyebrow
+	 * 10.5px and the time "18px/600; line-height:34px" (the stepper's height).
+	 */
+	@media (min-width: 860px) {
+		.info-strip {
+			max-width: 440px;
+			border-radius: var(--radius-info-strip-desktop);
+		}
+
+		.cell {
+			gap: 4px;
+			padding: 14px 18px;
+		}
+
+		.label {
+			font-size: 10.5px;
+		}
+
+		.time {
+			font-size: 18px;
+			line-height: 34px;
+		}
 	}
 </style>

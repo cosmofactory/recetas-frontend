@@ -96,4 +96,21 @@
 		font-weight: 600;
 		text-align: center;
 	}
+
+	/* Desktop README -> Recipe page: "stepper buttons 34px"; the prototype's gap 14px and value 18px (min-width 18px). */
+	@media (min-width: 860px) {
+		.stepper {
+			gap: 14px;
+		}
+
+		.step {
+			width: 34px;
+			height: 34px;
+		}
+
+		.value {
+			min-width: 18px;
+			font-size: 18px;
+		}
+	}
 </style>

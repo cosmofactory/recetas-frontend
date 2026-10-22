@@ -1,3 +1,4 @@
+import { desktopQuery } from '#lib/ui/breakpoints.ts';
 import type { components } from '#lib/api/schema.d.ts';
 
 export type Photos = components['schemas']['Photos'];
@@ -18,6 +19,12 @@ export type ImageSetOptions = {
 // A mobile photo as wide as the page less its 20px side padding (the
 // Variations and Recipe heroes, the variation cards).
 export const MOBILE_CONTENT_WIDTH_SIZES = 'calc(100vw - 40px)';
+// Desktop Variations and Recipe heroes fill one heading-grid column, at most
+// 1.1/2.1 of the 1440px page container.
+export const DISH_HERO_SIZES = `${desktopQuery} min(55vw, 760px), ${MOBILE_CONTENT_WIDTH_SIZES}`;
+// A desktop variation card is a minmax(300px, 1fr) column of the page
+// container: never wider than about 460px (two columns just before a third fits).
+export const VARIATION_CARD_SIZES = `${desktopQuery} 480px, ${MOBILE_CONTENT_WIDTH_SIZES}`;
 
 export const ROLE_WIDTHS: Record<PhotoRole, readonly [number, number]> = {
 	thumb: [128, 256],

@@ -1,5 +1,5 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
-import { isDesktopPage, tokenValue } from './home-e2e';
+import { expect, type Locator, type Page } from '@playwright/test';
+import { tokenValue } from './home-e2e';
 import {
 	betanzosIngredients,
 	DONE_ROW_OPACITY,
@@ -14,12 +14,6 @@ import {
 
 // Shared fixtures for the FE-6 PR 3 Recipe page Playwright specs. Content is
 // the vendored mock bundle (DATA_SOURCE=mock); copy is in recipe-copy.ts.
-
-// Stage FE-6 -> Small decisions: until PR 4 desktop renders the mobile
-// layout, and desktop checks start in PR 4.
-export function skipRecipeOnDesktop(page: Page) {
-	test.skip(isDesktopPage(page), 'desktop Recipe layout is FE-6 PR 4');
-}
 
 export const ingredientRows = (page: Page): Locator => page.getByTestId(RECIPE_TEST_IDS.ingredient);
 export const stepRows = (page: Page): Locator => page.getByTestId(RECIPE_TEST_IDS.step);

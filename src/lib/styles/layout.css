@@ -198,6 +198,20 @@
 	--border-check: rgba(43, 30, 22, 0.3);
 
 	/*
+	 * Desktop Variations and Recipe pages (prototype, FE-6 PR 4): the heroes
+	 * "border-radius:22px", the variation cards and the ingredients card
+	 * "border-radius:20px", the info strip "border-radius:16px"; the heading
+	 * column gaps clamp(28px,3.9vw,56px) and the recipe body's
+	 * clamp(32px,4.4vw,64px).
+	 */
+	--radius-hero-desktop: 22px;
+	--radius-variation-card-desktop: 20px;
+	--radius-ingredients-card: 20px;
+	--radius-info-strip-desktop: 16px;
+	--dish-header-gap-desktop: clamp(28px, 3.9vw, 56px);
+	--recipe-body-gap-desktop: clamp(32px, 4.4vw, 64px);
+
+	/*
 	 * The design gives no focus colour; ink is its existing high-contrast UI
 	 * colour (on every page and surface background).
 	 */

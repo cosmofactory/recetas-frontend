@@ -28,6 +28,7 @@
 				value={tabs.value}
 				label={tabs.label}
 				onChange={tabs.onChange}
+				activation={tabs.activation}
 				size="desktop"
 			/>
 		</div>
