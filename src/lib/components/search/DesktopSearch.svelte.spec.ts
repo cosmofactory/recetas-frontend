@@ -382,6 +382,59 @@ describe('DesktopSearch keyboard', () => {
 	});
 });
 
+// APG combobox: while the popup is collapsed there is no active option, so
+// Enter picks nothing, and Down Arrow opens the popup without moving onto
+// an option. Assumption: reopening (by any route) starts with none active.
+describe('DesktopSearch keyboard while closed', () => {
+	useViewport(DESKTOP_VIEWPORT.width, DESKTOP_VIEWPORT.height);
+
+	async function closedWithQuery(query: string, keysBeforeEscape = '') {
+		const rendered = await openWithQuery(query);
+		await userEvent.keyboard(`${keysBeforeEscape}{Escape}`);
+		expect(dropdownShown(rendered.root), 'want the dropdown closed').toBe(false);
+		rendered.onOpen.mockClear();
+		return rendered;
+	}
+
+	it('Enter picks nothing after Escape', async () => {
+		const { onSelect } = await closedWithQuery('tortilla');
+		await userEvent.keyboard('{Enter}');
+		expect(onSelect, 'got a pick while closed').not.toHaveBeenCalled();
+	});
+
+	it('Enter picks nothing after Escape, even with an option active before it', async () => {
+		const { onSelect } = await closedWithQuery('tortilla', '{ArrowDown}');
+		await userEvent.keyboard('{Enter}');
+		expect(onSelect, 'got the hidden active option picked').not.toHaveBeenCalled();
+	});
+
+	it('ArrowDown reopens the dropdown with no option active', async () => {
+		const { root, input, onOpen } = await closedWithQuery('tortilla');
+		await userEvent.keyboard('{ArrowDown}');
+		expect(onOpen, 'want ArrowDown to ask to open').toHaveBeenCalled();
+		expect(input.getAttribute('aria-expanded')).toBe('true');
+		expect(input.hasAttribute('aria-activedescendant'), 'got an active option').toBe(false);
+		expect(activeDropdownTitle(root)).toBeNull();
+	});
+
+	const closers = [
+		{ name: 'Escape', close: () => userEvent.keyboard('{Escape}') },
+		{ name: 'an outside click', close: (outside: HTMLElement) => userEvent.click(outside) }
+	];
+
+	for (const { name, close } of closers) {
+		it(`reopening by a click after ${name} leaves no option active`, async () => {
+			const { root, outside, input } = await openWithQuery('tortilla');
+			await userEvent.keyboard('{ArrowDown}');
+			await close(outside);
+			await userEvent.click(input);
+			expect(dropdownShown(root), 'want the dropdown reopened').toBe(true);
+			expect(input.getAttribute('aria-expanded')).toBe('true');
+			expect(activeDropdownTitle(root), 'got the old active option back').toBeNull();
+		});
+	}
+});
+
 describe('DesktopSearch closing', () => {
 	useViewport(DESKTOP_VIEWPORT.width, DESKTOP_VIEWPORT.height);
 
