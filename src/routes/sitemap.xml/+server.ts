@@ -1,5 +1,6 @@
 import { PUBLIC_ORIGIN } from '$app/env/private';
 import { baseLocale } from '#lib/i18n/locales.ts';
+import { CACHE_CONTROL_HEADER, CRAWLER_FILE_CACHE_CONTROL } from '#lib/server/cache-control.ts';
 import { catalog } from '#lib/server/catalog.ts';
 import { orHttpError } from '#lib/server/load-errors.ts';
 import { SITEMAP_CONTENT_TYPE, sitemapXml } from '#lib/seo/sitemap.ts';
@@ -15,6 +16,9 @@ export const GET: RequestHandler = async (event) => {
 		event
 	);
 	return new Response(sitemapXml(PUBLIC_ORIGIN, { regions, dishes }), {
-		headers: { 'content-type': SITEMAP_CONTENT_TYPE }
+		headers: {
+			'content-type': SITEMAP_CONTENT_TYPE,
+			[CACHE_CONTROL_HEADER]: CRAWLER_FILE_CACHE_CONTROL
+		}
 	});
 };

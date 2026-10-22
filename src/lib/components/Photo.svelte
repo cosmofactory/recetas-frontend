@@ -9,7 +9,8 @@
 		sizes: string;
 		alt: string;
 		baseUrl: string | undefined;
-		// The above-the-fold photo (e.g. the recipe hero): eager, high fetch priority.
+		// The above-the-fold photo (e.g. the recipe hero): eager, high fetch
+		// priority, and preloaded from the head.
 		priority?: boolean;
 		// CSS lengths or token vars (the design's fixed heights and radii);
 		// without them the caller sizes the box and Photo fills it.
@@ -26,7 +27,23 @@
 		imageSetOrPlaceholder({ baseUrl, prefix: photos?.[role] ?? null, role, report })
 	);
 	const size = $derived(intrinsicSize(role));
+	// The first <source> is what the browser picks (AVIF), so preloading it
+	// never costs a second download in another format.
+	const preload = $derived(priority ? set?.sources[0] : undefined);
 </script>
+
+<svelte:head>
+	{#if preload}
+		<link
+			rel="preload"
+			as="image"
+			type={preload.type}
+			imagesrcset={preload.srcset}
+			imagesizes={sizes}
+			fetchpriority="high"
+		/>
+	{/if}
+</svelte:head>
 
 {#if set}
 	<picture style:height style:border-radius={radius}>

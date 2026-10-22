@@ -1,5 +1,6 @@
 import { APP_ENV, PUBLIC_ORIGIN } from '$app/env/private';
 import { isIndexable } from '#lib/server/app-env.ts';
+import { CACHE_CONTROL_HEADER, CRAWLER_FILE_CACHE_CONTROL } from '#lib/server/cache-control.ts';
 import type { RequestHandler } from './$types';
 
 // Read at request time: APP_ENV is only known at runtime, so this is never
@@ -18,6 +19,9 @@ const allowAll = (origin: string) => [
 export const GET: RequestHandler = () => {
 	const lines = isIndexable(APP_ENV) ? allowAll(PUBLIC_ORIGIN) : DISALLOW_ALL;
 	return new Response(`${lines.join('\n')}\n`, {
-		headers: { 'content-type': 'text/plain; charset=utf-8' }
+		headers: {
+			'content-type': 'text/plain; charset=utf-8',
+			[CACHE_CONTROL_HEADER]: CRAWLER_FILE_CACHE_CONTROL
+		}
 	});
 };
