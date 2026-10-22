@@ -1,3 +1,4 @@
+import type { CatalogRegion, ValidatedColour } from '#lib/api/catalog-region.ts';
 import type { components } from '#lib/api/schema.d.ts';
 
 // The server data layer (FE-2): every loader reads the catalog through this
@@ -6,9 +7,7 @@ import type { components } from '#lib/api/schema.d.ts';
 
 type Schemas = components['schemas'];
 export type Lang = Schemas['Locale'];
-// tileColor is null when the API sent anything but #RRGGBB (region-colour.ts).
-type ValidatedColour<T> = Omit<T, 'tileColor'> & { tileColor: string | null };
-export type Region = ValidatedColour<Schemas['Region']>;
+export type Region = CatalogRegion;
 export type RegionDetail = ValidatedColour<Schemas['RegionDetail']>;
 export type Dish = Schemas['Dish'];
 export type Recipe = Schemas['Recipe'];

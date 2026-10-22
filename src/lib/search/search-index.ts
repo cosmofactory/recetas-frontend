@@ -1,3 +1,4 @@
+import type { CatalogRegion } from '#lib/api/catalog-region.ts';
 import type { components } from '#lib/api/schema.d.ts';
 import { DOT_SEPARATOR } from '#lib/i18n/format.ts';
 import type { Locale } from '#lib/i18n/locales.ts';
@@ -7,9 +8,7 @@ import { normalize } from './normalize.ts';
 type Schemas = components['schemas'];
 type Dish = Pick<Schemas['Dish'], 'key' | 'name' | 'nameEs' | 'variations'>;
 type Variation = Dish['variations'][number];
-type Region = Pick<Schemas['Region'], 'key' | 'name' | 'nameEs' | 'regionalDishes'> & {
-	tileColor: string | null;
-};
+type Region = Pick<CatalogRegion, 'key' | 'name' | 'nameEs' | 'regionalDishes' | 'tileColor'>;
 export type SearchCatalog = { regions: Region[]; dishes: Dish[] };
 
 // Both READMEs -> Overlay — Search: the result groups, in display order.
