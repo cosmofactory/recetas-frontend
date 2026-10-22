@@ -2,19 +2,24 @@ import Check from '@lucide/svelte/icons/check';
 import ChevronDown from '@lucide/svelte/icons/chevron-down';
 import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 import ChevronRight from '@lucide/svelte/icons/chevron-right';
+import Minus from '@lucide/svelte/icons/minus';
+import Plus from '@lucide/svelte/icons/plus';
 import Search from '@lucide/svelte/icons/search';
 import X from '@lucide/svelte/icons/x';
 
 // The icon set both READMEs list under Assets: "magnifier, back chevron,
 // close ×, check ✓" (stack.md F5: @lucide/svelte, one import per icon), the
-// desktop language button's "▾" caret and the desktop region row's "›".
+// desktop language button's "▾" caret, the desktop region row's "›" and
+// the Recipe servings stepper's − / +.
 export const ICONS = {
 	search: Search,
 	back: ChevronLeft,
 	close: X,
 	check: Check,
 	caret: ChevronDown,
-	forward: ChevronRight
+	forward: ChevronRight,
+	minus: Minus,
+	plus: Plus
 };
 
 export type IconName = keyof typeof ICONS;

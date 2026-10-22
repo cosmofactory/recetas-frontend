@@ -109,5 +109,28 @@
 			"navigation": "Навигация",
 			"desktopTopBar": "Верхняя панель для десктопа"
 		}
+	},
+	"recipe": {
+		"en": {
+			"fewerServings": "Fewer servings",
+			"moreServings": "More servings",
+			"servings": ["serving", "servings"],
+			"hours": "h",
+			"minutes": "min"
+		},
+		"es": {
+			"fewerServings": "Menos raciones",
+			"moreServings": "Más raciones",
+			"servings": ["ración", "raciones"],
+			"hours": "h",
+			"minutes": "min"
+		},
+		"ru": {
+			"fewerServings": "Меньше порций",
+			"moreServings": "Больше порций",
+			"servings": ["порция", "порции", "порций"],
+			"hours": "ч",
+			"minutes": "мин"
+		}
 	}
 }

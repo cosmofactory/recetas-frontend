@@ -93,14 +93,16 @@ const SAMPLE_KEYS = [
 ];
 
 describe('PLURAL_KEYS', () => {
-	// home.region is extra-strings.json's (FE-4 regions eyebrow).
-	it('lists exactly the plural arrays: home.variation, home.dish and home.region', async () => {
+	// home.region and recipe.servings are extra-strings.json's (FE-4 regions
+	// eyebrow, FE-6 servings announcement).
+	it('lists exactly the plural arrays: home.variation, home.dish, home.region and recipe.servings', async () => {
 		const keys = await loadExport<Iterable<string>>(SCRIPT, 'PLURAL_KEYS');
 		const got = [...keys].sort();
 		expect(got, `got ${JSON.stringify(got)}`).toEqual([
 			'home.dish',
 			'home.region',
-			'home.variation'
+			'home.variation',
+			'recipe.servings'
 		]);
 	});
 });

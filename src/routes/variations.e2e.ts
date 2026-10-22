@@ -1,29 +1,22 @@
 import { expect, test, type Locator, type Page, type TestInfo } from '@playwright/test';
 import { expectNoViolations } from '../testutil/axe-e2e';
-import { expectSameDocument, gotoHydrated, markDocument, pathAndQuery } from '../testutil/home-e2e';
 import {
-	DISH_NAMES,
-	type DISH_KEYS,
-	HANDLE_LABELS,
-	TORTILLA_SHEET,
-	VARIATION_REGIONS
-} from '../testutil/popular-copy';
-import {
-	dishCard,
-	dishSheet,
-	listScroller,
-	scrollListToEnd,
-	seeAllLink
-} from '../testutil/popular-e2e';
-import { expectSheetExpanded, expectSheetPeek, historyLength } from '../testutil/region-e2e';
+	expectHomeRestored,
+	expectUrl,
+	leaveScrolledHome,
+	LOWEST_DISH,
+	seeAllFromSheet
+} from '../testutil/home-flow-e2e';
+import { expectSameDocument, gotoHydrated, markDocument } from '../testutil/home-e2e';
+import { TORTILLA_SHEET, VARIATION_REGIONS } from '../testutil/popular-copy';
+import { expectSheetPeek, historyLength } from '../testutil/region-e2e';
 import {
 	backFallback,
 	PAGE_COPY,
 	recipePath,
 	TORTILLA_PAGE,
 	VARIATIONS_LOCALES,
-	VARIATIONS_THRESHOLD_PX,
-	type VariationsLocale
+	VARIATIONS_THRESHOLD_PX
 } from '../testutil/variations-copy';
 import {
 	backLink,
@@ -34,7 +27,6 @@ import {
 	scrollWindowTo,
 	skipOnDesktopUntilPr4,
 	variationCards,
-	waitForPagePushEnd,
 	windowScrollY
 } from '../testutil/variations-e2e';
 
@@ -56,20 +48,12 @@ import {
 // - Forward navigation into the page starts it at the top.
 // - Desktop renders the mobile layout until PR 4 and is not checked here.
 
-const HOME_WITH_FILTERS = '/en/?tab=popular&f=tapas&f=mains&f=desserts';
-const LOWEST_DISH = 'arrozleche' satisfies DishKey;
-const SCROLL_TOLERANCE_PX = 1;
 const PAST_THRESHOLD_PX = VARIATIONS_THRESHOLD_PX + 1;
 const FAR_DOWN_PX = 600;
 const HERO_PX = 180;
 const CARD_PHOTO_PX = 130;
 
 test.beforeEach(({ page }) => skipOnDesktopUntilPr4(page));
-
-async function expectUrl(page: Page, want: string) {
-	await page.waitForURL((url) => url.pathname + url.search === want);
-	expect(pathAndQuery(page)).toBe(want);
-}
 
 async function cardHrefs(page: Page): Promise<string[]> {
 	return variationCards(page).evaluateAll((cards) =>
@@ -81,41 +65,6 @@ async function boxHeight(locator: Locator): Promise<number> {
 	const box = await locator.boundingBox();
 	expect(box, 'got no box').not.toBeNull();
 	return box!.height;
-}
-
-// Popular → the dish sheet (expanded) → "See all variations".
-type DishKey = (typeof DISH_KEYS)[number];
-
-async function seeAllFromSheet(page: Page, lang: VariationsLocale, dishKey: DishKey) {
-	await dishCard(page, dishKey).click();
-	await page.waitForURL((url) => url.searchParams.get('dish') === dishKey);
-	const name = DISH_NAMES[lang][dishKey];
-	await expectSheetPeek(page, name);
-	await dishSheet(page).getByRole('button', { name: HANDLE_LABELS[lang], exact: true }).click();
-	await expectSheetExpanded(page, name);
-	await seeAllLink(page, lang).click();
-	await expectUrl(page, `/${lang}/dishes/${dishKey}`);
-	await waitForPagePushEnd(page);
-}
-
-// The home with filters, its list scrolled to the end and the lowest dish's
-// sheet open, then its Variations page. Returns the home URL and offset.
-async function leaveScrolledHome(page: Page): Promise<{ url: string; scrollTop: number }> {
-	await gotoHydrated(page, HOME_WITH_FILTERS);
-	const { scrollTop } = await scrollListToEnd(page);
-	expect(scrollTop, 'want the Popular list scrolled before leaving').toBeGreaterThan(0);
-	await seeAllFromSheet(page, 'en', LOWEST_DISH);
-	return { url: `${HOME_WITH_FILTERS}&dish=${LOWEST_DISH}`, scrollTop };
-}
-
-async function expectHomeRestored(page: Page, home: { url: string; scrollTop: number }) {
-	await expectUrl(page, home.url);
-	await expectSheetPeek(page, DISH_NAMES.en[LOWEST_DISH]);
-	await expect
-		.poll(async () => Math.abs((await listScroller(page)).scrollTop - home.scrollTop), {
-			message: `want the Popular list back at scrollTop ${home.scrollTop}`
-		})
-		.toBeLessThanOrEqual(SCROLL_TOLERANCE_PX);
 }
 
 test.describe('Variations page without JavaScript', () => {

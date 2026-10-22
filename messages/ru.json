@@ -126,5 +126,21 @@
 	"devUi_openOverlay": "Открыть всплывающую панель",
 	"devUi_stickyPanel": "Закреплённая панель",
 	"devUi_navigation": "Навигация",
-	"devUi_desktopTopBar": "Верхняя панель для десктопа"
+	"devUi_desktopTopBar": "Верхняя панель для десктопа",
+	"recipe_fewerServings": "Меньше порций",
+	"recipe_moreServings": "Больше порций",
+	"recipe_servings": [
+		{
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "{count} порция",
+				"countPlural=few": "{count} порции",
+				"countPlural=many": "{count} порций",
+				"countPlural=other": "{count} порции"
+			}
+		}
+	],
+	"recipe_hours": "ч",
+	"recipe_minutes": "мин"
 }

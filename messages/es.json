@@ -123,5 +123,20 @@
 	"devUi_openOverlay": "Abrir la hoja superpuesta",
 	"devUi_stickyPanel": "Panel fijo",
 	"devUi_navigation": "Navegación",
-	"devUi_desktopTopBar": "Barra superior de escritorio"
+	"devUi_desktopTopBar": "Barra superior de escritorio",
+	"recipe_fewerServings": "Menos raciones",
+	"recipe_moreServings": "Más raciones",
+	"recipe_servings": [
+		{
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "{count} ración",
+				"countPlural=other": "{count} raciones",
+				"countPlural=many": "{count} raciones"
+			}
+		}
+	],
+	"recipe_hours": "h",
+	"recipe_minutes": "min"
 }
