@@ -14,14 +14,26 @@
 		onChange?: (value: string) => void;
 		// The desktop top bar's switch sets its labels a little larger.
 		size?: 'regular' | 'desktop';
+		// WAI-ARIA tabs: 'auto' selects as the keys move focus; 'manual' only
+		// moves focus (roving tabindex), and Enter or a click activates.
+		activation?: 'auto' | 'manual';
 	};
 
-	let { options, value = $bindable(), label, onChange, size = 'regular' }: Props = $props();
+	let {
+		options,
+		value = $bindable(),
+		label,
+		onChange,
+		size = 'regular',
+		activation = 'auto'
+	}: Props = $props();
 
 	const tabs: HTMLElement[] = $state([]);
 	const selectedIndex = $derived(options.findIndex((option) => option.value === value));
+	// Manual activation: the tab the keys last moved focus to.
+	let focusedIndex = $state<number | undefined>(undefined);
 	// A value no option has must not take the switch out of the Tab order.
-	const tabStop = $derived(Math.max(selectedIndex, 0));
+	const tabStop = $derived(focusedIndex ?? Math.max(selectedIndex, 0));
 
 	function select(index: number) {
 		if (index === selectedIndex) return;
@@ -33,13 +45,20 @@
 		if (options[index].href === undefined) select(index);
 	}
 
-	// Automatic activation: moving focus selects.
+	// Automatic activation: moving focus selects. Manual: it only moves focus.
 	function moveWithKey(event: KeyboardEvent, index: number) {
 		const next = tabIndexForKey(event.key, index, options.length);
 		if (next === undefined) return;
 		event.preventDefault();
-		select(next);
+		if (activation === 'auto') select(next);
+		else focusedIndex = next;
 		tabs[next].focus();
+	}
+
+	// Leaving the switch hands the Tab stop back to the selected tab.
+	function forgetFocus(event: FocusEvent) {
+		const next = event.relatedTarget;
+		if (!(next instanceof HTMLElement) || !tabs.includes(next)) focusedIndex = undefined;
 	}
 </script>
 
@@ -61,6 +80,7 @@
 			tabindex={index === tabStop ? 0 : -1}
 			onclick={() => selectOnClick(index)}
 			onkeydown={(event: KeyboardEvent) => moveWithKey(event, index)}
+			onfocusout={forgetFocus}
 		>
 			{option.label}
 		</svelte:element>

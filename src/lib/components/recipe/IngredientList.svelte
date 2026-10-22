@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { MediaQuery } from 'svelte/reactivity';
 	import type { components } from '#lib/api/schema.d.ts';
 	import { ICONS } from '#lib/components/ui/icons.ts';
 	import { m } from '#lib/paraglide/messages.js';
 	import { ingredientQuantity } from '#lib/recipe/servings.ts';
+	import { desktopQuery } from '#lib/ui/breakpoints.ts';
 
 	type Props = {
 		ingredients: components['schemas']['Ingredient'][];
@@ -13,15 +15,17 @@
 
 	let { ingredients, baseServings, servings, lang }: Props = $props();
 
-	// Mobile README -> Screen 3: the check circle's "✓" (prototype 11px).
-	const CHECK_ICON_PX = 11;
+	// The check circle's "✓": mobile prototype 11px, desktop prototype 12px.
+	const CHECK_ICON_PX = { mobile: 11, desktop: 12 } as const;
+	const desktop = new MediaQuery(desktopQuery, false);
+	const checkSize = $derived(desktop.current ? CHECK_ICON_PX.desktop : CHECK_ICON_PX.mobile);
 	const Check = ICONS.check;
 
 	// "got it" per ingredient, in memory only (X6); the parent remounts this per recipe.
 	let got = $state<boolean[]>([]);
 </script>
 
-<section class="ingredients">
+<section class="ingredients" data-testid="recipe-ingredients-card">
 	<h2 class="heading">{m.recipe_ingredients()}</h2>
 	<ul class="rows" role="list">
 		{#each ingredients as ingredient, i (i)}
@@ -35,7 +39,7 @@
 					onclick={() => (got[i] = !got[i])}
 				>
 					<span class="check" data-testid="recipe-check">
-						{#if got[i]}<Check size={CHECK_ICON_PX} aria-hidden={true} />{/if}
+						{#if got[i]}<Check size={checkSize} aria-hidden={true} />{/if}
 					</span>
 					<span class="name">{ingredient.name}</span>
 					<span class="quantity" data-testid="recipe-quantity"
@@ -130,5 +134,45 @@
 		font-size: 13px;
 		font-weight: 600;
 		white-space: nowrap;
+	}
+
+	/*
+	 * Desktop README -> Recipe page: "ingredients card is sticky (top 24px)";
+	 * the prototype: surface card, 1px --border-card, radius 20px, "padding:
+	 * 24px 26px 14px", heading 28px (padding-bottom 8px), rows "gap:14px;
+	 * padding:13px 0", a 22px check, name 15px, quantity 14px.
+	 */
+	@media (min-width: 860px) {
+		.ingredients {
+			position: sticky;
+			top: 24px;
+			padding: 24px 26px 14px;
+			border: 1px solid var(--border-card);
+			border-radius: var(--radius-ingredients-card);
+			background: var(--bg-surface);
+		}
+
+		.heading {
+			padding-bottom: 8px;
+			font-size: 28px;
+		}
+
+		.row {
+			gap: 14px;
+			padding: 13px 0;
+		}
+
+		.check {
+			width: 22px;
+			height: 22px;
+		}
+
+		.name {
+			font-size: 15px;
+		}
+
+		.quantity {
+			font-size: 14px;
+		}
 	}
 </style>

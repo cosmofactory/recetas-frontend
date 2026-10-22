@@ -9,6 +9,7 @@ import {
 } from '../testutil/home-flow-e2e';
 import { expectSameDocument, gotoHydrated, markDocument } from '../testutil/home-e2e';
 import { TORTILLA_SHEET, VARIATION_REGIONS } from '../testutil/popular-copy';
+import { skipOnDesktop } from '../testutil/popular-e2e';
 import { expectSheetPeek, historyLength } from '../testutil/region-e2e';
 import {
 	backFallback,
@@ -25,7 +26,6 @@ import {
 	pagePushMarks,
 	recordPagePushMarks,
 	scrollWindowTo,
-	skipOnDesktopUntilPr4,
 	variationCards,
 	windowScrollY
 } from '../testutil/variations-e2e';
@@ -46,14 +46,18 @@ import {
 // - Home's Popular list scroll position is a SvelteKit `snapshot` (D-FE6-1):
 //   restored by the back button and by browser Back alike.
 // - Forward navigation into the page starts it at the top.
-// - Desktop renders the mobile layout until PR 4 and is not checked here.
+// - Desktop (FE-6 PR 4) shares the content, the 404 and the card links;
+//   its pill, layout and scroll are variations-desktop.e2e.ts and
+//   desktop-navigation.e2e.ts. The StickyTopBar, the mobile sizes, the page
+//   push and the home sheet flows are mobile only.
 
 const PAST_THRESHOLD_PX = VARIATIONS_THRESHOLD_PX + 1;
 const FAR_DOWN_PX = 600;
 const HERO_PX = 180;
 const CARD_PHOTO_PX = 130;
 
-test.beforeEach(({ page }) => skipOnDesktopUntilPr4(page));
+const MOBILE_ONLY = 'the mobile Variations layout (< 860px)';
+const skipMobileOnly = ({ page }: { page: Page }) => skipOnDesktop(page, MOBILE_ONLY);
 
 async function cardHrefs(page: Page): Promise<string[]> {
 	return variationCards(page).evaluateAll((cards) =>
@@ -103,6 +107,7 @@ test.describe('Variations page without JavaScript', () => {
 		test(`${url}: no map, and the back link goes to ${backFallback(lang, 'tortilla')}`, async ({
 			page
 		}) => {
+			skipOnDesktop(page, MOBILE_ONLY);
 			await page.goto(url);
 			await expect(page.getByTestId('region-map')).toHaveCount(0);
 			await expect(backLink(page, lang)).toHaveAttribute('href', backFallback(lang, 'tortilla'));
@@ -110,6 +115,7 @@ test.describe('Variations page without JavaScript', () => {
 	}
 
 	test(`hero photo ${HERO_PX}px, card photos ${CARD_PHOTO_PX}px`, async ({ page }) => {
+		skipOnDesktop(page, MOBILE_ONLY);
 		await page.goto('/en/dishes/tortilla');
 		// No MEDIA_BASE_URL in E2E: every <Photo> is its placeholder box.
 		expect(await boxHeight(page.locator('.placeholder').first())).toBe(HERO_PX);
@@ -130,6 +136,8 @@ test.describe('Variations page: unknown dish', () => {
 });
 
 test.describe('Variations page: sticky top bar on window scroll', () => {
+	test.beforeEach(skipMobileOnly);
+
 	for (const lang of VARIATIONS_LOCALES) {
 		const name = TORTILLA_PAGE[lang].name;
 
@@ -169,6 +177,8 @@ test.describe('Variations page: sticky top bar on window scroll', () => {
 });
 
 test.describe('Variations page: back button', () => {
+	test.beforeEach(skipMobileOnly);
+
 	for (const lang of VARIATIONS_LOCALES) {
 		test(`${lang}: on a direct entry it goes to ${backFallback(lang, 'tortilla')}`, async ({
 			page
@@ -241,6 +251,8 @@ test.describe('Variations page: cards open the recipe', () => {
 });
 
 test.describe('Variations page: page push from home', () => {
+	test.beforeEach(skipMobileOnly);
+
 	test('slides in (a push mark)', { tag: '@cross-browser' }, async ({ page }) => {
 		await gotoHydrated(page, '/en/?tab=popular');
 		await recordPagePushMarks(page);

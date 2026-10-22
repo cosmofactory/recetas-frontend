@@ -6,6 +6,8 @@ const TAB_LABELS: Record<HomeTab, () => string> = {
 	popular: m.home_popular
 };
 
+export const tabLabel = (tab: HomeTab): string => TAB_LABELS[tab]();
+
 // The Regional | Popular options, each a link to its tab URL. The page
 // renders two switches (mobile header and desktop top bar); only one may
 // carry the panel ids, or the HTML would repeat them. A function, so the
@@ -13,7 +15,7 @@ const TAB_LABELS: Record<HomeTab, () => string> = {
 export function tabOptions(lang: string, withPanelIds: boolean) {
 	return HOME_TABS.map((tab) => ({
 		value: tab,
-		label: TAB_LABELS[tab](),
+		label: tabLabel(tab),
 		href: tabHref(tab, lang),
 		panelId: withPanelIds ? TAB_PANEL_IDS[tab] : undefined
 	}));

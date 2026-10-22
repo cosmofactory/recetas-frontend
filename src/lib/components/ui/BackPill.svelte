@@ -12,7 +12,7 @@
 	const Back = ICONS.back;
 </script>
 
-<a class="back-pill" {href} {onclick}>
+<a class="back-pill" data-testid="back-pill" {href} {onclick}>
 	<Back size={BACK_ICON_PX} aria-hidden={true} />
 	{label}
 </a>

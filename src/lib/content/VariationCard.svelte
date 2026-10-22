@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { components } from '#lib/api/schema.d.ts';
 	import Photo from '#lib/components/Photo.svelte';
-	import { MOBILE_CONTENT_WIDTH_SIZES } from '#lib/media.ts';
+	import { VARIATION_CARD_SIZES } from '#lib/media.ts';
 	import { m } from '#lib/paraglide/messages.js';
 
 	type Props = {
@@ -14,11 +14,11 @@
 </script>
 
 <!-- The whole card is one link to its recipe; the photo is decorative. -->
-<a class="variation-card" data-testid="variation-card" {href}>
+<a class="variation-card hover-lift" data-testid="variation-card" {href}>
 	<Photo
 		photos={variation.photos}
 		role="card"
-		sizes={MOBILE_CONTENT_WIDTH_SIZES}
+		sizes={VARIATION_CARD_SIZES}
 		alt=""
 		baseUrl={mediaBaseUrl}
 		height="var(--variation-photo-height)"
@@ -83,5 +83,42 @@
 		color: var(--accent-text);
 		font-size: 12.5px;
 		font-weight: 600;
+	}
+
+	/*
+	 * Desktop README -> Variations page: "190px photo, region eyebrow, 25px
+	 * serif name, description, "View recipe →""; the prototype: 1px
+	 * --border-card, radius 20px, body "padding:18px 20px 20px; gap:6px",
+	 * eyebrow 10.5px, description 14px, "View recipe" 13px with padding-top
+	 * 6px, and the shared hover lift.
+	 */
+	@media (min-width: 860px) {
+		.variation-card {
+			--variation-photo-height: 190px;
+			border-width: 1px;
+			border-radius: var(--radius-variation-card-desktop);
+		}
+
+		.body {
+			gap: 6px;
+			padding: 18px 20px 20px;
+		}
+
+		.region {
+			font-size: 10.5px;
+		}
+
+		.name {
+			font-size: 25px;
+		}
+
+		.description {
+			font-size: 14px;
+		}
+
+		.view-recipe {
+			padding-top: 6px;
+			font-size: 13px;
+		}
 	}
 </style>

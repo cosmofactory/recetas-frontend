@@ -16,14 +16,17 @@ export type PageNavigation = {
 	shallow: boolean;
 };
 
+// The home and its region pages.
+export const HOME_DEPTH = 0;
+
 const ROUTE_DEPTH: Record<string, number> = {
-	'/[lang=lang]/(home)': 0,
-	'/[lang=lang]/(home)/regions/[regionKey]': 0,
+	'/[lang=lang]/(home)': HOME_DEPTH,
+	'/[lang=lang]/(home)/regions/[regionKey]': HOME_DEPTH,
 	'/[lang=lang]/dishes/[dishKey]': 1,
 	'/[lang=lang]/dishes/[dishKey]/[regionKey]': 2
 };
 
-function depthOf(target: RouteTarget): number | undefined {
+export function depthOf(target: RouteTarget): number | undefined {
 	const id = target?.route.id;
 	return id ? ROUTE_DEPTH[id] : undefined;
 }
