@@ -54,7 +54,7 @@ describe('MEDIA_BASE_URL', () => {
 // noindex`). It is required outside `vite dev` and the build, like
 // PUBLIC_ORIGIN, so a deployment can't silently fall back to either mode. The
 // values are the one enum the Go API and telemetry already use
-// (`local|demo|prod`, appEnvs in #lib/server/telemetry/config.ts), so
+// (`local|demo|prod`, appEnvs in #lib/server/app-env.ts), so
 // APP_ENV=local with a LOGFIRE_TOKEN keeps working.
 
 async function appEnv(value: string | undefined): Promise<Validation> {
