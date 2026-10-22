@@ -6,7 +6,7 @@ import type { BackOrigin } from '#lib/ui/back-origin.ts';
 
 export type BackPillLink = { label: string; href: string };
 
-type RecipeNames = { dishKey: string; dishName: string; regionName: string };
+type RecipeNames = { dishKey: string; dishName: string };
 
 type Named = { key: string; name: string };
 

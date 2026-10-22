@@ -31,6 +31,8 @@
 	const uid = $props.id();
 	const listboxId = `${uid}-listbox`;
 	const optionId = (position: number) => `${uid}-option-${position}`;
+	// APG combobox: while collapsed, the arrows open the popup and nothing is active.
+	const OPENING_KEYS = new Set(['ArrowDown', 'ArrowUp']);
 
 	let search: HTMLElement | undefined = $state();
 	let hydrated = $state(false);
@@ -52,8 +54,13 @@
 		return onPointerDownOutside(search, () => onClose());
 	});
 
+	// However the dropdown closed, it reopens with no option active.
+	$effect.pre(() => {
+		if (!open) combobox.active = NO_ACTIVE_OPTION;
+	});
+
 	$effect(() => {
-		if (combobox.active === NO_ACTIVE_OPTION) return;
+		if (!open || combobox.active === NO_ACTIVE_OPTION) return;
 		document.getElementById(optionId(combobox.active))?.scrollIntoView({ block: 'nearest' });
 	});
 
@@ -70,6 +77,13 @@
 	function fillQuery(next: string) {
 		combobox.setQuery(next);
 		input?.focus();
+	}
+
+	function onKeydown(event: KeyboardEvent) {
+		if (open) return combobox.onKeydown(event, pick);
+		if (!OPENING_KEYS.has(event.key)) return;
+		event.preventDefault();
+		onOpen();
 	}
 
 	function pick(entry: SearchEntry) {
@@ -93,7 +107,7 @@
 		activeId={expanded && combobox.activeEntry ? optionId(combobox.active) : undefined}
 		{onInput}
 		onClear={() => fillQuery('')}
-		onKeydown={(event) => combobox.onKeydown(event, pick)}
+		{onKeydown}
 		size="desktop"
 		{open}
 		disabled={!hydrated}
