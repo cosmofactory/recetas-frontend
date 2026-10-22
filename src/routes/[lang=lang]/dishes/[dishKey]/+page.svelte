@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import JsonLd from '#lib/components/JsonLd.svelte';
 	import PageHead from '#lib/components/PageHead.svelte';
 	import DishPagesTopBar from '#lib/components/dish/DishPagesTopBar.svelte';
 	import VariationsHeader from '#lib/components/dish/VariationsHeader.svelte';
@@ -8,10 +9,12 @@
 	import BackPill from '#lib/components/ui/BackPill.svelte';
 	import StickyTopBar from '#lib/components/ui/StickyTopBar.svelte';
 	import VariationCard from '#lib/content/VariationCard.svelte';
+	import { headLinks } from '#lib/i18n/head-links.ts';
 	import { localeFromPath } from '#lib/i18n/locales.ts';
 	import { recipeHref } from '#lib/i18n/localized-href.ts';
 	import { m } from '#lib/paraglide/messages.js';
 	import { popularDishHref } from '#lib/popular/filters.ts';
+	import { variationsPageJsonLd } from '#lib/seo/dish-pages-json-ld.ts';
 	import { ogImageUrl } from '#lib/seo/og-image.ts';
 	import { originTab, type BackOrigin } from '#lib/ui/back-origin.ts';
 	import { inAppBack } from '#lib/ui/in-app-back.ts';
@@ -38,9 +41,17 @@
 			heroPrefix: dish.photos.hero
 		})
 	);
+	const jsonLd = $derived(
+		variationsPageJsonLd(dish, {
+			origin: data.origin,
+			lang,
+			url: headLinks(data.origin, page.url).canonical
+		})
+	);
 </script>
 
 <PageHead title={variationsTitle(dish.name)} description={dish.description} {image} />
+<JsonLd data={jsonLd} />
 
 <DishPagesTopBar {lang} tab={originTab(origin)} url={page.url} catalog={data} />
 <main class="variations page-container">

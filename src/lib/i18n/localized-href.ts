@@ -13,3 +13,7 @@ export const variationsHref = (dishKey: string, lang: Locale | string): string =
 // A variation's Recipe page, /:lang/dishes/:dishKey/:regionKey.
 export const recipeHref = (dishKey: string, regionKey: string, lang: Locale | string): string =>
 	localizedHref(`/dishes/${dishKey}/${regionKey}`, lang);
+
+// A region on the home map, /:lang/regions/:regionKey.
+export const regionHref = (regionKey: string, lang: Locale | string): string =>
+	localizedHref(`/regions/${regionKey}`, lang);

@@ -1,4 +1,4 @@
-import { localizedHref, recipeHref, variationsHref } from '#lib/i18n/localized-href.ts';
+import { recipeHref, regionHref, variationsHref } from '#lib/i18n/localized-href.ts';
 import type { SearchEntry } from './search-index.ts';
 
 export type SearchLayout = 'mobile' | 'desktop';
@@ -11,7 +11,7 @@ type ResultTarget = Pick<SearchEntry, 'group' | 'dishKey' | 'regionKey'>;
 // its recipe on desktop.
 export function searchResultHref(entry: ResultTarget, lang: string, layout: SearchLayout): string {
 	const { dishKey = '', regionKey = '' } = entry;
-	if (entry.group === 'region') return localizedHref(`/regions/${regionKey}`, lang);
+	if (entry.group === 'region') return regionHref(regionKey, lang);
 	if (entry.group === 'variation' && layout === 'desktop') {
 		return recipeHref(dishKey, regionKey, lang);
 	}

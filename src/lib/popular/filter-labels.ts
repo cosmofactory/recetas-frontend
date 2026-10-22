@@ -1,10 +1,13 @@
 import { DOT_SEPARATOR, formatNumber } from '#lib/i18n/format.ts';
 import { m } from '#lib/paraglide/messages.js';
 import { getLocale } from '#lib/paraglide/runtime.js';
+import type { Locale } from '#lib/i18n/locales.ts';
 import type { FilterGroupKey, FilterId } from './filters.ts';
 
+type LabelMessage = (inputs?: Record<string, never>, options?: { locale?: Locale }) => string;
+
 // strings.json -> home.filterLabels, by filter id.
-const FILTER_LABELS: Record<FilterId, () => string> = {
+const FILTER_LABELS: Record<FilterId, LabelMessage> = {
 	vegetarian: m.home_filterLabels_vegetarian,
 	seafood: m.home_filterLabels_seafood,
 	pork: m.home_filterLabels_withPork,
@@ -19,7 +22,9 @@ const FILTER_LABELS: Record<FilterId, () => string> = {
 	'all-year': m.home_filterLabels_allYear
 };
 
-export const filterLabel = (id: FilterId): string => FILTER_LABELS[id]();
+// In `locale`, else the request's locale.
+export const filterLabel = (id: FilterId, locale?: Locale): string =>
+	FILTER_LABELS[id]({}, { locale });
 
 // strings.json -> home.diet / course / effort / season: the groups' eyebrows.
 const GROUP_LABELS: Record<FilterGroupKey, () => string> = {

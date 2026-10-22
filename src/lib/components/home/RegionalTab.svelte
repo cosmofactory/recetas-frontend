@@ -4,7 +4,7 @@
 	import StickyPanel from '#lib/components/ui/StickyPanel.svelte';
 	import RegionDetails from '#lib/content/RegionDetails.svelte';
 	import RegionMap from '#lib/content/RegionMap.svelte';
-	import { localizedHref, recipeHref as recipeHrefIn } from '#lib/i18n/localized-href.ts';
+	import { recipeHref as recipeHrefIn, regionHref } from '#lib/i18n/localized-href.ts';
 	import type { MapRegionData } from '#lib/map/region-map.ts';
 	import { desktopQuery } from '#lib/ui/breakpoints.ts';
 	import { sheetOpener } from '#lib/ui/sheet-opener.ts';
@@ -38,7 +38,7 @@
 	// The map link that opened the sheet gets focus back when it closes.
 	const regionOpener = sheetOpener();
 
-	const hrefFor = (regionKey: string) => localizedHref(`/regions/${regionKey}`, lang);
+	const hrefFor = (regionKey: string) => regionHref(regionKey, lang);
 	const recipeHref = (dishKey: string, regionKey: string) => recipeHrefIn(dishKey, regionKey, lang);
 </script>
 
