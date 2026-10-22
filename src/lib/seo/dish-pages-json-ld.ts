@@ -1,7 +1,8 @@
 import type { components } from '#lib/api/schema.d.ts';
-import { localizedHref, recipeHref, variationsHref } from '#lib/i18n/localized-href.ts';
+import { recipeHref, variationsHref } from '#lib/i18n/localized-href.ts';
 import type { Locale } from '#lib/i18n/locales.ts';
 import { SITE_NAME } from '#lib/page-title.ts';
+import { REGIONAL, tabHref } from '#lib/ui/home-tab.ts';
 import type { JsonLdNode } from './json-ld.ts';
 import { breadcrumbJsonLd, itemListJsonLd, type LinkedPage } from './list-json-ld.ts';
 import { recipeJsonLd } from './recipe-json-ld.ts';
@@ -12,12 +13,10 @@ type Recipe = components['schemas']['Recipe'];
 // Where a page is: PUBLIC_ORIGIN, its locale and its canonical URL.
 export type PageLocation = { origin: string; lang: Locale; url: string };
 
-const HOME_PATH = '/';
-
 // The brand is the home crumb's name, untranslated like the site name.
 const homeCrumb = ({ origin, lang }: PageLocation): LinkedPage => ({
 	name: SITE_NAME,
-	url: `${origin}${localizedHref(HOME_PATH, lang)}`
+	url: `${origin}${tabHref(REGIONAL, lang)}`
 });
 
 // Variations page: Home → dish, and its variations' Recipe pages in the API's

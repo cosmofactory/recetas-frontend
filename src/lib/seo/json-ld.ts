@@ -4,7 +4,7 @@ export type JsonLdNode = Record<string, unknown>;
 
 // The text of a <script type="application/ld+json">. Script text is raw (no
 // entity decoding), so instead of HTML-escaping, every "<" becomes the JSON
-// escape <: no content can close the script or open a comment, and the
+// escape `\u003c`: no content can close the script or open a comment, and the
 // text still parses to the same value.
 export function serializeJsonLd(data: unknown): string {
 	return JSON.stringify(data).replaceAll('<', '\\u003c');
