@@ -52,9 +52,11 @@ jobs:
       - name: API contract drift
         run: pnpm api:check
 
-      # Vitest's browser project runs component tests in Chromium.
+      # Vitest's browser project runs component tests in Chromium. The hosted
+      # runner already has Chrome's system libraries, so skip --with-deps:
+      # its apt step stalled on a slow Ubuntu mirror until the job timed out.
       - name: Install Chromium for component tests
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm exec playwright install chromium
 
       - name: Unit and component tests
         run: pnpm test
@@ -74,6 +76,12 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4]
+    # The official image ships the browsers and their system libraries, so
+    # no job waits on apt (a slow Ubuntu mirror cancelled whole shards at
+    # 30 minutes). Keep the tag equal to the @playwright/test version; a
+    # mismatch fails at launch with "Executable doesn't exist".
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
 
     steps:
       - name: Check out repository
@@ -91,10 +99,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install browsers
-        run: pnpm test:e2e:install
-
       - name: Playwright
+        # Firefox refuses to start as root with a HOME it doesn't own, and
+        # Actions resets HOME to /github/home for every step.
+        env:
+          HOME: /root
         run: pnpm test:e2e --shard=${{ matrix.shard }}/${{ strategy.job-total }}
 
       - name: Upload Playwright traces
