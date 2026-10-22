@@ -79,4 +79,11 @@ describe('unitLabel', () => {
 			expect(got, `got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`).toBe(want);
 		});
 	}
+
+	for (const unknown of ['cup', 'toString', 'constructor']) {
+		it(`unitLabel(en, ${unknown}) throws as an unknown unit`, async () => {
+			const unitLabel = await loadExport<UnitLabel>(MODULE, 'unitLabel');
+			expect(() => unitLabel('en', unknown)).toThrow(new RegExp(unknown));
+		});
+	}
 });
