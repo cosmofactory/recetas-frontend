@@ -23,6 +23,7 @@ const harnessModules: Record<string, Loader> = import.meta.glob('./*Harness.svel
 const uiLogicModules: Record<string, Loader> = import.meta.glob('../lib/ui/*.ts');
 const contentModules: Record<string, Loader> = import.meta.glob('../lib/content/*.svelte');
 const homeModules: Record<string, Loader> = import.meta.glob('../lib/components/home/*.svelte');
+const searchModules: Record<string, Loader> = import.meta.glob('../lib/components/search/*.svelte');
 const mapModules: Record<string, Loader> = import.meta.glob([
 	'../lib/map/*.ts',
 	'!../lib/map/*.spec.ts'
@@ -69,6 +70,13 @@ export function loadContent<P extends Record<string, unknown>>(
 export function loadHome<P extends Record<string, unknown>>(name: string): Promise<Component<P>> {
 	const file = `../lib/components/home/${name}.svelte`;
 	return loadFrom(homeModules[file], `src/lib/components/home/${name}.svelte`, 'default');
+}
+
+export function loadSearchComponent<P extends Record<string, unknown>>(
+	name: string
+): Promise<Component<P>> {
+	const file = `../lib/components/search/${name}.svelte`;
+	return loadFrom(searchModules[file], `src/lib/components/search/${name}.svelte`, 'default');
 }
 
 // An export of a src/lib/map module, e.g. loadMapExport('grid.ts', 'parseGrid').
