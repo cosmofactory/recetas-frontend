@@ -30,6 +30,11 @@ import {
 	onlyNodeOfType
 } from '../../../../../testutil/json-ld';
 import { loadExport } from '../../../../../testutil/load-export';
+import {
+	expectHeroPreload,
+	expectNoImagePreload,
+	imagePreloads
+} from '../../../../../testutil/hero-preload';
 import { renderKitPage, unmockKit } from '../../../../../testutil/ssr-page';
 import { PAGE_COPY, pageTitle } from '../../../../../testutil/variations-copy';
 
@@ -511,5 +516,26 @@ describe('Recipe page JSON-LD (FE-8)', { timeout: COLD_COMPILE_TIMEOUT_MS }, () 
 			const { head } = await renderPage({ lang: 'en', description: HOSTILE });
 			expect(onlyNodeOfType(head, 'Recipe').description).toBe(HOSTILE);
 		});
+	});
+});
+
+// FE-8 PR 3: the hero preload (rules in testutil/hero-preload.ts).
+describe('Recipe page: hero preload (FE-8)', { timeout: COLD_COMPILE_TIMEOUT_MS }, () => {
+	for (const lang of ['en', 'es', 'ru'] as const) {
+		it(`${lang}: with a hero photo the head preloads it, matching the <picture>`, async () => {
+			expectHeroPreload(
+				await renderPage({ lang, withPhotos: true }),
+				'dishes/tortilla/gal/hero-1a2b'
+			);
+		});
+	}
+
+	it('without photos there is no image preload', async () => {
+		expectNoImagePreload(await renderPage({ lang: 'en' }));
+	});
+
+	it('the preload is in the head, never the body', async () => {
+		const { body } = await renderPage({ lang: 'en', withPhotos: true });
+		expect(imagePreloads(body)).toEqual([]);
 	});
 });

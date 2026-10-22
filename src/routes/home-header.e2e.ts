@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '../testutil/e2e-test';
 import { LOCALES } from '../testutil/e2e';
 import {
 	bottom,

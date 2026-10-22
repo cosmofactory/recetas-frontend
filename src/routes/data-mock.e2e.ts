@@ -1,4 +1,4 @@
-import { expect, test, type TestInfo } from '@playwright/test';
+import { expect, test, type TestInfo } from '../testutil/e2e-test';
 import { getRaw, htmlLang } from '../testutil/e2e';
 
 // FE-2 acceptance with DATA_SOURCE=mock (set on the Playwright webServer):

@@ -1,4 +1,4 @@
-import { expect, test, type APIRequestContext, type TestInfo } from '@playwright/test';
+import { expect, test, type APIRequestContext, type TestInfo } from '../testutil/e2e-test';
 import { getRaw, LOCALES, PAGES, type Locale } from '../testutil/e2e';
 import { PUBLIC_ORIGIN } from '../testutil/e2e-origin';
 import { decodeAmp, startTags } from '../testutil/html';

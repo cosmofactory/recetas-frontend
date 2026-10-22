@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from '../testutil/e2e-test';
 import { gotoHydrated, onlyVisible, pathAndQuery } from '../testutil/home-e2e';
 import { expectUrl, HOME_WITH_FILTERS } from '../testutil/home-flow-e2e';
 import { skipOnDesktop } from '../testutil/popular-e2e';

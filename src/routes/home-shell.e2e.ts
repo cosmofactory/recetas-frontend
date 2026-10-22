@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page, type TestInfo } from '@playwright/test';
+import { expect, test, type Locator, type Page, type TestInfo } from '../testutil/e2e-test';
 import { getRaw } from '../testutil/e2e';
 import {
 	expectSameDocument,

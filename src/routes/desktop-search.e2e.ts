@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page, type TestInfo } from '@playwright/test';
+import { expect, test, type Locator, type Page, type TestInfo } from '../testutil/e2e-test';
 import { expectAnimationsSettled } from '../testutil/animations-e2e';
 import { expectNoViolations } from '../testutil/axe-e2e';
 import { expectPillWithHref, clickPill } from '../testutil/desktop-pages-e2e';

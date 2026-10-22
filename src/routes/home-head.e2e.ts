@@ -1,4 +1,4 @@
-import { expect, test, type TestInfo } from '@playwright/test';
+import { expect, test, type TestInfo } from '../testutil/e2e-test';
 import { LOCALES } from '../testutil/e2e';
 import { PUBLIC_ORIGIN } from '../testutil/e2e-origin';
 import { gotoHydrated, HOME_COPY } from '../testutil/home-e2e';

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from '../testutil/e2e-test';
 import { PAGES } from '../testutil/e2e';
 
 // FE-1 review follow-ups: <html lang> must follow client-side navigation (it

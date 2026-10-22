@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '../testutil/e2e-test';
 import { backPill, expectUrl, useShortWindow } from '../testutil/desktop-pages-e2e';
 import {
 	boxOf,
