@@ -74,6 +74,15 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4]
+    # The official image ships the browsers and their system libraries, so
+    # no job waits on apt (a slow Ubuntu mirror cancelled whole shards at
+    # 30 minutes). Keep the tag equal to the @playwright/test version; a
+    # mismatch fails at launch with "Executable doesn't exist".
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      # Firefox refuses to start as root with a HOME it doesn't own.
+      env:
+        HOME: /root
 
     steps:
       - name: Check out repository
@@ -90,9 +99,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Install browsers
-        run: pnpm test:e2e:install
 
       - name: Playwright
         run: pnpm test:e2e --shard=${{ matrix.shard }}/${{ strategy.job-total }}
