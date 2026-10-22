@@ -12,6 +12,14 @@ import {
 } from '../../../../testutil/html';
 import type { Lang } from '../../../../testutil/map';
 import { VARIATION_REGIONS } from '../../../../testutil/popular-copy';
+import {
+	breadcrumbItems,
+	jsonLdDocuments,
+	jsonLdScripts,
+	nodesOfType,
+	onlyNodeOfType,
+	type JsonLdNode
+} from '../../../../testutil/json-ld';
 import { renderKitPage, unmockKit } from '../../../../testutil/ssr-page';
 import {
 	backFallback,
@@ -333,5 +341,83 @@ describe('Variations page og:image (FE-8)', () => {
 		const { head } = await renderPage({ lang: 'es' });
 		const want = `${ORIGIN}/og-default.png`;
 		expect(metaContents(head, 'og:image'), `want og:image ${want}`).toEqual([want]);
+	});
+});
+
+// FE-8 PR 2 (stage FE-8 -> SEO: "ItemList or BreadcrumbList markup on the
+// Variations pages"): both, in the head as <script type="application/ld+json">
+// (same serialiser as the Recipe page, json-ld.spec.ts), each document with
+// @context https://schema.org.
+// - BreadcrumbList Home → dish: "Asadorov" (the brand, untranslated) at
+//   /:lang/, then the dish name at this page's canonical; `item` absolute.
+// - ItemList of the variations' Recipe pages in the API's region order (all
+//   equal, none first by merit): ListItem { position from 1, url (absolute
+//   canonical of the Recipe page), name (the variation name) }.
+// - No Recipe node here: the recipes are on their own pages.
+type ListEntry = { position: number; url: string; name: string };
+
+function itemListEntries(list: JsonLdNode): ListEntry[] {
+	return ((list.itemListElement ?? []) as JsonLdNode[]).map((entry) => ({
+		position: entry.position as number,
+		url: entry.url as string,
+		name: entry.name as string
+	}));
+}
+
+function wantEntries(lang: Lang, dishKey: string): ListEntry[] {
+	return fixtureDish({ lang, dishKey }).variations.map((v, i) => ({
+		position: i + 1,
+		url: `${ORIGIN}${recipePath(lang, dishKey, v.regionKey)}`,
+		name: v.name
+	}));
+}
+
+describe('Variations page JSON-LD (FE-8)', { timeout: COLD_COMPILE_TIMEOUT_MS }, () => {
+	for (const lang of VARIATIONS_LOCALES) {
+		it(`${lang}: a BreadcrumbList Home → dish`, async () => {
+			const list = onlyNodeOfType((await renderPage({ lang })).head, 'BreadcrumbList');
+			expect(breadcrumbItems(list)).toEqual([
+				{ position: 1, name: 'Asadorov', item: `${ORIGIN}/${lang}/` },
+				{ position: 2, name: TORTILLA_PAGE[lang].name, item: `${ORIGIN}/${lang}/dishes/tortilla` }
+			]);
+		});
+
+		it(`${lang}: an ItemList of every variation's recipe URL, in region order`, async () => {
+			const list = onlyNodeOfType((await renderPage({ lang })).head, 'ItemList');
+			expect(itemListEntries(list)).toEqual(wantEntries(lang, 'tortilla'));
+		});
+	}
+
+	it('every ItemList entry is a ListItem', async () => {
+		const list = onlyNodeOfType((await renderPage({ lang: 'en' })).head, 'ItemList');
+		const types = ((list.itemListElement ?? []) as JsonLdNode[]).map((e) => e['@type']);
+		expect(types.length, 'got an empty ItemList').toBe(VARIATION_REGIONS.tortilla.length);
+		expect(new Set(types)).toEqual(new Set(['ListItem']));
+	});
+
+	it('paella: the ItemList keeps the API (region) order: cat, ara, val, …', async () => {
+		const { head } = await renderPage({ lang: 'en', dishKey: 'paella' });
+		const urls = itemListEntries(onlyNodeOfType(head, 'ItemList')).map((e) => e.url);
+		const want = VARIATION_REGIONS.paella.map((r) => `${ORIGIN}${recipePath('en', 'paella', r)}`);
+		expect(urls).toEqual(want);
+	});
+
+	it('the ItemList URLs are the variation cards’ links, made absolute', async () => {
+		const { head, body } = await renderPage({ lang: 'ru' });
+		const urls = itemListEntries(onlyNodeOfType(head, 'ItemList')).map((e) => e.url);
+		expect(urls).toEqual(cardHrefs(body).map((href) => `${ORIGIN}${href}`));
+	});
+
+	it('every JSON-LD document names the schema.org context', async () => {
+		const docs = jsonLdDocuments((await renderPage({ lang: 'es' })).head);
+		expect(docs.length, 'got no JSON-LD in the head').toBeGreaterThan(0);
+		for (const doc of docs) expect(doc['@context']).toBe('https://schema.org');
+	});
+
+	it('is in the head, never the body, and has no Recipe node', async () => {
+		const { head, body } = await renderPage({ lang: 'en' });
+		expect(jsonLdScripts(head).length, 'got no JSON-LD in the head').toBeGreaterThan(0);
+		expect(jsonLdScripts(body)).toEqual([]);
+		expect(nodesOfType(head, 'Recipe')).toEqual([]);
 	});
 });
