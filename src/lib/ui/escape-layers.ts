@@ -4,9 +4,10 @@
 // so an Escape an inner control already handled (defaultPrevented) is left
 // alone, and the one handled here is marked for anything further out.
 
-export type EscapeLayerKind = 'sheet' | 'overlay';
+// search: the full-screen search overlay, above the Filters sheet (FE-7).
+export type EscapeLayerKind = 'sheet' | 'overlay' | 'search';
 
-const LAYER_ORDER: Record<EscapeLayerKind, number> = { sheet: 0, overlay: 1 };
+const LAYER_ORDER: Record<EscapeLayerKind, number> = { sheet: 0, overlay: 1, search: 2 };
 
 type Layer = { order: number; onEscape: () => void };
 

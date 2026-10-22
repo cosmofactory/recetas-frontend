@@ -45,15 +45,22 @@ function cycleTab(container: HTMLElement, event: KeyboardEvent) {
 	target.focus();
 }
 
+// moveFocus: false leaves focus where it is, for a container that moves it
+// in itself later (the search overlay, after its enter transition).
+export type TrapFocusOptions = { moveFocus?: boolean };
+
 // Keeps Tab inside `container` until the returned release is called. Focus
 // moves in unless it is already there (e.g. on the handle that expanded the
 // sheet). Escape is not handled here but by escape-layers.ts.
-export function trapFocus(container: HTMLElement): () => void {
+export function trapFocus(
+	container: HTMLElement,
+	{ moveFocus = true }: TrapFocusOptions = {}
+): () => void {
 	const onKeydown = (event: KeyboardEvent) => {
 		if (event.key === 'Tab') cycleTab(container, event);
 	};
 	container.addEventListener('keydown', onKeydown);
-	if (!container.contains(document.activeElement)) {
+	if (moveFocus && !container.contains(document.activeElement)) {
 		(tabbableWithin(container)[0] ?? container).focus();
 	}
 	return () => container.removeEventListener('keydown', onKeydown);

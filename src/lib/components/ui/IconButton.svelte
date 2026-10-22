@@ -6,14 +6,25 @@
 		// The accessible name (a message); the icon is the only visible content.
 		label: string;
 		onclick?: (event: MouseEvent) => void;
+		// The popup it opens (e.g. the search overlay's dialog) and whether
+		// that is open; both left off for a plain action.
+		haspopup?: 'dialog' | 'menu';
+		expanded?: boolean;
 	};
 
-	let { icon, label, onclick }: Props = $props();
+	let { icon, label, onclick, haspopup, expanded }: Props = $props();
 
 	const Icon = $derived(ICONS[icon]);
 </script>
 
-<button type="button" class="icon-button" aria-label={label} {onclick}>
+<button
+	type="button"
+	class="icon-button"
+	aria-label={label}
+	aria-haspopup={haspopup}
+	aria-expanded={expanded}
+	{onclick}
+>
 	<Icon size={ICON_SIZE_PX} aria-hidden={true} />
 </button>
 

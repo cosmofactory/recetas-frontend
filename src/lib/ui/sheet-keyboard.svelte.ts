@@ -14,6 +14,8 @@ type SheetKeyboardOptions = {
 	// The control that opened it, when the screen knows (WebKit doesn't focus
 	// a link on click); otherwise the focused element.
 	opener?: () => HTMLElement | undefined;
+	// false: going modal doesn't move focus in; the layer does it itself.
+	focusOnModal?: boolean;
 };
 
 // Another sheet (role="dialog"), whose own focus return moves focus here.
@@ -34,8 +36,8 @@ function trackOpener(sheet: HTMLElement | undefined, onOpener: (opener: HTMLElem
 	return () => sheet.removeEventListener('focusin', onFocusIn);
 }
 
-// The keyboard and focus behaviour both sheets share; call it during
-// component init.
+// The keyboard and focus behaviour the sheets and the search overlay share;
+// call it during component init.
 export function sheetKeyboard(options: SheetKeyboardOptions) {
 	// Derived, so the effects rerun only when the flags flip, not on every
 	// state change: peek → expanded must not re-remember the handle.
@@ -60,6 +62,6 @@ export function sheetKeyboard(options: SheetKeyboardOptions) {
 	$effect(() => {
 		const sheet = options.sheet();
 		if (!modal || !sheet) return;
-		return trapFocus(sheet);
+		return trapFocus(sheet, { moveFocus: options.focusOnModal ?? true });
 	});
 }

@@ -30,6 +30,8 @@ const NON_COPY_PROPS = new Set([
 	'role',
 	// FE-3 primitives: IconButton's icon name; Photo's CSS lengths and sizes list.
 	'icon',
+	// FE-7: IconButton's aria-haspopup token ('dialog' | 'menu').
+	'haspopup',
 	'height',
 	'radius',
 	'sizes'

@@ -4,14 +4,15 @@
 	import LanguageButton from '#lib/components/ui/LanguageButton.svelte';
 	import SegmentedSwitch from '#lib/components/ui/SegmentedSwitch.svelte';
 
-	// searchLabel: the search button's name (the overlay arrives with FE-7).
+	// search: the button that opens the search overlay (FE-7).
+	type SearchButton = { label: string; expanded: boolean; onclick: (event: MouseEvent) => void };
 	type Props = {
 		tabs: ComponentProps<typeof SegmentedSwitch>;
 		language: ComponentProps<typeof LanguageButton>;
-		searchLabel: string;
+		search: SearchButton;
 	};
 
-	let { tabs, language, searchLabel }: Props = $props();
+	let { tabs, language, search }: Props = $props();
 </script>
 
 <!-- The mobile home's one heading is the logo; desktop has its own (AboutBlock). -->
@@ -20,7 +21,13 @@
 		<h1 class="logo">Asadorov</h1>
 		<div class="actions">
 			<LanguageButton {...language} />
-			<IconButton icon="search" label={searchLabel} />
+			<IconButton
+				icon="search"
+				label={search.label}
+				haspopup="dialog"
+				expanded={search.expanded}
+				onclick={search.onclick}
+			/>
 		</div>
 	</div>
 	<SegmentedSwitch

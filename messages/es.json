@@ -110,6 +110,7 @@
 	"a11y_check": "Marcar",
 	"a11y_sheetHandle": "Expandir o contraer",
 	"a11y_homeTabs": "Explorar",
+	"a11y_clearSearch": "Borrar búsqueda",
 	"devUi_title": "Componentes de interfaz (solo desarrollo)",
 	"devUi_iconButtons": "Botones de icono",
 	"devUi_chips": "Chips",

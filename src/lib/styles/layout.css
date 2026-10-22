@@ -68,6 +68,22 @@
 	--z-overlay: 20;
 	/* Desktop prototype top bar: "position:relative;z-index:30". */
 	--z-top-bar-desktop: 30;
+	/* Mobile README -> Overlay — Search: "Full-screen, above everything". */
+	--z-search: 40;
+
+	/*
+	 * Search overlay. Mobile README: "Enter: opacity 0 → 1 (250ms) and
+	 * translateY 24px → 0 (350ms --ease)" (the slide is --dur-search); the
+	 * prototype's clear "×" is a circle in rgba(43,30,22,.12), a suggestion
+	 * chip has a 1px rgba(43,30,22,.2) border and hover rgba(43,30,22,.05).
+	 * Result row: "40px thumb (radius 9px; regions 10px)" (--radius-thumb).
+	 */
+	--dur-search-fade: 250ms;
+	--search-enter-offset: 24px;
+	--bg-clear-search: rgba(43, 30, 22, 0.12);
+	--border-search-chip: rgba(43, 30, 22, 0.2);
+	--bg-search-chip-hover: rgba(43, 30, 22, 0.05);
+	--radius-search-thumb: 9px;
 
 	/* Desktop README -> Layout: max-width 1440px, centred; fluid padding and gaps. */
 	--content-max-width: 1440px;
