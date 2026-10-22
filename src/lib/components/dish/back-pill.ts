@@ -7,6 +7,14 @@ export type BackPillLink = { label: string; href: string };
 
 type RecipeNames = { dishKey: string; dishName: string; regionName: string };
 
+type Named = { key: string; name: string };
+
+// The [lang=lang] layout's lists, which name the page an origin URL is.
+export type OriginCatalog = { dishes: readonly Named[]; regions: readonly Named[] };
+
+// /:lang/dishes/:dishKey or /:lang/regions/:regionKey (and below).
+const ORIGIN_PAGE = /^\/[^/]+\/(dishes|regions)\/([^/?#]+)/;
+
 // Stage FE-6 -> Small decisions (desktop prototype dishBack): the home tab
 // the page came from, or on a direct load "‹ Popular" to /:lang/?tab=popular.
 export function variationsBackPill(origin: BackOrigin | null, lang: string): BackPillLink {
@@ -14,18 +22,24 @@ export function variationsBackPill(origin: BackOrigin | null, lang: string): Bac
 	return { label: tabLabel(origin.tab), href: origin.href };
 }
 
-// Desktop prototype recipeBack: the dish name from its Variations page (and
-// on a direct load, to that page), else Popular or the recipe's region.
+// Desktop prototype recipeBack: on a direct load the dish name, to its
+// Variations page. Else the label names the page the href goes to (stage
+// FE-7 -> Small decisions: a search pick can open another dish's recipe):
+// a Variations page by its dish, a region by its region, the home by its tab.
 export function recipeBackPill(
 	origin: BackOrigin | null,
 	recipe: RecipeNames,
-	lang: string
+	lang: string,
+	catalog: OriginCatalog
 ): BackPillLink {
 	if (!origin) return { label: recipe.dishName, href: variationsHref(recipe.dishKey, lang) };
-	return { label: recipeOriginLabel(origin, recipe), href: origin.href };
+	return { label: originPageName(origin, catalog) ?? tabLabel(origin.tab), href: origin.href };
 }
 
-function recipeOriginLabel(origin: BackOrigin, recipe: RecipeNames): string {
-	if (origin.from === 'variations') return recipe.dishName;
-	return origin.tab === POPULAR ? tabLabel(POPULAR) : recipe.regionName;
+function originPageName(origin: BackOrigin, catalog: OriginCatalog): string | undefined {
+	const match = ORIGIN_PAGE.exec(origin.href);
+	if (!match) return undefined;
+	const [, kind, key] = match;
+	const list = kind === 'dishes' ? catalog.dishes : catalog.regions;
+	return list.find((entry) => entry.key === key)?.name;
 }

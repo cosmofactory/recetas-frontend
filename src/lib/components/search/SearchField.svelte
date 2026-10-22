@@ -2,10 +2,12 @@
 	import { ICONS } from '#lib/components/ui/icons.ts';
 	import { m } from '#lib/paraglide/messages.js';
 
-	// The overlay's pill field: the combobox input (stage FE-7 -> Small
+	// The search pill field: the combobox input (stage FE-7 -> Small
 	// decisions, the APG list-autocomplete combobox) and its clear "×".
 	// listboxId is set only while the results show; activeId names the
-	// active option.
+	// active option. size="desktop" is the top bar's field (FE-7 PR 4): its
+	// own placeholder, a darker border while `open`, and `disabled` until
+	// hydrated (search runs client-side).
 	type Props = {
 		query: string;
 		input?: HTMLInputElement;
@@ -14,6 +16,11 @@
 		onInput: (query: string) => void;
 		onClear: () => void;
 		onKeydown: (event: KeyboardEvent) => void;
+		size?: 'mobile' | 'desktop';
+		open?: boolean;
+		disabled?: boolean;
+		onFocus?: () => void;
+		onClick?: () => void;
 	};
 
 	let {
@@ -23,7 +30,12 @@
 		activeId,
 		onInput,
 		onClear,
-		onKeydown
+		onKeydown,
+		size = 'mobile',
+		open = false,
+		disabled = false,
+		onFocus,
+		onClick
 	}: Props = $props();
 
 	// Prototype: the magnifier is 14px; the "×" glyph 13px in a 22px circle.
@@ -31,9 +43,10 @@
 	const CLEAR_ICON_PX = 13;
 	const Magnifier = ICONS.search;
 	const Clear = ICONS.close;
+	const desktop = $derived(size === 'desktop');
 </script>
 
-<div class="field" data-testid="search-field">
+<div class="field" class:desktop class:open data-testid="search-field">
 	<span class="magnifier" aria-hidden="true"><Magnifier size={MAGNIFIER_PX} /></span>
 	<input
 		bind:this={input}
@@ -46,10 +59,13 @@
 		aria-expanded={listboxId !== undefined}
 		aria-controls={listboxId}
 		aria-activedescendant={activeId}
-		placeholder={m.search_placeholder()}
+		placeholder={desktop ? m.desktop_ph() : m.search_placeholder()}
+		{disabled}
 		value={query}
 		oninput={(event) => onInput(event.currentTarget.value)}
 		onkeydown={onKeydown}
+		onfocus={onFocus}
+		onclick={onClick}
 	/>
 	{#if query}
 		<button type="button" class="clear" aria-label={m.a11y_clearSearch()} onclick={onClear}>
@@ -77,6 +93,23 @@
 		background: var(--bg-surface);
 	}
 
+	/*
+	 * Desktop README -> Top bar: "inline search field (height 44px)"; the
+	 * prototype's box is content-box (as the language button beside it),
+	 * "padding:0 16px", "transition:border-color .2s", and its border is
+	 * rgba(43,30,22,.45) while the dropdown is open.
+	 */
+	.field.desktop {
+		box-sizing: content-box;
+		height: 44px;
+		padding: 0 16px;
+		transition: border-color var(--dur-colour);
+	}
+
+	.field.desktop.open {
+		border-color: var(--border-field-open);
+	}
+
 	.magnifier {
 		display: flex;
 		flex: none;
@@ -91,6 +124,11 @@
 		background: transparent;
 		color: var(--ink);
 		font: 500 15px var(--font-text);
+	}
+
+	/* Prototype: the desktop input is "font:500 14px". */
+	.desktop input {
+		font-size: 14px;
 	}
 
 	input::placeholder {

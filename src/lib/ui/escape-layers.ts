@@ -4,7 +4,8 @@
 // so an Escape an inner control already handled (defaultPrevented) is left
 // alone, and the one handled here is marked for anything further out.
 
-// search: the full-screen search overlay, above the Filters sheet (FE-7).
+// search: the full-screen search overlay, above the Filters sheet, and the
+// desktop search dropdown (FE-7).
 // menu: the header's language menu, which opens above a peeking sheet.
 export type EscapeLayerKind = 'sheet' | 'overlay' | 'search' | 'menu';
 
