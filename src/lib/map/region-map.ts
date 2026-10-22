@@ -1,4 +1,4 @@
-import type { components } from '#lib/api/schema.d.ts';
+import type { CatalogRegion } from '#lib/api/catalog-region.ts';
 import mapGridFile from './map-grid.json';
 import { labelPosition, parseGrid, type GridCell, type MapGrid } from './grid.ts';
 
@@ -17,11 +17,7 @@ export type LabelPlacement = { left: string; top: string };
 
 export type RegionShape = { cells: GridCell[]; label: LabelPlacement };
 
-// A region as the server catalog hands it on: tileColor is null when the API
-// sent anything but #RRGGBB (#lib/server/region-colour.ts).
-export type MapRegionData = Omit<components['schemas']['Region'], 'tileColor'> & {
-	tileColor: string | null;
-};
+export type MapRegionData = CatalogRegion;
 
 export type ShapedRegion = MapRegionData & { shape: RegionShape };
 
