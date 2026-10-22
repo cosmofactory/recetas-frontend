@@ -14,6 +14,8 @@ type ViewTransitionMark = Exclude<PageDirection, 'none'> | 'fade';
 // The root layout's page container, which the CSS fallback animates.
 const APP_SHELL_CLASS = 'app-shell';
 
+const SUPERSEDED = 'page push superseded by a newer navigation';
+
 const root = () => document.documentElement;
 const ignore = () => undefined;
 let activeTransition: ViewTransition | undefined;
@@ -21,6 +23,11 @@ let activeTransition: ViewTransition | undefined;
 // itself (iOS edge swipe, Chrome Android back); SvelteKit doesn't pass the
 // event to onNavigate.
 let browserAnimatedPopstate = false;
+// The page push whose transition hasn't captured the old page yet. Kit has
+// already pushed its URL and renders it once our onNavigate resolves, even
+// when a newer navigation (a quick Back) has rendered meanwhile; so a newer
+// navigation supersedes it, and a superseded one never resolves.
+let pendingCapture: { superseded: boolean } | undefined;
 
 export function pagePush(): void {
 	// Capture phase, so it runs before SvelteKit's own popstate handler.
@@ -40,6 +47,7 @@ function takeBrowserAnimated(navigation: PushNavigation): boolean {
 }
 
 export function startPagePush(navigation: PushNavigation): Promise<void> | undefined {
+	if (pendingCapture) pendingCapture.superseded = true;
 	if (takeBrowserAnimated(navigation)) return undefined;
 	const direction = pageDirection(navigation);
 	if (direction === 'none' || matchMedia(desktopQuery).matches) return undefined;
@@ -53,11 +61,16 @@ export function startPagePush(navigation: PushNavigation): Promise<void> | undef
 
 // Resolves once the transition has captured the old page; its update then
 // waits for the new page, which is what it animates to. An aborted
-// navigation rejects the update and every promise derived from it.
+// navigation rejects the update and every promise derived from it; so does a
+// superseded one, which skips its transition and holds its navigation.
 function runViewTransition(mark: ViewTransitionMark, complete: Promise<void>): Promise<void> {
 	return new Promise((captured) => {
 		root().dataset.pagePush = mark;
+		const capture = { superseded: false };
+		pendingCapture = capture;
 		const transition = document.startViewTransition(async () => {
+			if (pendingCapture === capture) pendingCapture = undefined;
+			if (capture.superseded) throw new Error(SUPERSEDED);
 			captured();
 			await complete;
 		});

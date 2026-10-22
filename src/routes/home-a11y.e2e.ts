@@ -1,4 +1,5 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { expectNoViolations, loadAxe, summary, WCAG_AA_TAGS } from '../testutil/axe-e2e';
 import { gotoHydrated } from '../testutil/home-e2e';
 import {
 	dishCards,
@@ -25,55 +26,6 @@ import {
 //
 // The module is loaded at run time, so until it is installed this spec
 // fails as an assertion naming the package (and type-checks without it).
-
-const AXE_MODULE = '@axe-core/playwright';
-const WCAG_AA_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
-
-type Violation = {
-	id: string;
-	impact?: string | null;
-	help: string;
-	nodes: { target: unknown; html: string }[];
-};
-type AxeBuilder = {
-	withTags(tags: string[]): AxeBuilder;
-	withRules(rules: string[]): AxeBuilder;
-	analyze(): Promise<{ violations: Violation[]; incomplete: Violation[] }>;
-};
-type AxeBuilderClass = new (options: { page: Page }) => AxeBuilder;
-
-async function loadAxe(): Promise<AxeBuilderClass> {
-	let mod: { default?: AxeBuilderClass } = {};
-	let loadError = '';
-	try {
-		mod = (await import(/* @vite-ignore */ AXE_MODULE)) as { default?: AxeBuilderClass };
-	} catch (err) {
-		loadError = String(err);
-	}
-	expect(mod.default, `install ${AXE_MODULE} ~4.13.0 (devDependency): ${loadError}`).toBeDefined();
-	return mod.default!;
-}
-
-function summary(violations: Violation[]): string {
-	return violations
-		.map(
-			(v) =>
-				`${v.id} (${v.impact ?? 'n/a'}): ${v.help} at ${JSON.stringify(v.nodes.map((n) => n.target))}`
-		)
-		.join('\n');
-}
-
-// Best-practice landmark rules (FE-4 PR 3 review): one <main>, and all page
-// content inside some landmark.
-const LANDMARK_RULES = ['landmark-one-main', 'region'];
-
-async function expectNoViolations(page: Page, what: string) {
-	const Axe = await loadAxe();
-	const { violations } = await new Axe({ page }).withTags(WCAG_AA_TAGS).analyze();
-	expect(violations, `got axe violations on ${what}:\n${summary(violations)}`).toEqual([]);
-	const landmarks = (await new Axe({ page }).withRules(LANDMARK_RULES).analyze()).violations;
-	expect(landmarks, `got landmark violations on ${what}:\n${summary(landmarks)}`).toEqual([]);
-}
 
 const MOBILE_PROJECT = 'chromium-mobile-390';
 const DESKTOP_PROJECT = 'chromium-desktop-1280';

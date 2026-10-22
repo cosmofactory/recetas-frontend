@@ -7,6 +7,7 @@
 	import { dishCardHref } from '#lib/popular/card-href.ts';
 	import { clearFiltersHref, type FilterUrl } from '#lib/popular/filters.ts';
 	import { desktopQuery } from '#lib/ui/breakpoints.ts';
+	import { scrollSnapshot } from '#lib/ui/scroll-snapshot.ts';
 
 	// The Popular tab's filtered list, or its empty state. A card opens its
 	// dish sheet on mobile, the Variations page on desktop (dishCardHref), and
@@ -29,9 +30,14 @@
 	// Mobile: focus stays on the card, so closing its sheet returns it there.
 	// Desktop: the Variations page gets the default scroll and focus reset.
 	const reset = $derived(desktop.current ? undefined : 'false');
+
+	// The mobile list scrolls itself, so its offset comes back with the entry
+	// (D-FE6-1); on desktop the window scrolls and Kit restores that.
+	let list: HTMLDivElement | undefined = $state();
+	scrollSnapshot('home-popular-list', () => list);
 </script>
 
-<div class="list">
+<div bind:this={list} class="list">
 	{#if dishes.length > 0}
 		<ul class="cards" role="list" data-sveltekit-reset={reset}>
 			{#each dishes as dish (dish.key)}

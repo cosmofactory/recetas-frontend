@@ -184,6 +184,9 @@
 	--radius-dish-row: 8px;
 	--radius-dish-thumb: 8px;
 
+	/* Mobile README -> Screen 2: variation card "radius 18px" (tokens.json: "Variation card 18px"). */
+	--radius-variation-card: 18px;
+
 	/*
 	 * The design gives no focus colour; ink is its existing high-contrast UI
 	 * colour (on every page and surface background).

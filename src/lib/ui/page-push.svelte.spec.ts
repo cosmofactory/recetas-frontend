@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest';
+import { page } from 'vitest/browser';
 import {
 	deferred,
 	navigation,
@@ -480,6 +481,18 @@ describe('page-push.css fallback animation on .app-shell', () => {
 
 const nextTask = () => new Promise((resolve) => setTimeout(resolve, 0));
 
+// Every unhandled promise rejection until the test ends (kept off the console).
+function recordUnhandledRejections(): unknown[] {
+	const unhandled: unknown[] = [];
+	const record = (event: PromiseRejectionEvent) => {
+		unhandled.push(event.reason);
+		event.preventDefault();
+	};
+	window.addEventListener('unhandledrejection', record);
+	onTestFinished(() => window.removeEventListener('unhandledrejection', record));
+	return unhandled;
+}
+
 describe('startPagePush with overlapping or aborted navigations', () => {
 	useViewport(390, 844);
 
@@ -502,13 +515,7 @@ describe('startPagePush with overlapping or aborted navigations', () => {
 	// native API the update then rejects, and so do ready, updateCallbackDone
 	// and finished; none of that may surface as an unhandled rejection.
 	it('removes the mark, with no unhandled rejection, when the navigation is aborted', async () => {
-		const unhandled: unknown[] = [];
-		const record = (event: PromiseRejectionEvent) => {
-			unhandled.push(event.reason);
-			event.preventDefault();
-		};
-		window.addEventListener('unhandledrejection', record);
-		onTestFinished(() => window.removeEventListener('unhandledrejection', record));
+		const unhandled = recordUnhandledRejections();
 		const aborted = Promise.reject(new Error('navigation aborted'));
 		aborted.catch(() => undefined);
 		void (await startPagePush())(navigation({ ...PUSH, complete: aborted }));
@@ -520,19 +527,75 @@ describe('startPagePush with overlapping or aborted navigations', () => {
 
 	it('adds no fallback mark, and no unhandled rejection, when an aborted push has no API', async () => {
 		withoutViewTransitions();
-		const unhandled: unknown[] = [];
-		const record = (event: PromiseRejectionEvent) => {
-			unhandled.push(event.reason);
-			event.preventDefault();
-		};
-		window.addEventListener('unhandledrejection', record);
-		onTestFinished(() => window.removeEventListener('unhandledrejection', record));
+		const unhandled = recordUnhandledRejections();
 		const aborted = Promise.reject(new Error('navigation aborted'));
 		aborted.catch(() => undefined);
 		void (await startPagePush())(navigation({ ...PUSH, complete: aborted }));
 		await nextTask();
 		await nextTask();
 		expect(root.dataset.pagePushFallback, 'got a fallback mark').toBeUndefined();
+		expect(unhandled.map(String), 'got unhandled rejections').toEqual([]);
+	});
+});
+
+// FE-6 PR 2 review: a push whose view transition has not run its update yet
+// (the old page isn't captured) is superseded by a newer navigation B. When
+// A's update finally runs it must not capture or release A: A's navigation
+// stays held (SvelteKit has moved on to B), B runs as it would alone, and
+// nothing surfaces as an unhandled rejection. Regression guard.
+// Runs a transition's update the way the browser would: its rejection, if
+// any, is the transition's to handle (ready / updateCallbackDone / finished).
+async function runUpdate(started: Started) {
+	await Promise.resolve()
+		.then(started.update)
+		.catch(() => undefined);
+}
+
+describe('startPagePush when a newer navigation supersedes a pending push', () => {
+	useViewport(390, 844);
+
+	it('B with a transition (pop): A stays held, B captures and is released', async () => {
+		const unhandled = recordUnhandledRejections();
+		const { started } = fakeViewTransitions();
+		const start = await startPagePush();
+		const heldA = start(navigation(PUSH));
+		const heldB = start(navigation(POP));
+		expect(started.length, 'want a transition for A and one for B').toBe(2);
+		await runUpdate(started[0]);
+		expect(await isPending(heldA!), 'got the superseded push released').toBe(true);
+		expect(heldB, 'want B held until its own capture').toBeInstanceOf(Promise);
+		void started[1].update();
+		expect(await isPending(heldB!), 'got B still held after its update ran').toBe(false);
+		expect(root.dataset.pagePush, 'want B to own the mark').toBe('pop');
+		await nextTask();
+		expect(unhandled.map(String), 'got unhandled rejections').toEqual([]);
+	});
+
+	it('B with no transition (one dish → another): A stays held, B is not held', async () => {
+		const unhandled = recordUnhandledRejections();
+		const { started } = fakeViewTransitions();
+		const start = await startPagePush();
+		const heldA = start(navigation(PUSH));
+		const heldB = start(navigation({ from: DISH, to: '/en/dishes/paella' }));
+		expect(heldB, 'got B held though it has no transition').toBeUndefined();
+		expect(started.length, 'want no transition for B').toBe(1);
+		await runUpdate(started[0]);
+		expect(await isPending(heldA!), 'got the superseded push released').toBe(true);
+		await nextTask();
+		expect(unhandled.map(String), 'got unhandled rejections').toEqual([]);
+	});
+
+	it('B at 1280px (no page push): A stays held, B is not held', async () => {
+		const unhandled = recordUnhandledRejections();
+		const { started } = fakeViewTransitions();
+		const start = await startPagePush();
+		const heldA = start(navigation(PUSH));
+		await page.viewport(1280, 800);
+		const heldB = start(navigation(POP));
+		expect(heldB, 'got B held on desktop').toBeUndefined();
+		await runUpdate(started[0]);
+		expect(await isPending(heldA!), 'got the superseded push released').toBe(true);
+		await nextTask();
 		expect(unhandled.map(String), 'got unhandled rejections').toEqual([]);
 	});
 });

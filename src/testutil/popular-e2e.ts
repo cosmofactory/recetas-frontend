@@ -88,7 +88,7 @@ export async function pressedChips(page: Page, lang: PopularLocale, ids: readonl
 }
 
 // The closest scrolling ancestor of the first card (the list's own
-// scroller): its sizes, after scrolling it to `scrollTop` when given.
+// scroller): its sizes and offset, after scrolling it to `scrollTop` when given.
 function measureScroller(page: Page, scrollTop?: number) {
 	return dishCards(page)
 		.first()
@@ -97,8 +97,13 @@ function measureScroller(page: Page, scrollTop?: number) {
 			while (el && !/(auto|scroll)/.test(getComputedStyle(el).overflowY)) el = el.parentElement;
 			if (el && top !== undefined) el.scrollTop = top;
 			return el
-				? { found: true, scrollHeight: el.scrollHeight, clientHeight: el.clientHeight }
-				: { found: false, scrollHeight: 0, clientHeight: 0 };
+				? {
+						found: true,
+						scrollHeight: el.scrollHeight,
+						clientHeight: el.clientHeight,
+						scrollTop: el.scrollTop
+					}
+				: { found: false, scrollHeight: 0, clientHeight: 0, scrollTop: 0 };
 		}, scrollTop);
 }
 

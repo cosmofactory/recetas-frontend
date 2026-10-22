@@ -3,12 +3,18 @@
 
 	// Localization -> Length: chips never truncate, so the filter bar scrolls
 	// sideways; the Filters sheet and the desktop sidebar wrap instead (`wrap`).
-	type Props = { children: Snippet; wrap?: boolean; size?: 'regular' | 'desktop' };
+	// `element`: the row itself, for a screen that keeps its scroll offset.
+	type Props = {
+		children: Snippet;
+		wrap?: boolean;
+		size?: 'regular' | 'desktop';
+		element?: HTMLDivElement;
+	};
 
-	let { children, wrap = false, size = 'regular' }: Props = $props();
+	let { children, wrap = false, size = 'regular', element = $bindable() }: Props = $props();
 </script>
 
-<div class="chip-row" class:wrap class:desktop={size === 'desktop'}>
+<div bind:this={element} class="chip-row" class:wrap class:desktop={size === 'desktop'}>
 	{@render children()}
 </div>
 
