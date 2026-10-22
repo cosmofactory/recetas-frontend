@@ -80,9 +80,6 @@ jobs:
     # mismatch fails at launch with "Executable doesn't exist".
     container:
       image: mcr.microsoft.com/playwright:v1.64.1-noble
-      # Firefox refuses to start as root with a HOME it doesn't own.
-      env:
-        HOME: /root
 
     steps:
       - name: Check out repository
@@ -101,6 +98,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Playwright
+        # Firefox refuses to start as root with a HOME it doesn't own, and
+        # Actions resets HOME to /github/home for every step.
+        env:
+          HOME: /root
         run: pnpm test:e2e --shard=${{ matrix.shard }}/${{ strategy.job-total }}
 
       - name: Upload Playwright traces
