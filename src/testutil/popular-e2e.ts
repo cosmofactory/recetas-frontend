@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { animationsSettled } from './animations-e2e';
 import { isDesktopPage, onlyVisible } from './home-e2e';
 import {
 	FILTERS_ACTIVE_ATTR,
@@ -160,12 +161,13 @@ const REST_TOLERANCE_PX = 1;
 
 // Whether the open sheet has come to rest: no transition or animation still
 // running on it, and its bottom edge on the frame's bottom (translateY 0).
-function sheetAtRest(sheet: Locator): Promise<boolean> {
-	return sheet.evaluate((el, tolerance) => {
-		const settled = el.getAnimations().every((a) => a.playState !== 'running');
-		const bottom = el.getBoundingClientRect().bottom;
-		return settled && Math.abs(bottom - window.innerHeight) <= tolerance;
-	}, REST_TOLERANCE_PX);
+async function sheetAtRest(sheet: Locator): Promise<boolean> {
+	if (!(await animationsSettled(sheet))) return false;
+	return sheet.evaluate(
+		(el, tolerance) =>
+			Math.abs(el.getBoundingClientRect().bottom - window.innerHeight) <= tolerance,
+		REST_TOLERANCE_PX
+	);
 }
 
 // Open and settled: geometry read after this is the resting layout, not a

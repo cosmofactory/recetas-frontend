@@ -46,10 +46,12 @@ import {
 //   font-size:12.5px; font-weight:700; letter-spacing:.08em`, hover
 //   `background:rgba(43,30,22,.06)` (= --bg-hover-subtle); it shows the
 //   current language code upper-cased (`langCode: L.toUpperCase()`) and a
-//   "▾" at `opacity:.55`. FE-7's language menu is a list of links, so the
-//   button is a disclosure (aria-expanded + aria-controls, no
-//   aria-haspopup), and its accessible name starts with the visible code
-//   (WCAG 2.5.3), the localized label after it ("EN Language"). It sits in a `position:relative` wrapper that also
+//   "▾" at `opacity:.55`. The bar passes the language props through to the
+//   bare LanguageButton untouched: aria-expanded and aria-controls always,
+//   aria-haspopup only when the caller opts in (`haspopup`; FE-7's header
+//   wiring passes "menu" for its APG menu button). Its accessible name
+//   starts with the visible code (WCAG 2.5.3), the localized label after it
+//   ("EN Language"). It sits in a `position:relative` wrapper that also
 //   holds the menu, so the menu anchors under it ("Language menu is the same
 //   as mobile, anchored under its button"): a `languageMenu` snippet (FE-7).
 // Rendered only from 860px ("Below 860px a separate mobile layout applies").
@@ -283,14 +285,22 @@ describe('DesktopTopBar language button', () => {
 
 	const states = [false, true];
 	for (const expanded of states) {
-		it(`is a disclosure for FE-7's menu: aria-expanded="${expanded}", aria-controls, no aria-haspopup`, async () => {
+		it(`passes aria-expanded="${expanded}" and aria-controls through, no aria-haspopup unless asked`, async () => {
 			await shownBar({ language: language({ expanded, controls: 'lang-menu' }) });
 			const button = languageButton();
 			expect(button.getAttribute('aria-expanded')).toBe(String(expanded));
 			expect(button.getAttribute('aria-controls')).toBe('lang-menu');
-			expect(button.getAttribute('aria-haspopup'), 'got aria-haspopup on a disclosure').toBeNull();
+			expect(
+				button.getAttribute('aria-haspopup'),
+				'got aria-haspopup without the haspopup prop'
+			).toBeNull();
 		});
 	}
+
+	it('passes the opt-in haspopup="menu" through as aria-haspopup', async () => {
+		await shownBar({ language: language({ controls: 'lang-menu', haspopup: 'menu' }) });
+		expect(languageButton().getAttribute('aria-haspopup')).toBe('menu');
+	});
 
 	it('anchors the languageMenu snippet under the button, right-aligned', async () => {
 		await shownBar({ languageMenu: MENU });

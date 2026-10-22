@@ -1,4 +1,5 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { expectAnimationsSettled } from '../testutil/animations-e2e';
 import { getRaw, LOCALES, setCookieHeaders } from '../testutil/e2e';
 import {
 	boxOf,
@@ -205,6 +206,7 @@ test.describe('language menu: placement', () => {
 			skipOnDesktop(page, 'the mobile dropdown (< 860px)');
 			await gotoHydrated(page, '/en/');
 			await openMenu(page, 'en');
+			await expectAnimationsSettled(languageMenu(page, 'en'), 'the menu');
 			const menu = await boxOf(languageMenu(page, 'en'), 'the menu');
 			const { width } = page.viewportSize()!;
 			expectPx(menu.width, MOBILE_MENU.width, 'menu width');
@@ -222,6 +224,7 @@ test.describe('language menu: placement', () => {
 				await gotoHydrated(page, url);
 				const button = await boxOf(languageButton(page, 'en'), 'the language button');
 				await openMenu(page, 'en');
+				await expectAnimationsSettled(languageMenu(page, 'en'), 'the menu');
 				const menu = await boxOf(languageMenu(page, 'en'), 'the menu');
 				expectPx(menu.width, DESKTOP_MENU.width, 'menu width');
 				expectPx(menu.y - button.y, DESKTOP_MENU.belowButtonTop, 'menu top below the button');

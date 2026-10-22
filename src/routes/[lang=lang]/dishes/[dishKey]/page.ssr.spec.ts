@@ -240,8 +240,17 @@ describe(
 		});
 
 		it('marks no card as current, best, primary or featured', async () => {
+			// aria-current is scoped to the cards: the language menu in the top
+			// bar legitimately marks the current language with it.
 			const { body } = await renderPage({ lang: 'en' });
-			expect(body).not.toMatch(/aria-current=|\b(best|primary|featured|highlight)\b/i);
+			const cards = cardsIn(body);
+			expect(cards.length, 'got no variation cards').toBeGreaterThan(0);
+			for (const [i, card] of cards.entries()) {
+				expect(card, `got a highlight on card ${i}`).not.toMatch(
+					/aria-current=|\b(best|primary|featured|highlight)\b/i
+				);
+			}
+			expect(body).not.toMatch(/\b(best|primary|featured|highlight)\b/i);
 		});
 
 		it('renders no map', async () => {
