@@ -35,7 +35,7 @@
 	<meta name="description" content={recipe.description} />
 </svelte:head>
 
-<DishPagesTopBar {lang} tab={originTab(origin)} />
+<DishPagesTopBar {lang} tab={originTab(origin)} url={page.url} />
 <main class="recipe page-container">
 	<div class="top-bar-slot mobile-only">
 		<StickyTopBar

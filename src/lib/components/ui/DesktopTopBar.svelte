@@ -7,7 +7,8 @@
 	type Tabs = Omit<ComponentProps<typeof SegmentedSwitch>, 'size'>;
 	type Language = Omit<ComponentProps<typeof LanguageButton>, 'size'>;
 	// search: the inline search field (FE-7); languageMenu: the menu,
-	// anchored under the language button.
+	// anchored under the language button, inside the <details> that opens it
+	// without JavaScript (language.summary).
 	type Props = {
 		homeHref: string;
 		tabs: Tabs;
@@ -34,10 +35,10 @@
 		</div>
 		<div class="spacer"></div>
 		{@render search?.()}
-		<div class="language">
+		<svelte:element this={language.summary ? 'details' : 'div'} class="language">
 			<LanguageButton {...language} size="desktop" />
 			{@render languageMenu?.()}
-		</div>
+		</svelte:element>
 	</div>
 </header>
 

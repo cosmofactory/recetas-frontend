@@ -85,6 +85,18 @@
 	--bg-search-chip-hover: rgba(43, 30, 22, 0.05);
 	--radius-search-thumb: 9px;
 
+	/*
+	 * Language menu (both READMEs -> Overlay — Language menu): "shadow 0 14px
+	 * 34px rgba(43,30,22,.18) … opacity 0→1 (180ms) and translateY −6px→0
+	 * (220ms --ease)". It and its outside-tap layer sit above a peeking
+	 * sheet's scrim and everything in the header.
+	 */
+	--shadow-menu: 0 14px 34px rgba(43, 30, 22, 0.18);
+	--dur-menu-fade: 180ms;
+	--dur-menu: 220ms;
+	--menu-enter-offset: -6px;
+	--z-menu: 50;
+
 	/* Desktop README -> Layout: max-width 1440px, centred; fluid padding and gaps. */
 	--content-max-width: 1440px;
 	--desktop-side-padding: clamp(24px, 2.8vw, 40px);

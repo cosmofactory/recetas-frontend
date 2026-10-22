@@ -9,6 +9,8 @@
 	import SearchOverlay from '#lib/components/search/SearchOverlay.svelte';
 	import { tabOptions } from '#lib/components/home/home-header.ts';
 	import DesktopTopBar from '#lib/components/ui/DesktopTopBar.svelte';
+	import LanguageMenu from '#lib/components/ui/LanguageMenu.svelte';
+	import { LanguageMenuState } from '#lib/components/ui/language-menu.svelte.ts';
 	import { localeFromPath } from '#lib/i18n/locales.ts';
 	import { localizedHref } from '#lib/i18n/localized-href.ts';
 	import { m } from '#lib/paraglide/messages.js';
@@ -64,21 +66,29 @@
 	});
 
 	const tabs = $derived({ value: tab, label: m.a11y_homeTabs(), onChange: replaceTab });
-	// Until the language menu arrives (FE-7) the button opens nothing.
-	const language = $derived({ code: lang, label: m.home_language(), expanded: false });
+	const mobileLanguage = new LanguageMenuState('mobile');
+	const desktopLanguage = new LanguageMenuState('desktop');
 </script>
 
 <div class="home">
 	<MobileHeader
 		tabs={{ ...tabs, options: tabOptions(lang, true) }}
-		{language}
+		language={mobileLanguage.button(lang)}
 		search={searchButton}
-	/>
+	>
+		{#snippet languageMenu()}
+			<LanguageMenu {...mobileLanguage.menu(lang, page.url)} />
+		{/snippet}
+	</MobileHeader>
 	<DesktopTopBar
 		homeHref={localizedHref('/', lang)}
 		tabs={{ ...tabs, options: tabOptions(lang, false) }}
-		{language}
-	/>
+		language={desktopLanguage.button(lang)}
+	>
+		{#snippet languageMenu()}
+			<LanguageMenu {...desktopLanguage.menu(lang, page.url)} />
+		{/snippet}
+	</DesktopTopBar>
 	<main class="home-main">
 		<HomeTabPanel tab={REGIONAL} selected={tab === REGIONAL}>
 			<RegionalTab

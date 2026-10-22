@@ -4,6 +4,14 @@ export type Locale = (typeof locales)[number];
 
 export const baseLocale: Locale = 'en';
 
+// The language menu's rows: each language in its own name (an endonym), the
+// same in every locale, so data rather than translated copy.
+export const localeNames: Record<Locale, string> = {
+	en: 'English',
+	es: 'Español',
+	ru: 'Русский'
+};
+
 export function isLocale(value: unknown): value is Locale {
 	return typeof value === 'string' && (locales as readonly string[]).includes(value);
 }

@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { tabOptions } from '#lib/components/home/home-header.ts';
 	import DesktopTopBar from '#lib/components/ui/DesktopTopBar.svelte';
+	import LanguageMenu from '#lib/components/ui/LanguageMenu.svelte';
+	import { LanguageMenuState } from '#lib/components/ui/language-menu.svelte.ts';
+	import type { Locale } from '#lib/i18n/locales.ts';
 	import { localizedHref } from '#lib/i18n/localized-href.ts';
+	import type { PageLocation } from '#lib/i18n/set-lang.ts';
 	import { m } from '#lib/paraglide/messages.js';
 	import type { HomeTab } from '#lib/ui/home-tab.ts';
 
@@ -9,9 +13,10 @@
 	// home's desktop top bar (not sticky). tab: the origin tab, which the
 	// switch shows; its tabs link to the home tabs. Arrow keys only move
 	// focus (manual activation), so leaving the page takes Enter or a click.
-	type Props = { lang: string; tab: HomeTab };
+	// url: the page URL, which the language menu keeps in each locale.
+	type Props = { lang: Locale; tab: HomeTab; url: PageLocation };
 
-	let { lang, tab }: Props = $props();
+	let { lang, tab, url }: Props = $props();
 
 	const tabs = $derived({
 		options: tabOptions(lang, false),
@@ -19,8 +24,11 @@
 		label: m.a11y_homeTabs(),
 		activation: 'manual' as const
 	});
-	// Until the language menu arrives (FE-7) the button opens nothing.
-	const language = $derived({ code: lang, label: m.home_language(), expanded: false });
+	const language = new LanguageMenuState('desktop');
 </script>
 
-<DesktopTopBar homeHref={localizedHref('/', lang)} {tabs} {language} />
+<DesktopTopBar homeHref={localizedHref('/', lang)} {tabs} language={language.button(lang)}>
+	{#snippet languageMenu()}
+		<LanguageMenu {...language.menu(lang, url)} />
+	{/snippet}
+</DesktopTopBar>

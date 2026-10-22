@@ -15,8 +15,9 @@ import {
 } from '../testutil/home-e2e';
 
 // FE-4 PR 2, the home header (stage FE-4 -> Header: "Logo "Asadorov" (never
-// translated), the language button (... a placeholder is fine until FE-7),
-// the search button (opens the overlay from FE-7), and the segmented switch
+// translated), the language button (... a placeholder is fine until FE-7;
+// it opens the language menu since FE-7 PR 3, language-menu.e2e.ts), the
+// search button (opens the overlay from FE-7), and the segmented switch
 // Regional | Popular, all with translated labels").
 //
 // Mobile (< 860px, `.mobile-only`), mobile README -> Screen 1 -> Header and
@@ -29,7 +30,7 @@ import {
 //   "ES" / "RU") + small ▾". Assumption: 40px is its outer height, like the
 //   search IconButton beside it (FE-3 built that one 40×40 border-box), so
 //   the two read as one row; like every control its hit area is 44px.
-//   Until FE-7 it opens nothing: aria-expanded="false"; its accessible name
+//   It loads closed: aria-expanded="false"; its accessible name
 //   is the visible code plus the localized "Language" (as on desktop).
 // - Search button: the FE-3 IconButton, named by a11y.search.
 // - Switch: SegmentedSwitch (FE-3 tests its styles), full header width.
@@ -94,7 +95,7 @@ test.describe('exactly one header at every width', () => {
 		);
 	}
 
-	test('the language button is a placeholder until FE-7: not expanded', async ({ page }) => {
+	test('the language button loads closed: not expanded', async ({ page }) => {
 		await gotoHydrated(page, '/en/');
 		await expect(languageButton(page, HOME_COPY.en.language)).toHaveAttribute(
 			'aria-expanded',

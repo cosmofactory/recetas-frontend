@@ -36,7 +36,7 @@
 	<meta name="description" content={dish.description} />
 </svelte:head>
 
-<DishPagesTopBar {lang} tab={originTab(origin)} />
+<DishPagesTopBar {lang} tab={originTab(origin)} url={page.url} />
 <main class="variations page-container">
 	<div class="top-bar-slot mobile-only">
 		<StickyTopBar
