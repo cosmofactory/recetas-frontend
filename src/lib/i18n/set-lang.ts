@@ -1,4 +1,5 @@
-import type { Locale } from './locales.ts';
+import { isLocale, type Locale } from './locales.ts';
+import { localizedHref } from './localized-href.ts';
 
 // Any base works: only same-origin, root-relative paths survive the checks.
 const PROBE_ORIGIN = 'http://next.invalid';
@@ -29,4 +30,20 @@ export function safeNext(to: Locale | string, next: string | null): string {
 // The language menu's link: /set-lang sets the cookie and comes back to `next`.
 export function setLangHref(to: Locale | string, next: string): string {
 	return `/set-lang?to=${encodeURIComponent(to)}&next=${encodeURIComponent(next)}`;
+}
+
+// What a row needs of the page URL (Kit's `page.url` is a read-only URL).
+export type PageLocation = Pick<URL, 'pathname' | 'search'>;
+
+// The page's path and query without its locale prefix ("/es/regions/gal" ->
+// "/regions/gal"); the fragment is dropped, as /set-lang only takes a path.
+function pathWithoutLocale(url: PageLocation): string {
+	const first = url.pathname.split('/')[1];
+	const rest = isLocale(first) ? url.pathname.slice(first.length + 1) : url.pathname;
+	return (rest || '/') + url.search;
+}
+
+// A language menu row: switch to `to` and land on the same route and query.
+export function languageSwitchHref(url: PageLocation, to: Locale | string): string {
+	return setLangHref(to, localizedHref(pathWithoutLocale(url), to));
 }

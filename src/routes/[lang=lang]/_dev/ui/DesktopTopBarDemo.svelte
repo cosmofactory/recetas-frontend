@@ -4,8 +4,8 @@
 	import { browseTabs } from './gallery.ts';
 
 	// Dev gallery: the desktop top bar, from 860px only (as it renders).
-	// There is no search field or language menu yet (FE-7); the button only
-	// toggles its expanded state.
+	// Shown without the search field and the language menu (FE-7, tested on
+	// their own); the button only toggles its expanded state.
 	type Props = { homeHref: string; lang: string };
 
 	let { homeHref, lang }: Props = $props();

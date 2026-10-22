@@ -5,9 +5,10 @@
 // alone, and the one handled here is marked for anything further out.
 
 // search: the full-screen search overlay, above the Filters sheet (FE-7).
-export type EscapeLayerKind = 'sheet' | 'overlay' | 'search';
+// menu: the header's language menu, which opens above a peeking sheet.
+export type EscapeLayerKind = 'sheet' | 'overlay' | 'search' | 'menu';
 
-const LAYER_ORDER: Record<EscapeLayerKind, number> = { sheet: 0, overlay: 1, search: 2 };
+const LAYER_ORDER: Record<EscapeLayerKind, number> = { sheet: 0, overlay: 1, search: 2, menu: 3 };
 
 type Layer = { order: number; onEscape: () => void };
 

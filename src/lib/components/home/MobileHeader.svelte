@@ -1,18 +1,21 @@
 <script lang="ts">
-	import type { ComponentProps } from 'svelte';
+	import type { ComponentProps, Snippet } from 'svelte';
 	import IconButton from '#lib/components/ui/IconButton.svelte';
 	import LanguageButton from '#lib/components/ui/LanguageButton.svelte';
 	import SegmentedSwitch from '#lib/components/ui/SegmentedSwitch.svelte';
 
-	// search: the button that opens the search overlay (FE-7).
+	// search: the button that opens the search overlay (FE-7); languageMenu:
+	// the menu the language button opens, inside the <details> that opens it
+	// without JavaScript (language.summary).
 	type SearchButton = { label: string; expanded: boolean; onclick: (event: MouseEvent) => void };
 	type Props = {
 		tabs: ComponentProps<typeof SegmentedSwitch>;
 		language: ComponentProps<typeof LanguageButton>;
 		search: SearchButton;
+		languageMenu?: Snippet;
 	};
 
-	let { tabs, language, search }: Props = $props();
+	let { tabs, language, search, languageMenu }: Props = $props();
 </script>
 
 <!-- The mobile home's one heading is the logo; desktop has its own (AboutBlock). -->
@@ -20,7 +23,10 @@
 	<div class="row">
 		<h1 class="logo">Asadorov</h1>
 		<div class="actions">
-			<LanguageButton {...language} />
+			<svelte:element this={language.summary ? 'details' : 'div'} class="language">
+				<LanguageButton {...language} />
+				{@render languageMenu?.()}
+			</svelte:element>
 			<IconButton
 				icon="search"
 				label={search.label}
@@ -67,5 +73,9 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
+	}
+
+	.language {
+		display: flex;
 	}
 </style>

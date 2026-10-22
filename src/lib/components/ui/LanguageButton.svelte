@@ -2,34 +2,59 @@
 	import { CARET_ICON_PX, ICONS } from './icons.ts';
 
 	// code: the current locale; label: the localized "Language" message.
-	// expanded / controls / onclick: the language menu (FE-7) it opens.
-	// size: the mobile header's or the desktop top bar's button.
+	// expanded / controls / haspopup / onclick / onkeydown: the language menu
+	// (FE-7) it opens. size: the mobile header's or the desktop top bar's
+	// button. summary: render as the <summary> of the caller's <details>,
+	// which opens the menu before (or without) JavaScript.
 	type Props = {
 		code: string;
 		label: string;
 		expanded: boolean;
 		controls?: string;
+		haspopup?: 'menu';
 		onclick?: (event: MouseEvent) => void;
+		onkeydown?: (event: KeyboardEvent) => void;
 		size?: 'mobile' | 'desktop';
+		summary?: boolean;
 	};
 
-	let { code, label, expanded, controls, onclick, size = 'mobile' }: Props = $props();
+	let {
+		code,
+		label,
+		expanded,
+		controls,
+		haspopup,
+		onclick,
+		onkeydown,
+		size = 'mobile',
+		summary = false
+	}: Props = $props();
 
 	const Caret = ICONS.caret;
 </script>
 
-<button
-	type="button"
-	class="language-button"
-	class:desktop={size === 'desktop'}
-	aria-expanded={expanded}
-	aria-controls={controls}
-	{onclick}
->
+{#snippet face()}
 	<span>{code.toUpperCase()}</span>
 	<span class="visually-hidden">{label}</span>
 	<span class="caret" aria-hidden="true"><Caret size={CARET_ICON_PX} /></span>
-</button>
+{/snippet}
+
+{#if summary}
+	<summary class="language-button" class:desktop={size === 'desktop'}>{@render face()}</summary>
+{:else}
+	<button
+		type="button"
+		class="language-button"
+		class:desktop={size === 'desktop'}
+		aria-expanded={expanded}
+		aria-controls={controls}
+		aria-haspopup={haspopup}
+		{onclick}
+		{onkeydown}
+	>
+		{@render face()}
+	</button>
+{/if}
 
 <style>
 	/*
@@ -68,6 +93,15 @@
 		padding: 0 14px 0 16px;
 		border-color: var(--border-language-button);
 		font-size: 12.5px;
+	}
+
+	/* The no-JS <summary> draws no disclosure marker. */
+	summary.language-button {
+		list-style: none;
+	}
+
+	summary.language-button::-webkit-details-marker {
+		display: none;
 	}
 
 	.language-button::before {
