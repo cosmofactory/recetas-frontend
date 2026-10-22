@@ -1,4 +1,4 @@
-import { largestJpegUrl } from '#lib/media.ts';
+import { jpegUrls, largestJpegUrl } from '#lib/media.ts';
 
 // Served from static/: a 1200x630 placeholder in the page colour until the
 // design team supplies the real image.
@@ -15,12 +15,22 @@ export type OgImageInput = {
 // fallback on PUBLIC_ORIGIN. A prefix media.ts rejects must not break the
 // head; the page's <Photo> reports it.
 export function ogImageUrl({ origin, mediaBaseUrl, heroPrefix = null }: OgImageInput): string {
-	return heroJpeg(mediaBaseUrl, heroPrefix) ?? `${origin}${OG_FALLBACK_IMAGE_PATH}`;
+	const options = { baseUrl: mediaBaseUrl, prefix: heroPrefix, role: 'hero' } as const;
+	return orNull(() => largestJpegUrl(options)) ?? fallbackUrl(origin);
 }
 
-function heroJpeg(baseUrl: string | undefined, prefix: string | null): string | null {
+// Every hero width as a JPEG (the JSON-LD `image`), else [the same fallback
+// as og:image]: Google requires an image for a Recipe rich result.
+export function heroImageUrls({ origin, mediaBaseUrl, heroPrefix = null }: OgImageInput): string[] {
+	const options = { baseUrl: mediaBaseUrl, prefix: heroPrefix, role: 'hero' } as const;
+	return orNull(() => jpegUrls(options)) ?? [fallbackUrl(origin)];
+}
+
+const fallbackUrl = (origin: string) => `${origin}${OG_FALLBACK_IMAGE_PATH}`;
+
+function orNull<T>(build: () => T | null): T | null {
 	try {
-		return largestJpegUrl({ baseUrl, prefix, role: 'hero' });
+		return build();
 	} catch {
 		return null;
 	}

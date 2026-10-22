@@ -96,6 +96,13 @@ export function largestJpegUrl({ baseUrl, prefix, role }: ImageSetOptions): stri
 	return url === null ? null : variantUrl(url, Math.max(...ROLE_WIDTHS[role]), FALLBACK_EXTENSION);
 }
 
+// Every width of the role as a JPEG, smallest first, for a consumer that
+// lists image URLs (JSON-LD); null like imageSet.
+export function jpegUrls({ baseUrl, prefix, role }: ImageSetOptions): string[] | null {
+	const url = photoUrl(baseUrl, prefix);
+	return url === null ? null : ROLE_WIDTHS[role].map((w) => variantUrl(url, w, FALLBACK_EXTENSION));
+}
+
 // "https://d1abc.cloudfront.net/media/" -> "https://d1abc.cloudfront.net/media";
 // unset or empty -> undefined (every photo renders as the placeholder).
 export function parseMediaBaseUrl(value: string | undefined): string | undefined {

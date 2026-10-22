@@ -23,6 +23,13 @@ import {
 	variationsPath,
 	type RecipeLocale
 } from '../../../../../testutil/recipe-copy';
+import {
+	breadcrumbItems,
+	jsonLdDocuments,
+	jsonLdScripts,
+	onlyNodeOfType
+} from '../../../../../testutil/json-ld';
+import { loadExport } from '../../../../../testutil/load-export';
 import { renderKitPage, unmockKit } from '../../../../../testutil/ssr-page';
 import { PAGE_COPY, pageTitle } from '../../../../../testutil/variations-copy';
 
@@ -73,6 +80,7 @@ type RenderSpec = {
 	regionKey?: string;
 	baseServings?: number;
 	withPhotos?: boolean;
+	description?: string;
 };
 
 const photos = (prefix: string): Photos => ({
@@ -85,7 +93,9 @@ function fixtureRecipe(spec: RenderSpec): Recipe {
 	const recipe = recipeIn(spec.lang, spec.dishKey ?? 'tortilla', spec.regionKey ?? 'gal');
 	const baseServings = spec.baseServings ?? recipe.baseServings;
 	const prefix = `dishes/${recipe.dishKey}/${recipe.regionKey}`;
-	return { ...recipe, baseServings, photos: spec.withPhotos ? photos(prefix) : recipe.photos };
+	const description = spec.description ?? recipe.description;
+	const photoSet = spec.withPhotos ? photos(prefix) : recipe.photos;
+	return { ...recipe, baseServings, description, photos: photoSet };
 }
 
 function pageData(spec: RenderSpec): PageData {
@@ -395,5 +405,111 @@ describe('Recipe page og:image (FE-8)', () => {
 		const { head } = await renderPage({ lang: 'es' });
 		const want = `${ORIGIN}/og-default.png`;
 		expect(metaContents(head, 'og:image'), `want og:image ${want}`).toEqual([want]);
+	});
+});
+
+// FE-8 PR 2 (stage FE-8 -> SEO: JSON-LD schema.org/Recipe on recipe pages;
+// the object itself is pinned in recipe-json-ld.spec.ts, its serialisation
+// in json-ld.spec.ts). Decisions pinned here:
+// - The page puts its JSON-LD in the head (never the body), in
+//   <script type="application/ld+json">; every document carries @context
+//   https://schema.org.
+// - It holds exactly one Recipe node, equal to recipeJsonLd for this
+//   recipe, its dish's course (from the [lang=lang] layout's `dishes`), the
+//   page's canonical URL (headLinks on data.origin) and data.mediaBaseUrl.
+// - The Recipe page also gets a BreadcrumbList, Home → dish → variation
+//   (decided in FE-8 PR 2: Google shows the trail in results and the data is
+//   already on the page): "Asadorov" (the brand, untranslated, like the
+//   site name) at /:lang/, the dish name at its Variations page, the
+//   variation name at this page; `item` is absolute on every step.
+// - Content can't break out of the script: a description holding
+//   "</script>" leaves exactly one JSON-LD script, whose text has no "<".
+type RecipeJsonLd = (input: Record<string, unknown>) => Record<string, unknown>;
+
+const canonicalOf = (lang: RecipeLocale, path = '/dishes/tortilla/gal') =>
+	`${ORIGIN}/${lang}${path}`;
+
+describe('Recipe page JSON-LD (FE-8)', { timeout: COLD_COMPILE_TIMEOUT_MS }, () => {
+	for (const lang of RECIPE_LOCALES) {
+		it(`${lang}: one Recipe node, equal to recipeJsonLd for this page`, async () => {
+			const spec: RenderSpec = { lang, withPhotos: true };
+			const { head } = await renderPage(spec);
+			const recipeJsonLd = await loadExport<RecipeJsonLd>(
+				'src/lib/seo/recipe-json-ld.ts',
+				'recipeJsonLd'
+			);
+			const want = recipeJsonLd({
+				recipe: fixtureRecipe(spec),
+				course: 'tapas',
+				lang,
+				url: canonicalOf(lang),
+				origin: ORIGIN,
+				mediaBaseUrl: MEDIA_BASE_URL
+			});
+			expect(onlyNodeOfType(head, 'Recipe')).toEqual(want);
+		});
+
+		it(`${lang}: the Recipe's url is the canonical, in ${lang}`, async () => {
+			const node = onlyNodeOfType((await renderPage({ lang })).head, 'Recipe');
+			expect([node.url, node.inLanguage, node.name]).toEqual([
+				canonicalOf(lang),
+				lang,
+				BETANZOS[lang].name
+			]);
+		});
+
+		it(`${lang}: a BreadcrumbList Home → dish → variation`, async () => {
+			const list = onlyNodeOfType((await renderPage({ lang })).head, 'BreadcrumbList');
+			expect(breadcrumbItems(list)).toEqual([
+				{ position: 1, name: 'Asadorov', item: `${ORIGIN}/${lang}/` },
+				{ position: 2, name: BETANZOS[lang].dish, item: canonicalOf(lang, '/dishes/tortilla') },
+				{ position: 3, name: BETANZOS[lang].name, item: canonicalOf(lang) }
+			]);
+		});
+	}
+
+	it('the fabada: recipeCategory from its dish’s course (mains)', async () => {
+		const { head } = await renderPage({ lang: 'es', dishKey: 'cocido', regionKey: 'ast' });
+		expect(onlyNodeOfType(head, 'Recipe').recipeCategory).toBe('Principales');
+	});
+
+	it('every JSON-LD document names the schema.org context', async () => {
+		const docs = jsonLdDocuments((await renderPage({ lang: 'en' })).head);
+		expect(docs.length, 'got no JSON-LD in the head').toBeGreaterThan(0);
+		for (const doc of docs) expect(doc['@context']).toBe('https://schema.org');
+	});
+
+	it('the JSON-LD is in the head, never the body', async () => {
+		const { head, body } = await renderPage({ lang: 'en' });
+		expect(jsonLdScripts(head).length, 'got no JSON-LD in the head').toBeGreaterThan(0);
+		expect(jsonLdScripts(body)).toEqual([]);
+	});
+
+	it('the image includes the og:image (the hero’s largest JPEG)', async () => {
+		const { head } = await renderPage({ lang: 'en', withPhotos: true });
+		const ogImage = metaContents(head, 'og:image')[0];
+		expect([onlyNodeOfType(head, 'Recipe').image].flat()).toContain(ogImage);
+	});
+
+	it('without photos the image is [the og:image fallback]', async () => {
+		const { head } = await renderPage({ lang: 'ru' });
+		expect([onlyNodeOfType(head, 'Recipe').image].flat()).toEqual([`${ORIGIN}/og-default.png`]);
+	});
+
+	describe('a description holding </script>', () => {
+		const HOSTILE = 'Runny </script><script>alert(1)</script><!-- & "more" -->';
+
+		it('cannot close the JSON-LD script or add one', async () => {
+			const { head } = await renderPage({ lang: 'en', description: HOSTILE });
+			expect(head).not.toContain('<script>alert(1)');
+			const docs = jsonLdScripts(head);
+			expect(docs.length, 'want the JSON-LD intact').toBeGreaterThan(0);
+			for (const text of docs) expect(text, `got "<" in ${text}`).not.toContain('<');
+		});
+
+		it('round-trips: the Recipe description is the text as written', async () => {
+			const { head } = await renderPage({ lang: 'en', description: HOSTILE });
+			expect(onlyNodeOfType(head, 'Recipe').description).toBe(HOSTILE);
+		});
 	});
 });

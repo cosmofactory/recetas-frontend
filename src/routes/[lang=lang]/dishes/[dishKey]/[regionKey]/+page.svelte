@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import JsonLd from '#lib/components/JsonLd.svelte';
 	import PageHead from '#lib/components/PageHead.svelte';
 	import DishPagesTopBar from '#lib/components/dish/DishPagesTopBar.svelte';
 	import { recipeBackPill } from '#lib/components/dish/back-pill.ts';
@@ -7,9 +8,11 @@
 	import RecipeBody from '#lib/components/recipe/RecipeBody.svelte';
 	import BackPill from '#lib/components/ui/BackPill.svelte';
 	import StickyTopBar from '#lib/components/ui/StickyTopBar.svelte';
+	import { headLinks } from '#lib/i18n/head-links.ts';
 	import { localeFromPath } from '#lib/i18n/locales.ts';
 	import { variationsHref } from '#lib/i18n/localized-href.ts';
 	import { m } from '#lib/paraglide/messages.js';
+	import { recipePageJsonLd } from '#lib/seo/dish-pages-json-ld.ts';
 	import { ogImageUrl } from '#lib/seo/og-image.ts';
 	import { originTab, type BackOrigin } from '#lib/ui/back-origin.ts';
 	import { inAppBack } from '#lib/ui/in-app-back.ts';
@@ -37,6 +40,13 @@
 			heroPrefix: recipe.photos.hero
 		})
 	);
+	const jsonLd = $derived(
+		recipePageJsonLd(data, {
+			origin: data.origin,
+			lang,
+			url: headLinks(data.origin, page.url).canonical
+		})
+	);
 </script>
 
 <PageHead
@@ -45,6 +55,7 @@
 	{image}
 	type="article"
 />
+<JsonLd data={jsonLd} />
 
 <DishPagesTopBar {lang} tab={originTab(origin)} url={page.url} catalog={data} />
 <main class="recipe page-container">
