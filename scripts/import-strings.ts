@@ -13,7 +13,8 @@ const MESSAGE_SCHEMA = 'https://inlang.com/schema/inlang-message-format';
 export const PLURAL_KEYS: ReadonlySet<string> = new Set([
 	'home.variation',
 	'home.dish',
-	'home.region'
+	'home.region',
+	'recipe.servings'
 ]);
 
 // The CLDR category of each strings.json plural form, in array order.

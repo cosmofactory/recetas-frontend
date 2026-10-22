@@ -188,6 +188,16 @@
 	--radius-variation-card: 18px;
 
 	/*
+	 * Mobile README -> Screen 3 (Recipe): info strip "1px rgba(43,30,22,.12)
+	 * border, radius 14px"; ingredient quantity "ink at .7"; the prototype's
+	 * open check ring rgba(43,30,22,.3).
+	 */
+	--border-info-strip: rgba(43, 30, 22, 0.12);
+	--radius-info-strip: 14px;
+	--ink-quantity: rgba(43, 30, 22, 0.7);
+	--border-check: rgba(43, 30, 22, 0.3);
+
+	/*
 	 * The design gives no focus colour; ink is its existing high-contrast UI
 	 * colour (on every page and surface background).
 	 */

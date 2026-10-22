@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { components } from '#lib/api/schema.d.ts';
 	import Photo from '#lib/components/Photo.svelte';
+	import { MOBILE_CONTENT_WIDTH_SIZES } from '#lib/media.ts';
 	import { m } from '#lib/paraglide/messages.js';
 
 	type Props = {
@@ -10,9 +11,6 @@
 	};
 
 	let { variation, href, mediaBaseUrl }: Props = $props();
-
-	// Mobile: the card is the page's width less its 20px side padding.
-	const PHOTO_SIZES = 'calc(100vw - 40px)';
 </script>
 
 <!-- The whole card is one link to its recipe; the photo is decorative. -->
@@ -20,7 +18,7 @@
 	<Photo
 		photos={variation.photos}
 		role="card"
-		sizes={PHOTO_SIZES}
+		sizes={MOBILE_CONTENT_WIDTH_SIZES}
 		alt=""
 		baseUrl={mediaBaseUrl}
 		height="var(--variation-photo-height)"

@@ -15,6 +15,10 @@ export type ImageSetOptions = {
 };
 
 // stack.md X3: each role is pre-generated at these widths, smallest first.
+// A mobile photo as wide as the page less its 20px side padding (the
+// Variations and Recipe heroes, the variation cards).
+export const MOBILE_CONTENT_WIDTH_SIZES = 'calc(100vw - 40px)';
+
 export const ROLE_WIDTHS: Record<PhotoRole, readonly [number, number]> = {
 	thumb: [128, 256],
 	card: [480, 960],

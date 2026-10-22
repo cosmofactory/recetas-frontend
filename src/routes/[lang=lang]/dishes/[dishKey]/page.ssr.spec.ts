@@ -1,5 +1,4 @@
-import type { Component } from 'svelte';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import bundle from '#lib/server/mock/content.bundle.json';
 import { buildView } from '#lib/server/mock/bundle-mapping.ts';
 import type { Dish, Photos } from '#lib/server/catalog-source.ts';
@@ -10,9 +9,9 @@ import {
 	startTags,
 	visibleText
 } from '../../../../testutil/html';
-import { loadExport } from '../../../../testutil/load-export';
 import type { Lang } from '../../../../testutil/map';
 import { VARIATION_REGIONS } from '../../../../testutil/popular-copy';
+import { renderKitPage, unmockKit } from '../../../../testutil/ssr-page';
 import {
 	backFallback,
 	PAGE_COPY,
@@ -50,7 +49,6 @@ type PageData = {
 	dishes: Dish[];
 	dish: Dish;
 };
-type PageProps = { data: PageData; params: Record<string, string> };
 
 const PAGE = 'src/routes/[lang=lang]/dishes/[dishKey]/+page.svelte';
 const ORIGIN = 'http://localhost';
@@ -95,41 +93,19 @@ function pageData(spec: RenderSpec): PageData {
 	};
 }
 
-function mockKit(url: URL, params: Record<string, string>, data: PageData) {
-	vi.doMock('$app/state', () => ({
-		page: { params, route: { id: ROUTE_ID }, url, data, status: 200, error: null, state: {} },
-		navigating: null
-	}));
-	vi.doMock('$app/navigation', () => ({
-		goto: vi.fn(),
-		onNavigate: vi.fn(),
-		afterNavigate: vi.fn(),
-		beforeNavigate: vi.fn(),
-		pushState: vi.fn(),
-		replaceState: vi.fn()
-	}));
-}
-
-async function renderPage(spec: RenderSpec): Promise<{ head: string; body: string }> {
+function renderPage(spec: RenderSpec): Promise<{ head: string; body: string }> {
 	const data = pageData(spec);
-	const params = { lang: spec.lang, dishKey: data.dish.key };
-	vi.resetModules();
-	mockKit(new URL(`/${spec.lang}/dishes/${data.dish.key}`, ORIGIN), params, data);
-	const Page = await loadExport<Component<PageProps>>(PAGE, 'default');
-	// After resetModules, so the page, the renderer and the locale store share
-	// one Svelte runtime and one Paraglide runtime.
-	const { render } = await import('svelte/server');
-	const { withRequestLocale } = await import('#lib/server/request-locale.ts');
-	return withRequestLocale(spec.lang, () => {
-		const { head, body } = render(Page, { props: { data, params } });
-		return { head, body };
+	return renderKitPage({
+		pageFile: PAGE,
+		routeId: ROUTE_ID,
+		lang: spec.lang,
+		url: `/${spec.lang}/dishes/${data.dish.key}`,
+		params: { lang: spec.lang, dishKey: data.dish.key },
+		data
 	});
 }
 
-afterEach(() => {
-	vi.doUnmock('$app/state');
-	vi.doUnmock('$app/navigation');
-});
+afterEach(unmockKit);
 
 const cardsIn = (html: string) => elementsWith(html, `data-testid="${VARIATION_CARD_TEST_ID}"`);
 

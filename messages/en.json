@@ -120,5 +120,19 @@
 	"devUi_openOverlay": "Open the overlay sheet",
 	"devUi_stickyPanel": "Sticky panel",
 	"devUi_navigation": "Navigation",
-	"devUi_desktopTopBar": "Desktop top bar"
+	"devUi_desktopTopBar": "Desktop top bar",
+	"recipe_fewerServings": "Fewer servings",
+	"recipe_moreServings": "More servings",
+	"recipe_servings": [
+		{
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "{count} serving",
+				"countPlural=other": "{count} servings"
+			}
+		}
+	],
+	"recipe_hours": "h",
+	"recipe_minutes": "min"
 }

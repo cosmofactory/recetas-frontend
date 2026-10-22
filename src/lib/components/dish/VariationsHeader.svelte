@@ -1,14 +1,12 @@
 <script lang="ts">
 	import type { components } from '#lib/api/schema.d.ts';
 	import Photo from '#lib/components/Photo.svelte';
+	import { MOBILE_CONTENT_WIDTH_SIZES } from '#lib/media.ts';
 	import { m } from '#lib/paraglide/messages.js';
 
 	type Props = { dish: components['schemas']['Dish']; mediaBaseUrl: string | undefined };
 
 	let { dish, mediaBaseUrl }: Props = $props();
-
-	// Mobile: the page's width less its 20px side padding.
-	const HERO_SIZES = 'calc(100vw - 40px)';
 </script>
 
 <!-- The hero is above the fold, so it loads first; the <h1> names the page. -->
@@ -16,7 +14,7 @@
 	<Photo
 		photos={dish.photos}
 		role="hero"
-		sizes={HERO_SIZES}
+		sizes={MOBILE_CONTENT_WIDTH_SIZES}
 		alt=""
 		baseUrl={mediaBaseUrl}
 		priority
