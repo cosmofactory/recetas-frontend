@@ -77,6 +77,10 @@ import { installStorageSpy, recordedWrites } from '../testutil/storage-spy';
 // - Desktop selection is one plain push, with no Popular replace (that is
 //   the mobile flow): the back pill returns to the page search was used
 //   from (FE-6 recordOrigin), and Back does too.
+// - The pill's label always names the page its href goes to (coordinator,
+//   FE-7 PR 4): from another dish's Variations page, that dish's name (as
+//   a Variations origin always reads); from another region, the origin
+//   region's name, not the recipe's.
 // - The field is in the server HTML as a real <input role="combobox">, but
 //   `disabled` until hydrated: search is client-side, so without JavaScript
 //   a typeable field would mislead. The box is there, so hydration shifts
@@ -398,13 +402,28 @@ test.describe('desktop search: selecting', () => {
 		await expectUrl(page, '/en/regions/gal');
 	});
 
-	test('from a Variations page, the recipe pill returns to that page', async ({ page }) => {
+	test("from another dish's Variations page, the recipe pill names that dish and returns to it", async ({
+		page
+	}) => {
 		await gotoHydrated(page, '/en/dishes/paella');
 		await typeInDesktopSearch(page, 'en', 'betanzos');
 		await pick(page, 'en', VARIATIONS, BETANZOS.en.name);
 		await expectUrl(page, '/en/dishes/tortilla/gal');
+		await expectPillWithHref(page, DISH_NAMES.en.paella, '/en/dishes/paella');
 		await clickPill(page);
 		await expectUrl(page, '/en/dishes/paella');
+	});
+
+	test('from another region, the recipe pill names the origin region and returns to it', async ({
+		page
+	}) => {
+		await gotoHydrated(page, '/en/regions/and');
+		await typeInDesktopSearch(page, 'en', 'betanzos');
+		await pick(page, 'en', VARIATIONS, BETANZOS.en.name);
+		await expectUrl(page, '/en/dishes/tortilla/gal');
+		await expectPillWithHref(page, 'Andalucía', '/en/regions/and');
+		await clickPill(page);
+		await expectUrl(page, '/en/regions/and');
 	});
 
 	test('from a Recipe page, a region result opens its panel', async ({ page }) => {
