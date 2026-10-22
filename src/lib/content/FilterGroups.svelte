@@ -6,26 +6,32 @@
 
 	// The Filters sheet's (mobile) and the filter sidebar's (desktop) four
 	// groups. Controlled like FilterBar: `active` is the URL's filters, a
-	// press asks the screen to toggle (onToggle).
-	type Props = { active: readonly string[]; onToggle: (id: string) => void };
+	// press asks the screen to toggle (onToggle). `size` picks the sheet's
+	// or the sidebar's metrics.
+	type Props = {
+		active: readonly string[];
+		onToggle: (id: string) => void;
+		size?: 'regular' | 'desktop';
+	};
 
-	let { active, onToggle }: Props = $props();
+	let { active, onToggle, size = 'regular' }: Props = $props();
 
 	// Unique per instance: the sheet and the sidebar can both be in the page.
 	const uid = $props.id();
 </script>
 
-<div class="filter-groups" data-testid="filter-groups">
+<div class="filter-groups" class:desktop={size === 'desktop'} data-testid="filter-groups">
 	{#each FILTER_GROUPS as group (group.key)}
 		{@const labelId = `${uid}-${group.key}`}
 		<div class="group" role="group" aria-labelledby={labelId}>
 			<span class="eyebrow" id={labelId}>{filterGroupLabel(group.key)}</span>
-			<ChipRow wrap>
+			<ChipRow wrap {size}>
 				{#each group.ids as id (id)}
 					<Chip
 						label={filterLabel(id)}
 						pressed={active.includes(id)}
 						onToggle={() => onToggle(id)}
+						{size}
 					/>
 				{/each}
 			</ChipRow>
@@ -58,5 +64,21 @@
 		font-weight: 700;
 		letter-spacing: 0.11em;
 		text-transform: uppercase;
+	}
+
+	/*
+	 * Desktop prototype, filter sidebar: the groups in its "gap:22px" column,
+	 * each "flex column; gap:9px" with a "10.5px/700, .11em" eyebrow.
+	 */
+	.filter-groups.desktop {
+		gap: 22px;
+	}
+
+	.desktop .group {
+		gap: 9px;
+	}
+
+	.desktop .eyebrow {
+		font-size: 10.5px;
 	}
 </style>

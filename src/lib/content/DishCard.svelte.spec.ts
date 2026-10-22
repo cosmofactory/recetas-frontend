@@ -18,7 +18,9 @@ import {
 } from '../../testutil/popular-copy';
 import {
 	computed,
+	emulateReducedMotion,
 	loadContent,
+	resetEmulatedMedia,
 	stage,
 	style,
 	ungatedHoverRules,
@@ -62,17 +64,29 @@ const PHOTO = 'picture, [class~="placeholder"]';
 const MEDIA = 'https://media.invalid';
 const CARD_HOVER_BG = '#FDFAF3';
 const MOBILE_CARD_WIDTH_PX = 358;
+// FE-5 PR 3: the desktop grid (desktop README -> Popular) and card.
+const DESKTOP_GRID = { sidebar: 220, minTrack: 250, gap: 20, cap: 1440 };
+const CARD_SMALL_FILE_WIDTH_PX = 480;
+const LIFT = 'matrix(1, 0, 0, 1, 0, -2)';
+const BG_SURFACE = () => computed('background-color', 'var(--bg-surface)');
 
 const baseGetLocale = getLocale;
 afterEach(() => overwriteGetLocale(baseGetLocale));
 
-type RenderSpec = { lang?: PopularLocale; dish?: Dish; href?: string; mediaBaseUrl?: string };
+type RenderSpec = {
+	lang?: PopularLocale;
+	dish?: Dish;
+	href?: string;
+	mediaBaseUrl?: string;
+	width?: number;
+};
 
 async function renderCard(spec: RenderSpec = {}): Promise<HTMLAnchorElement> {
 	const lang = spec.lang ?? 'en';
 	overwriteGetLocale(() => lang);
 	const DishCard = await loadContent<DishCardProps>('DishCard');
-	const target = stage(`width: ${MOBILE_CARD_WIDTH_PX}px; background: var(--bg-page)`);
+	const width = spec.width ?? MOBILE_CARD_WIDTH_PX;
+	const target = stage(`width: ${width}px; background: var(--bg-page)`);
 	const props: DishCardProps = {
 		dish: spec.dish ?? dishIn(lang, 'tortilla'),
 		href: spec.href ?? `/${lang}/?tab=popular&dish=tortilla`,
@@ -353,5 +367,222 @@ describe('DishCard: mobile styles (< 860px)', () => {
 			.poll(() => style(card, 'background-color'))
 			.toBe(computed('background-color', CARD_HOVER_BG));
 		expect(ungatedHoverRules(card), 'got :hover rules outside @media (hover: hover)').toEqual([]);
+	});
+
+	// FE-5 PR 3: the lift is the desktop card's (desktop README -> Popular);
+	// the mobile README gives the mobile card a background hover only.
+	it('hover: no lift and no shadow below 860px', async () => {
+		const card = await renderCard();
+		await userEvent.hover(card);
+		await expect.poll(() => style(card, 'background-color')).not.toBe(BG_SURFACE());
+		expect(style(card, 'transform')).toBe('none');
+		expect(style(card, 'box-shadow')).toBe('none');
+	});
+});
+
+// FE-5 PR 3, the same DishCard in the desktop grid (≥ 860px): CSS restyles
+// it, the markup and props stay the same (one card per dish, never two).
+//
+// Sources:
+// - Desktop README -> Popular: "Card: 180px photo, 25px serif name + count,
+//   description, preview line; hover lifts 2px with shadow 0 10px 26px
+//   rgba(43,30,22,.1)" (--shadow-card-hover, the .hover-lift utility).
+// - Desktop prototype L158–168, which wins: card "background:#FBF7EC;
+//   border:1px solid rgba(43,30,22,.1); border-radius:18px; padding:14px
+//   14px 18px; flex column; gap:10px"; photo "height:180px;
+//   border-radius:12px"; the text block "flex column; gap:7px; padding:4px
+//   4px 0"; name row "baseline, space-between, gap:12px"; name "font-size:
+//   25px; line-height:1.1" serif; count "12px/700, letter-spacing .04em,
+//   accent, nowrap"; description "13.5px, rgba(43,30,22,.62), lh 1.45"
+//   (--ink-2, the AA override); preview "12px, rgba(43,30,22,.5), lh 1.4,
+//   border-top 1px rgba(43,30,22,.08); padding-top 9px; margin-top 3px"
+//   (--ink-3, --border-hairline).
+// - Photo `sizes` (CLAUDE.md -> Photo): the desktop slot must cover the
+//   widest grid column the layout can produce (no upscaling) without asking
+//   for more than the smaller card file (ROLE_WIDTHS.card[0], 480w) at 1x.
+
+const clamp = (min: number, preferred: number, max: number) =>
+	Math.min(Math.max(preferred, min), max);
+
+// The Popular grid's card column at window width `vw` (desktop README:
+// side padding clamp(24px, 2.8vw, 40px), gap clamp(28px, 3.4vw, 48px)).
+function gridColumnWidth(vw: number): number {
+	const container = Math.min(vw, DESKTOP_GRID.cap);
+	const results =
+		container - 2 * clamp(24, 0.028 * vw, 40) - DESKTOP_GRID.sidebar - clamp(28, 0.034 * vw, 48);
+	const step = DESKTOP_GRID.minTrack + DESKTOP_GRID.gap;
+	const count = Math.floor((results + DESKTOP_GRID.gap) / step);
+	return (results - DESKTOP_GRID.gap * (count - 1)) / count;
+}
+
+// The end of a balanced "( … )" starting at index 0 of `text`.
+function closingParen(text: string): number {
+	let depth = 0;
+	for (let i = 0; i < text.length; i++) {
+		depth += text[i] === '(' ? 1 : text[i] === ')' ? -1 : 0;
+		if (depth === 0) return i;
+	}
+	return -1;
+}
+
+// The slot width the browser picks from a `sizes` list at this window: the
+// first entry whose media condition matches (or the bare last one),
+// resolved as a CSS width.
+function slotWidth(sizes: string): number {
+	for (const entry of sizes.split(/,(?![^(]*\))/).map((part) => part.trim())) {
+		const end = entry.startsWith('(') ? closingParen(entry) : -1;
+		if (end > 0 && !matchMedia(entry.slice(0, end + 1)).matches) continue;
+		const length = end > 0 ? entry.slice(end + 1).trim() : entry;
+		return stage(`width: ${length}; position: absolute`).getBoundingClientRect().width;
+	}
+	return 0;
+}
+
+function withCardPhoto(dish: Dish): Dish {
+	const key = dish.key;
+	return {
+		...dish,
+		photos: {
+			thumb: `dishes/${key}/thumb-1`,
+			card: `dishes/${key}/card-1`,
+			hero: `dishes/${key}/hero-1`
+		}
+	};
+}
+
+async function desktopSlot(vw: number): Promise<number> {
+	const width = Math.round(gridColumnWidth(vw));
+	const dish = withCardPhoto(dishIn('en', 'tortilla'));
+	const card = await renderCard({ dish, mediaBaseUrl: MEDIA, width });
+	const img = card.querySelector('img');
+	expect(img, 'got no <img> with a media base URL and a card photo').not.toBeNull();
+	return slotWidth(img!.getAttribute('sizes') ?? '');
+}
+
+describe('DishCard: desktop styles (≥ 860px)', () => {
+	useViewport(1280, 800);
+	const COLUMN = Math.round(gridColumnWidth(1280));
+
+	it('card: --bg-surface, 1px --border-card, radius 18px, padding 14px 14px 18px, column gap 10px', async () => {
+		const card = await renderCard({ width: COLUMN });
+		expect(style(card, 'background-color')).toBe(BG_SURFACE());
+		expect(style(card, 'border-top-width')).toBe('1px');
+		expect(style(card, 'border-top-color')).toBe(computed('color', 'var(--border-card)'));
+		expect(style(card, 'border-top-left-radius')).toBe('18px');
+		expect(style(card, 'padding')).toBe('14px 14px 18px');
+		expect(style(card, 'row-gap')).toBe('10px');
+	});
+
+	it('photo: full card width, 180px tall, radius 12px', async () => {
+		const card = await renderCard({ width: COLUMN });
+		const box = photoIn(card).getBoundingClientRect();
+		expectPx(box.height, 180, 'photo height');
+		expectPx(box.width, COLUMN - 2 * 14 - 2, 'photo width');
+		expect(style(photoIn(card), 'border-top-left-radius')).toBe('12px');
+	});
+
+	it('text block: inset 4px from the photo, 10px + 4px below it', async () => {
+		const card = await renderCard({ width: COLUMN });
+		const photo = photoIn(card).getBoundingClientRect();
+		const row = card.querySelector('h3')!.parentElement!.getBoundingClientRect();
+		const preview = textElement(card, PREVIEWS.en.tortilla!).getBoundingClientRect();
+		expectPx(row.left - photo.left, 4, 'name row inset');
+		expectPx(photo.right - preview.right, 4, 'preview right inset');
+		expectPx(row.top - photo.bottom, 10 + 4, 'photo → name row');
+	});
+
+	it('name row: 25px Instrument Serif lh 1.1; count 12px/700 .04em --accent-text nowrap; gap 12px', async () => {
+		const card = await renderCard({ width: COLUMN });
+		const name = card.querySelector('h3')!;
+		const count = textElement(card, VARIATION_COUNTS.en.tortilla!);
+		expect(style(name, 'font-size')).toBe('25px');
+		expect(style(name, 'font-family')).toBe(computed('font-family', 'var(--font-display)'));
+		expectPx(px(name, 'line-height'), 25 * 1.1, 'name line-height');
+		expect(style(count, 'font-size')).toBe('12px');
+		expect(style(count, 'font-weight')).toBe('700');
+		expectPx(px(count, 'letter-spacing'), 12 * 0.04, 'count letter-spacing');
+		expect(style(count, 'color')).toBe(computed('color', 'var(--accent-text)'));
+		expect(style(count, 'white-space')).toBe('nowrap');
+		expect(style(name.parentElement!, 'column-gap')).toBe('12px');
+	});
+
+	it('description: 13.5px --ink-2 lh 1.45', async () => {
+		const dish = dishIn('en', 'tortilla');
+		const card = await renderCard({ dish, width: COLUMN });
+		const description = textElement(card, dish.description);
+		expect(style(description, 'font-size')).toBe('13.5px');
+		expect(style(description, 'color')).toBe(computed('color', 'var(--ink-2)'));
+		expectPx(px(description, 'line-height'), 13.5 * 1.45, 'description line-height');
+	});
+
+	it('preview: 12px --ink-3 lh 1.4, hairline, padding-top 9px, margin-top 3px', async () => {
+		const card = await renderCard({ width: COLUMN });
+		const preview = textElement(card, PREVIEWS.en.tortilla!);
+		expect(style(preview, 'font-size')).toBe('12px');
+		expect(style(preview, 'color')).toBe(computed('color', 'var(--ink-3)'));
+		expectPx(px(preview, 'line-height'), 12 * 1.4, 'preview line-height');
+		expect(style(preview, 'border-top-color')).toBe(computed('color', 'var(--border-hairline)'));
+		expect(style(preview, 'padding-top')).toBe('9px');
+		expect(style(preview, 'margin-top')).toBe('3px');
+	});
+
+	it('hover: lifts 2px with --shadow-card-hover, the background stays --bg-surface', async () => {
+		const card = await renderCard({ width: COLUMN });
+		await userEvent.hover(card);
+		await expect.poll(() => style(card, 'transform')).toBe(LIFT);
+		expect(style(card, 'box-shadow')).toBe(computed('box-shadow', 'var(--shadow-card-hover)'));
+		expect(style(card, 'background-color')).toBe(BG_SURFACE());
+		expect(ungatedHoverRules(card), 'got :hover rules outside @media (hover: hover)').toEqual([]);
+	});
+
+	it('nothing changes at rest: no lift, no shadow', async () => {
+		const card = await renderCard({ width: COLUMN });
+		expect(style(card, 'transform')).toBe('none');
+		expect(style(card, 'box-shadow')).toBe('none');
+	});
+});
+
+describe('DishCard: desktop hover under reduced motion', () => {
+	useViewport(1280, 800);
+	afterEach(() => resetEmulatedMedia());
+
+	it('no lift, only the shadow', async () => {
+		await emulateReducedMotion('reduce');
+		const card = await renderCard({ width: Math.round(gridColumnWidth(1280)) });
+		await userEvent.hover(card);
+		await expect
+			.poll(() => style(card, 'box-shadow'))
+			.toBe(computed('box-shadow', 'var(--shadow-card-hover)'));
+		expect(style(card, 'transform')).toBe('none');
+	});
+});
+
+// The FE-0 desktop widths, plus 1110px, where two columns are at their
+// widest (about 385px) just before a third fits.
+for (const vw of [860, 1110, 1280, 1440]) {
+	describe(`DishCard: photo sizes at ${vw}px`, () => {
+		useViewport(vw, 800);
+
+		it(`the slot covers the ${Math.round(gridColumnWidth(vw))}px grid column, at most ${CARD_SMALL_FILE_WIDTH_PX}px`, async () => {
+			const slot = await desktopSlot(vw);
+			expect(slot, 'got a slot narrower than the card photo').toBeGreaterThanOrEqual(
+				gridColumnWidth(vw) - 2 * 14 - 2
+			);
+			expect(slot, 'got a slot wider than the small card file').toBeLessThanOrEqual(
+				CARD_SMALL_FILE_WIDTH_PX
+			);
+		});
+	});
+}
+
+describe('DishCard: photo sizes on mobile', () => {
+	useViewport(390, 844);
+
+	it('the slot covers the card photo, at most the window width', async () => {
+		const dish = withCardPhoto(dishIn('en', 'tortilla'));
+		const card = await renderCard({ dish, mediaBaseUrl: MEDIA });
+		const slot = slotWidth(card.querySelector('img')!.getAttribute('sizes') ?? '');
+		expect(slot).toBeGreaterThanOrEqual(photoIn(card).getBoundingClientRect().width);
+		expect(slot).toBeLessThanOrEqual(390);
 	});
 });

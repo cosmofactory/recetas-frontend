@@ -1,11 +1,22 @@
 <script lang="ts">
 	// Controlled: a click asks the caller to flip it; the state lives in the URL.
-	type Props = { label: string; pressed: boolean; onToggle: (pressed: boolean) => void };
+	type Props = {
+		label: string;
+		pressed: boolean;
+		onToggle: (pressed: boolean) => void;
+		size?: 'regular' | 'desktop';
+	};
 
-	let { label, pressed, onToggle }: Props = $props();
+	let { label, pressed, onToggle, size = 'regular' }: Props = $props();
 </script>
 
-<button type="button" class="chip" aria-pressed={pressed} onclick={() => onToggle(!pressed)}>
+<button
+	type="button"
+	class="chip"
+	class:desktop={size === 'desktop'}
+	aria-pressed={pressed}
+	onclick={() => onToggle(!pressed)}
+>
 	{label}
 </button>
 
@@ -27,6 +38,12 @@
 			background-color var(--dur-colour),
 			border-color var(--dur-colour),
 			color var(--dur-colour);
+	}
+
+	/* Desktop prototype, filter sidebar: "padding:8px 14px ... font-size:13px; font-weight:600". */
+	.chip.desktop {
+		padding: 8px 14px;
+		font-size: 13px;
 	}
 
 	/*

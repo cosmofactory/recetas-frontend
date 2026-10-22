@@ -2,13 +2,13 @@
 	import type { Snippet } from 'svelte';
 
 	// Localization -> Length: chips never truncate, so the filter bar scrolls
-	// sideways; the Filters sheet wraps instead (`wrap`).
-	type Props = { children: Snippet; wrap?: boolean };
+	// sideways; the Filters sheet and the desktop sidebar wrap instead (`wrap`).
+	type Props = { children: Snippet; wrap?: boolean; size?: 'regular' | 'desktop' };
 
-	let { children, wrap = false }: Props = $props();
+	let { children, wrap = false, size = 'regular' }: Props = $props();
 </script>
 
-<div class="chip-row" class:wrap>
+<div class="chip-row" class:wrap class:desktop={size === 'desktop'}>
 	{@render children()}
 </div>
 
@@ -21,10 +21,11 @@
 	 */
 	.chip-row {
 		--ring-room: calc(var(--focus-ring-width) + var(--focus-ring-offset));
+		--row-gap: var(--chip-gap);
 		display: flex;
 		flex-wrap: nowrap;
 		align-items: center;
-		gap: var(--chip-gap);
+		gap: var(--row-gap);
 		min-height: var(--hit-min);
 		margin-inline: calc(-1 * var(--ring-room));
 		padding-inline: var(--ring-room);
@@ -42,11 +43,16 @@
 	 * (stage FE-3 -> Acceptance, hit-area exception).
 	 */
 	.chip-row.wrap {
-		--chip-hit-extend-block: calc(var(--chip-gap) / 2);
+		--chip-hit-extend-block: calc(var(--row-gap) / 2);
 		flex-wrap: wrap;
 		min-height: 0;
 		margin-inline: 0;
 		padding-inline: 0;
 		overflow: visible;
+	}
+
+	/* Desktop prototype, filter sidebar: "flex-wrap:wrap; gap:8px". */
+	.chip-row.desktop {
+		--row-gap: var(--chip-gap-desktop);
 	}
 </style>

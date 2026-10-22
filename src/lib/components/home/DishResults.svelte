@@ -1,13 +1,17 @@
 <script lang="ts">
+	import { MediaQuery } from 'svelte/reactivity';
 	import type { components } from '#lib/api/schema.d.ts';
 	import TextButton from '#lib/components/ui/TextButton.svelte';
 	import DishCard from '#lib/content/DishCard.svelte';
 	import { m } from '#lib/paraglide/messages.js';
-	import { clearFiltersHref, dishSheetHref, type FilterUrl } from '#lib/popular/filters.ts';
+	import { dishCardHref } from '#lib/popular/card-href.ts';
+	import { clearFiltersHref, type FilterUrl } from '#lib/popular/filters.ts';
+	import { desktopQuery } from '#lib/ui/breakpoints.ts';
 
 	// The Popular tab's filtered list, or its empty state. A card opens its
-	// dish sheet (a link keeping the filters) and reports itself through
-	// onOpenDish; onClear handles a click on the empty state's "Clear all" link.
+	// dish sheet on mobile, the Variations page on desktop (dishCardHref), and
+	// reports itself through onOpenDish; onClear handles a click on the empty
+	// state's "Clear all" link.
 	type Props = {
 		dishes: components['schemas']['Dish'][];
 		url: FilterUrl;
@@ -17,17 +21,24 @@
 	};
 
 	let { dishes, url, mediaBaseUrl, onClear, onOpenDish }: Props = $props();
+
+	// The server renders the desktop link (true), the one that works on both
+	// layouts without JavaScript; crossing 860px swaps the hrefs live.
+	const desktop = new MediaQuery(desktopQuery, true);
+	const layout = $derived(desktop.current ? 'desktop' : 'mobile');
+	// Mobile: focus stays on the card, so closing its sheet returns it there.
+	// Desktop: the Variations page gets the default scroll and focus reset.
+	const reset = $derived(desktop.current ? undefined : 'false');
 </script>
 
 <div class="list">
 	{#if dishes.length > 0}
-		<!-- reset false: focus stays on the card, so closing its sheet returns it there. -->
-		<ul class="cards" role="list" data-sveltekit-reset="false">
+		<ul class="cards" role="list" data-sveltekit-reset={reset}>
 			{#each dishes as dish (dish.key)}
 				<li>
 					<DishCard
 						{dish}
-						href={dishSheetHref(url, dish.key)}
+						href={dishCardHref(url, dish.key, layout)}
 						{mediaBaseUrl}
 						onclick={(event) => onOpenDish(dish.key, event.currentTarget)}
 					/>
@@ -40,7 +51,7 @@
 			<TextButton
 				label={m.home_clearAll()}
 				href={clearFiltersHref(url)}
-				size="small"
+				size="medium"
 				onclick={onClear}
 			/>
 		</div>
@@ -90,5 +101,29 @@
 	.no-match-text {
 		margin: 0;
 		font: 400 21px var(--font-display);
+	}
+
+	/*
+	 * Desktop README -> Popular: "card grid repeat(auto-fill, minmax(250px,
+	 * 1fr)), gap 20px"; the empty state's noMatch is serif 24px. The window
+	 * scrolls, so the list is no scroll container (sticky needs that too).
+	 */
+	@media (min-width: 860px) {
+		.list {
+			flex: none;
+			margin: 0;
+			padding: 0;
+			overflow: visible;
+		}
+
+		.cards {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+			gap: 20px;
+		}
+
+		.no-match-text {
+			font-size: 24px;
+		}
 	}
 </style>

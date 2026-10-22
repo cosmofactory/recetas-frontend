@@ -362,7 +362,7 @@ function panelNames(html: string): string[] {
 		.map((t) => t.attrs['aria-label']);
 }
 
-function headingTexts(html: string, level: 1 | 2): string[] {
+function headingTexts(html: string, level: 1 | 2 | 3): string[] {
 	const pattern = new RegExp(`<h${level}\\b[^>]*>([\\s\\S]*?)</h${level}>`, 'g');
 	return [...html.matchAll(pattern)].map((m) => visibleText(m[1]));
 }
@@ -516,9 +516,12 @@ describe('(home) layout: one <main> landmark', { timeout: COLD_COMPILE_TIMEOUT_M
 // the same dishes before any JavaScript runs.
 //
 // Decisions pinned here (FE-5 PR 1):
-// - Each DishCard is a link with data-testid="dish-card" whose href is
-//   /:lang/?tab=popular[&f=…canonical]&dish=<key> (PR 2 opens the dish sheet
-//   there; D-FE5-2).
+// - Each DishCard is a link with data-testid="dish-card". FE-5 PR 3: the
+//   server renders its href as the Variations page, /:lang/dishes/<key>
+//   (no filters): the server can't know the width, and that link works
+//   without JavaScript on both layouts and lets crawlers reach every
+//   Variations page. Once hydrated, mobile switches it to the dish sheet
+//   URL (?tab=popular[&f=…]&dish=<key>, D-FE5-2; see the E2E specs).
 // - The result count carries data-testid="result-count" (home.dish plural);
 //   the empty state is desktop.noMatch plus a "Clear all" action.
 // - The Popular panel has its own <h2>, the tab label (home.popular): the
@@ -559,9 +562,9 @@ describe(
 	'(home) layout: the Popular list in the server HTML',
 	{ timeout: COLD_COMPILE_TIMEOUT_MS },
 	() => {
-		it('/en/?tab=popular: every dish card, in dish order, each linking to its dish sheet URL', async () => {
+		it('/en/?tab=popular: every dish card, in dish order, each linking to its Variations page', async () => {
 			const html = popularPanel(await renderHome({ lang: 'en', path: '/en/?tab=popular' }));
-			const want = ALL_DISHES.map((key) => `/en/?tab=popular&dish=${key}`);
+			const want = ALL_DISHES.map((key) => `/en/dishes/${key}`);
 			expect(cardHrefs(html)).toEqual(want);
 			expect(resultCount(html)).toBe('7 dishes');
 		});
@@ -570,7 +573,7 @@ describe(
 			const html = popularPanel(
 				await renderHome({ lang: 'ru', path: '/ru/?tab=popular&f=vegetarian&f=summer' })
 			);
-			expect(cardHrefs(html)).toEqual(['/ru/?tab=popular&f=vegetarian&f=summer&dish=gazpacho']);
+			expect(cardHrefs(html)).toEqual(['/ru/dishes/gazpacho']);
 			expect(resultCount(html)).toBe('1 блюдо');
 			expect(visibleText(html)).toContain('Холодные супы');
 		});
@@ -580,7 +583,7 @@ describe(
 				await renderHome({ lang: 'es', path: '/es/?tab=popular&f=vegetarian' })
 			);
 			expect(cardHrefs(html)).toEqual(
-				['tortilla', 'gazpacho', 'arrozleche'].map((k) => `/es/?tab=popular&f=vegetarian&dish=${k}`)
+				['tortilla', 'gazpacho', 'arrozleche'].map((k) => `/es/dishes/${k}`)
 			);
 			expect(resultCount(html)).toBe('3 platos');
 		});
@@ -588,7 +591,7 @@ describe(
 		it('a messy filter URL reads canonical: order, duplicates and unknown ids', async () => {
 			const path = '/en/?tab=popular&f=summer&f=bogus&f=vegetarian&f=summer';
 			const html = popularPanel(await renderHome({ lang: 'en', path }));
-			expect(cardHrefs(html)).toEqual(['/en/?tab=popular&f=vegetarian&f=summer&dish=gazpacho']);
+			expect(cardHrefs(html)).toEqual(['/en/dishes/gazpacho']);
 		});
 
 		it('the Filters button counts the active filters: "Filters · 2"', async () => {
@@ -656,12 +659,14 @@ describe('(home) layout: the Popular panel heading', { timeout: COLD_COMPILE_TIM
 		});
 	}
 
-	it('/en/?tab=popular: the dish names are <h3>s under it', async () => {
+	// FE-5 PR 3: the desktop sidebar's "Filters" is an <h3> too, before the cards.
+	it('/en/?tab=popular: the sidebar heading and the dish names are <h3>s under it', async () => {
 		const html = popularPanel(await renderHome({ lang: 'en', path: '/en/?tab=popular' }));
 		const h3s = [...html.matchAll(/<h3\b[^>]*>([\s\S]*?)<\/h3>/g)].map((m) =>
 			decodeAmp(visibleText(m[1]))
 		);
 		expect(h3s).toEqual([
+			'Filters',
 			'Tortilla de patatas',
 			'Rice dishes',
 			'Cocido & stews',
@@ -860,3 +865,138 @@ describe(
 		});
 	}
 );
+
+// FE-5 PR 3, the desktop filter sidebar in the server HTML (stage FE-5 ->
+// Desktop Popular; desktop README -> Popular; prototype L137–154). Both
+// layouts are in the HTML (CSS hides one), so the sidebar is rendered for
+// every Popular URL, with the URL's filters pressed.
+//
+// Decisions pinned here (FE-5 PR 3):
+// - The sidebar root is data-testid="filter-sidebar", a <section>
+//   aria-labelledby its <h3> "Filters", holding FilterGroups and a "Clear
+//   all" <button>, aria-disabled="true" when no filter is active (it is
+//   drawn at 40% opacity then; see home-popular-desktop.e2e.ts).
+// - The mobile Filters sheet's FilterGroups may be in the page too, so
+//   every id in the HTML is unique and every id reference resolves.
+
+const SIDEBAR_CHIPS_EN = [
+	'Vegetarian',
+	'Seafood',
+	'With pork',
+	'Tapas',
+	'Mains',
+	'Desserts',
+	'Quick',
+	'Slow-cooked',
+	'Summer',
+	'Winter',
+	'Holy Week',
+	'All year'
+];
+
+function sidebarHtml(html: string): string {
+	const marker = html.indexOf('data-testid="filter-sidebar"');
+	expect(marker, 'got no [data-testid="filter-sidebar"]').toBeGreaterThan(-1);
+	return elementHtml(html, html.lastIndexOf('<', marker));
+}
+
+type ButtonTag = { text: string; attrs: Record<string, string> };
+
+function buttonsIn(html: string): ButtonTag[] {
+	const buttons = html.match(/<button\b[^>]*>[\s\S]*?<\/button>/g) ?? [];
+	return buttons.map((b) => ({ text: decodeAmp(visibleText(b)), attrs: startTags(b)[0].attrs }));
+}
+
+describe(
+	'(home) layout: the desktop filter sidebar in the server HTML',
+	{ timeout: COLD_COMPILE_TIMEOUT_MS },
+	() => {
+		it('/en/?tab=popular: a <section> labelled by its <h3> "Filters"', async () => {
+			const html = popularPanel(await renderHome({ lang: 'en', path: '/en/?tab=popular' }));
+			const sidebar = sidebarHtml(html);
+			const root = startTags(sidebar)[0];
+			expect(root.name, 'want the sidebar to be a <section>').toBe('section');
+			const heading = /<h3\b([^>]*)>([\s\S]*?)<\/h3>/.exec(sidebar);
+			expect(heading, 'got no <h3> in the sidebar').not.toBeNull();
+			expect(visibleText(heading![2])).toBe('Filters');
+			const headingId = /\bid="([^"]+)"/.exec(heading![1])?.[1];
+			expect(headingId, 'want an id on the sidebar heading').toBeDefined();
+			expect(root.attrs['aria-labelledby']).toBe(headingId);
+		});
+
+		it('/en/?tab=popular: the twelve chips in group order, none pressed; Clear all aria-disabled', async () => {
+			const html = popularPanel(await renderHome({ lang: 'en', path: '/en/?tab=popular' }));
+			const buttons = buttonsIn(sidebarHtml(html));
+			const chips = buttons.filter((b) => 'aria-pressed' in b.attrs);
+			expect(chips.map((c) => c.text)).toEqual(SIDEBAR_CHIPS_EN);
+			expect(chips.filter((c) => c.attrs['aria-pressed'] === 'true')).toEqual([]);
+			const clear = buttons.find((b) => b.text === 'Clear all');
+			expect(clear, 'got no "Clear all" button in the sidebar').toBeDefined();
+			expect(clear!.attrs['aria-disabled']).toBe('true');
+		});
+
+		it('/ru/?tab=popular&f=pork&f=winter: those chips pressed; Clear all enabled', async () => {
+			const path = '/ru/?tab=popular&f=pork&f=winter';
+			const html = popularPanel(await renderHome({ lang: 'ru', path }));
+			const buttons = buttonsIn(sidebarHtml(html));
+			const pressed = buttons.filter((b) => b.attrs['aria-pressed'] === 'true').map((b) => b.text);
+			expect(pressed).toEqual(['Со свининой', 'Зима']);
+			const clear = buttons.find((b) => b.text === 'Сбросить');
+			expect(clear, 'got no "Сбросить" button in the sidebar').toBeDefined();
+			expect(clear!.attrs['aria-disabled'] ?? 'false').toBe('false');
+			expect('disabled' in clear!.attrs, 'want it enabled').toBe(false);
+		});
+
+		it('/es/?tab=popular: the sidebar heading reads "Filtros"', async () => {
+			const html = popularPanel(await renderHome({ lang: 'es', path: '/es/?tab=popular' }));
+			expect(headingTexts(sidebarHtml(html), 3)).toEqual(['Filtros']);
+		});
+
+		it('/en/ (Regional): no sidebar', async () => {
+			const html = await renderHome({ lang: 'en', path: '/en/' });
+			expect(html).not.toContain('data-testid="filter-sidebar"');
+		});
+	}
+);
+
+const ID_REFERENCES = ['aria-labelledby', 'aria-describedby', 'aria-controls', 'for'];
+
+function duplicateIds(html: string): string[] {
+	const ids = startTags(html)
+		.map((t) => t.attrs.id)
+		.filter((id): id is string => id !== undefined);
+	return [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))];
+}
+
+function danglingReferences(html: string): string[] {
+	const tags = startTags(html);
+	const ids = new Set(tags.map((t) => t.attrs.id).filter(Boolean));
+	return tags.flatMap((t) =>
+		ID_REFERENCES.flatMap((attr) =>
+			(t.attrs[attr] ?? '')
+				.split(/\s+/)
+				.filter((ref) => ref !== '' && !ids.has(ref))
+				.map((ref) => `${attr}="${ref}" on <${t.name}>`)
+		)
+	);
+}
+
+describe('(home) layout: ids in the server HTML', { timeout: COLD_COMPILE_TIMEOUT_MS }, () => {
+	const paths = [
+		'/en/?tab=popular',
+		'/ru/?tab=popular&f=vegetarian&f=quick',
+		'/en/?tab=popular&f=desserts&f=summer',
+		'/en/?tab=popular&dish=tortilla'
+	];
+	for (const path of paths) {
+		it(`${path}: every id is unique`, async () => {
+			const html = await renderHome({ lang: path.slice(1, 3) as Lang, path });
+			expect(duplicateIds(html), 'got duplicate ids').toEqual([]);
+		});
+
+		it(`${path}: every id reference resolves`, async () => {
+			const html = await renderHome({ lang: path.slice(1, 3) as Lang, path });
+			expect(danglingReferences(html), 'got references to missing ids').toEqual([]);
+		});
+	}
+});

@@ -170,6 +170,16 @@
 	--bg-card-hover: #fdfaf3;
 	--radius-card-photo: 11px;
 
+	/*
+	 * Desktop Popular (prototype): the dish card "border-radius:18px", its
+	 * photo "border-radius:12px", the sidebar's chip rows "gap:8px" and its
+	 * "Clear all" at "opacity: 0.4" while nothing is active.
+	 */
+	--radius-card-desktop: 18px;
+	--radius-card-photo-desktop: 12px;
+	--chip-gap-desktop: 8px;
+	--opacity-inactive: 0.4;
+
 	/* Mobile README -> Dish detail sheet: variation "Row: ... radius 8px: 42px thumb (radius 8px)". */
 	--radius-dish-row: 8px;
 	--radius-dish-thumb: 8px;
@@ -261,14 +271,15 @@
 }
 
 /*
- * Desktop README -> Popular: card "hover lifts 2px with shadow ...". Under
+ * Desktop README -> Popular: card "hover lifts 2px with shadow ...". From
+ * 860px only (the mobile card has a background hover instead). Under
  * reduced motion the card doesn't move at all; only its shadow changes.
  */
 .hover-lift {
 	transition: box-shadow var(--dur-colour);
 }
 
-@media (hover: hover) {
+@media (hover: hover) and (min-width: 860px) {
 	.hover-lift:hover {
 		box-shadow: var(--shadow-card-hover);
 	}
@@ -282,7 +293,7 @@
 	}
 }
 
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+@media (hover: hover) and (min-width: 860px) and (prefers-reduced-motion: no-preference) {
 	.hover-lift:hover {
 		transform: translateY(-2px);
 	}

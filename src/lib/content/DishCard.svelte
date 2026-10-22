@@ -14,39 +14,38 @@
 
 	let { dish, href, mediaBaseUrl, onclick }: Props = $props();
 
-	// Mobile: the list's full width. Desktop: a grid column of at least 250px
-	// (desktop README -> Popular); PR 3 refines it with the desktop grid.
+	// Mobile: the list's full width. Desktop: a Popular grid column, at most
+	// about 385px wide (two columns just before a third fits), so 400px covers
+	// every column and never asks for more than the smaller card file.
 	const PHOTO_SIZES = `${desktopQuery} 400px, 100vw`;
-	const PHOTO_HEIGHT = '96px';
 </script>
 
 <!-- The whole card is one link; the photo is decorative, the name names it. -->
-<a class="dish-card" data-testid="dish-card" {href} {onclick}>
+<a class="dish-card hover-lift" data-testid="dish-card" {href} {onclick}>
 	<Photo
 		photos={dish.photos}
 		role="card"
 		sizes={PHOTO_SIZES}
 		alt=""
 		baseUrl={mediaBaseUrl}
-		height={PHOTO_HEIGHT}
-		radius="var(--radius-card-photo)"
+		height="var(--card-photo-height)"
+		radius="var(--card-photo-radius)"
 	/>
-	<div class="name-row">
-		<h3 class="name">{dish.name}</h3>
-		<span class="count">{m.home_variation({ count: dish.variations.length })}</span>
+	<div class="text">
+		<div class="name-row">
+			<h3 class="name">{dish.name}</h3>
+			<span class="count">{m.home_variation({ count: dish.variations.length })}</span>
+		</div>
+		<p class="description">{dish.description}</p>
+		<p class="preview">{dishPreview(dish)}</p>
 	</div>
-	<p class="description">{dish.description}</p>
-	<p class="preview">{dishPreview(dish)}</p>
 </a>
 
 <style>
-	/*
-	 * Mobile README -> Popular tab: "Card: bg --bg-surface, 1px --border-card,
-	 * radius 16px, padding 14px 15px, column gap 7px. Hover bg ..." (--bg-card-hover). The
-	 * prototype adds the name's line-height 1.1, the row gap 10px, the
-	 * count's nowrap and the preview's line-height 1.35 and hairline.
-	 */
+	/* Mobile README -> Popular tab "Card" and the mobile prototype (DishCard.svelte.spec.ts quotes them). */
 	.dish-card {
+		--card-photo-height: 96px;
+		--card-photo-radius: var(--radius-card-photo);
 		display: flex;
 		flex-direction: column;
 		gap: 7px;
@@ -56,7 +55,11 @@
 		background: var(--bg-surface);
 		color: var(--ink);
 		text-decoration: none;
-		transition: background-color var(--dur-colour);
+	}
+
+	/* Mobile: the text is part of the card's own column. */
+	.text {
+		display: contents;
 	}
 
 	.name-row {
@@ -98,9 +101,60 @@
 		line-height: 1.35;
 	}
 
-	@media (hover: hover) {
-		.dish-card:hover {
-			background-color: var(--bg-card-hover);
+	/* The desktop card lifts instead (.hover-lift). */
+	@media not all and (min-width: 860px) {
+		.dish-card {
+			transition: background-color var(--dur-colour);
+		}
+
+		@media (hover: hover) {
+			.dish-card:hover {
+				background-color: var(--bg-card-hover);
+			}
+		}
+	}
+
+	/* Desktop README -> Popular "Card" and the desktop prototype's card (L158–168). */
+	@media (min-width: 860px) {
+		.dish-card {
+			--card-photo-height: 180px;
+			--card-photo-radius: var(--radius-card-photo-desktop);
+			gap: 10px;
+			padding: 14px 14px 18px;
+			border-radius: var(--radius-card-desktop);
+		}
+
+		.text {
+			display: flex;
+			flex-direction: column;
+			gap: 7px;
+			padding: 4px 4px 0;
+		}
+
+		.name-row {
+			gap: 12px;
+		}
+
+		.name {
+			font-size: 25px;
+		}
+
+		.count {
+			font-size: 12px;
+			letter-spacing: 0.04em;
+		}
+
+		.description {
+			font-size: 13.5px;
+			line-height: 1.45;
+			text-wrap: pretty;
+		}
+
+		.preview {
+			margin-top: 3px;
+			padding-top: 9px;
+			font-size: 12px;
+			line-height: 1.4;
 		}
 	}
 </style>

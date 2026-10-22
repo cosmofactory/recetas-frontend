@@ -1,6 +1,12 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { gotoHydrated } from '../testutil/home-e2e';
-import { openFiltersSheet, openFiltersSheetByKeyboard } from '../testutil/popular-e2e';
+import {
+	dishCards,
+	filterSidebar,
+	noMatch,
+	openFiltersSheet,
+	openFiltersSheetByKeyboard
+} from '../testutil/popular-e2e';
 import {
 	expectSheetExpanded,
 	expectSheetPeek,
@@ -210,4 +216,52 @@ test.describe('axe: contrast decided everywhere on the mobile home', () => {
 			await expectContrastDecided(page, url);
 		});
 	}
+});
+
+// FE-5 PR 3: desktop Popular, with the sticky filter sidebar and the card
+// grid on screen (each scan first checks they are, so it covers them), at
+// the narrowest and a wide desktop width: the default list, a filtered list
+// (pressed chips, an enabled Clear all) and the empty state. The sidebar's
+// "Clear all" is 40% opaque with nothing active; it is aria-disabled then,
+// which WCAG 1.4.3 exempts from contrast, so every other contrast must be
+// decided (nothing left incomplete). Then the same with a card hovered
+// (lifted, with its shadow).
+const DESKTOP_POPULAR_PROJECTS = ['chromium-desktop-860', DESKTOP_PROJECT];
+
+function onlyInDesktopPopularProjects(testInfo: TestInfo) {
+	test.skip(
+		!DESKTOP_POPULAR_PROJECTS.includes(testInfo.project.name),
+		`the desktop Popular scan runs in ${DESKTOP_POPULAR_PROJECTS.join(', ')}`
+	);
+}
+
+test.describe('axe: WCAG 2.2 AA on desktop Popular', () => {
+	const scans = [
+		{ url: '/en/?tab=popular', empty: false },
+		{ url: '/es/?tab=popular&f=vegetarian', empty: false },
+		{ url: '/ru/?tab=popular&f=pork&f=winter&f=slow-cooked', empty: false },
+		{ url: '/en/?tab=popular&f=desserts&f=summer', empty: true },
+		{ url: '/ru/?tab=popular&f=seafood&f=easter', empty: true }
+	];
+	for (const { url, empty } of scans) {
+		test(`${url}: sidebar and ${empty ? 'empty state' : 'cards'} have no violations`, async ({
+			page
+		}, testInfo) => {
+			onlyInDesktopPopularProjects(testInfo);
+			await gotoHydrated(page, url);
+			await expect(filterSidebar(page)).toBeVisible();
+			const results = empty ? noMatch(page) : dishCards(page).first();
+			await expect(results).toBeVisible();
+			await expectNoViolations(page, url);
+			await expectContrastDecided(page, url);
+		});
+	}
+
+	test('/en/?tab=popular with a card hovered has no violations', async ({ page }, testInfo) => {
+		onlyInDesktopPopularProjects(testInfo);
+		await gotoHydrated(page, '/en/?tab=popular');
+		await expect(filterSidebar(page)).toBeVisible();
+		await dishCards(page).nth(1).hover();
+		await expectNoViolations(page, '/en/?tab=popular (card hovered)');
+	});
 });

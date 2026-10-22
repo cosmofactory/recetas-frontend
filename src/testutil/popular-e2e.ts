@@ -18,6 +18,10 @@ import { regionSheet } from './region-e2e';
 
 export const POPULAR_PANEL = '#home-popular';
 
+export function skipOnMobile(page: Page, why = 'the desktop Popular layout (≥ 860px)') {
+	test.skip(!isDesktopPage(page), why);
+}
+
 export function skipOnDesktop(
 	page: Page,
 	why = 'the mobile Popular layout (desktop is FE-5 PR 3)'
@@ -43,14 +47,21 @@ export const resultCount = (page: Page): Locator =>
 
 export const noMatch = (page: Page): Locator => popularPanel(page).getByTestId(TEST_IDS.noMatch);
 
-// The dish keys the list shows, read from each card's ?dish= link.
+// A card's dish key, from either of its hrefs (FE-5 PR 3): the mobile dish
+// sheet URL (?dish=<key>) or the desktop Variations page (/:lang/dishes/<key>).
+function dishKeyOf(href: string): string {
+	const url = new URL(href, 'http://x');
+	const fromSheet = url.searchParams.get('dish');
+	if (fromSheet) return fromSheet;
+	return /^\/[a-z]{2}\/dishes\/([^/]+)$/.exec(url.pathname)?.[1] ?? `(no dish in ${href})`;
+}
+
+// The dish keys the list shows, read from each card's link.
 export async function shownDishKeys(page: Page): Promise<string[]> {
 	const hrefs = await dishCards(page).evaluateAll((cards) =>
 		cards.map((card) => card.getAttribute('href') ?? '')
 	);
-	return hrefs.map(
-		(href) => new URL(href, 'http://x').searchParams.get('dish') ?? `(no dish in ${href})`
-	);
+	return hrefs.map(dishKeyOf);
 }
 
 export async function expectDishes(page: Page, want: readonly string[], what: string) {
@@ -186,7 +197,10 @@ export async function sheetPressedIds(
 export const dishSheet = regionSheet;
 
 export function dishCard(page: Page, key: string): Locator {
-	return popularPanel(page).locator(`[data-testid="${TEST_IDS.dishCard}"][href$="dish=${key}"]`);
+	const card = `[data-testid="${TEST_IDS.dishCard}"]`;
+	return popularPanel(page).locator(
+		`${card}[href$="dish=${key}"], ${card}[href$="/dishes/${key}"]`
+	);
 }
 
 // The dish sheet's variation rows (links into a recipe), in DOM order.
@@ -209,4 +223,42 @@ export async function tapTopScrim(page: Page) {
 
 export async function focusIsIn(container: Locator): Promise<boolean> {
 	return container.evaluate((el) => el.contains(document.activeElement));
+}
+
+// FE-5 PR 3: the desktop filter sidebar (≥ 860px), a region named by its
+// "Filters" heading, holding FilterGroups and its own "Clear all" button.
+
+export const filterSidebar = (page: Page): Locator =>
+	onlyVisible(page.getByTestId(TEST_IDS.filterSidebar));
+
+export function sidebarChip(page: Page, lang: PopularLocale, id: FilterIdCopy): Locator {
+	const name = SHEET_COPY[lang].labels[id];
+	return filterSidebar(page).getByRole('button', { name, exact: true });
+}
+
+export function sidebarGroup(page: Page, lang: PopularLocale, key: GroupKey): Locator {
+	const name = SHEET_COPY[lang].groups[key];
+	return filterSidebar(page).getByRole('group', { name, exact: true });
+}
+
+export function clearAllInSidebar(page: Page, lang: PopularLocale): Locator {
+	const name = POPULAR_COPY[lang].clearAll;
+	return filterSidebar(page).getByRole('button', { name, exact: true });
+}
+
+export async function sidebarPressedIds(
+	page: Page,
+	lang: PopularLocale,
+	ids: readonly FilterIdCopy[]
+): Promise<FilterIdCopy[]> {
+	const pressed: FilterIdCopy[] = [];
+	for (const id of ids) {
+		if ((await sidebarChip(page, lang, id).getAttribute('aria-pressed')) === 'true')
+			pressed.push(id);
+	}
+	return pressed;
+}
+
+export async function cardHrefs(page: Page): Promise<string[]> {
+	return dishCards(page).evaluateAll((cards) => cards.map((c) => c.getAttribute('href') ?? ''));
 }

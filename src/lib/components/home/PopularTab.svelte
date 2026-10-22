@@ -16,6 +16,8 @@
 	import DishResults from './DishResults.svelte';
 	import DishSheet from './DishSheet.svelte';
 	import PopularFilters from './PopularFilters.svelte';
+	import PopularSidebar from './PopularSidebar.svelte';
+	import ResultCount from './ResultCount.svelte';
 
 	// url: the page URL, whose `f` params are the active filters (D-FE5-1)
 	// and `dish` the open dish sheet (D-FE5-2). onToggleFilter(id) and
@@ -44,10 +46,13 @@
 	const dishOpener = sheetOpener();
 
 	let filters: ReturnType<typeof PopularFilters> | undefined = $state();
-	let resultCount: HTMLElement | undefined = $state();
+	let resultCount: ReturnType<typeof ResultCount> | undefined = $state();
 
-	// "Clear all" keeps its href (no JS, new tab); a plain click replaces the
-	// entry like a chip does.
+	// The Filters sheet's and the sidebar's "Clear all": focus stays on it.
+	const clearAll = () => void onClearFilters(clearFiltersHref(url));
+
+	// The empty state's "Clear all" keeps its href (no JS, new tab); a plain
+	// click replaces the entry like a chip does.
 	async function clearFilters(event: MouseEvent) {
 		if (!isPlainClick(event)) return;
 		event.preventDefault();
@@ -56,42 +61,34 @@
 		focusAfterClear();
 	}
 
-	// The link goes with the empty state. Mobile: the Filters button. Desktop
-	// has none until PR 3's sidebar, so the result count (tabindex -1), which
-	// also reads out the restored count.
+	// The link goes with the empty state. Mobile: the Filters button. Desktop:
+	// the result count, where the empty state was, which also reads out the
+	// restored count.
 	function focusAfterClear() {
 		if (desktop.current) resultCount?.focus();
 		else filters?.focusFiltersButton();
 	}
 </script>
 
-<div class="popular page-container">
+<div class="popular">
 	<!-- The desktop <h1> lives in the Regional panel, so this panel names itself. -->
 	<h2 class="visually-hidden">{m.home_popular()}</h2>
-	<div class="controls">
-		<PopularFilters
-			bind:this={filters}
-			{active}
-			onToggle={onToggleFilter}
-			onClear={() => void onClearFilters(clearFiltersHref(url))}
-		/>
-		<p
-			bind:this={resultCount}
-			class="result-count"
-			data-testid="result-count"
-			aria-live="polite"
-			tabindex="-1"
-		>
-			{m.home_dish({ count: shown.length })}
-		</p>
+	<div class="layout page-container">
+		<PopularSidebar {active} onToggle={onToggleFilter} onClear={clearAll} />
+		<div class="results">
+			<div class="controls">
+				<PopularFilters bind:this={filters} {active} onToggle={onToggleFilter} onClear={clearAll} />
+				<ResultCount bind:this={resultCount} count={shown.length} />
+			</div>
+			<DishResults
+				dishes={shown}
+				{url}
+				{mediaBaseUrl}
+				onClear={clearFilters}
+				onOpenDish={dishOpener.remember}
+			/>
+		</div>
 	</div>
-	<DishResults
-		dishes={shown}
-		{url}
-		{mediaBaseUrl}
-		onClear={clearFilters}
-		onOpenDish={dishOpener.remember}
-	/>
 </div>
 <DishSheet
 	dish={openDish}
@@ -103,7 +100,10 @@
 />
 
 <style>
-	.popular {
+	/* Mobile: one column filling the home frame (the list scrolls inside it). */
+	.popular,
+	.layout,
+	.results {
 		display: flex;
 		flex: 1;
 		flex-direction: column;
@@ -113,8 +113,7 @@
 
 	/*
 	 * Mobile prototype: the filter bar and the result count continue the
-	 * header's column (gap 16px under the switch); the README's result count
-	 * is "padding 0 3px ... eyebrow 11px/700, .09em, ink-3".
+	 * header's column (gap 16px under the switch).
 	 */
 	.controls {
 		display: flex;
@@ -124,13 +123,27 @@
 		padding: 16px 20px 0;
 	}
 
-	.result-count {
-		margin: 0;
-		padding: 0 3px;
-		color: var(--ink-3);
-		font-size: 11px;
-		font-weight: 700;
-		letter-spacing: 0.09em;
-		text-transform: uppercase;
+	/*
+	 * Desktop README -> Popular: "grid 220px minmax(0,1fr) ... Right: result
+	 * count, then card grid". The prototype: "padding:28px <side> 64px;
+	 * align-items:start" (the sidebar sticks), the results "flex column;
+	 * gap:18px". The window scrolls, so no ancestor of the sidebar may clip.
+	 */
+	@media (min-width: 860px) {
+		.layout {
+			display: grid;
+			grid-template-columns: 220px minmax(0, 1fr);
+			gap: var(--desktop-gap);
+			align-items: start;
+			padding-block: 28px 64px;
+		}
+
+		.results {
+			gap: 18px;
+		}
+
+		.controls {
+			padding: 0;
+		}
 	}
 </style>
