@@ -7,6 +7,7 @@ import {
 	LOWEST_DISH,
 	seeAllFromSheet
 } from '../testutil/home-flow-e2e';
+import { skipAgainstDeployment } from '../testutil/e2e-target';
 import { expectNoVariationStandsOut } from '../testutil/equal-variations-e2e';
 import { expectSameDocument, gotoHydrated, markDocument } from '../testutil/home-e2e';
 import { TORTILLA_SHEET, VARIATION_REGIONS } from '../testutil/popular-copy';
@@ -117,6 +118,7 @@ test.describe('Variations page without JavaScript', () => {
 
 	test(`hero photo ${HERO_PX}px, card photos ${CARD_PHOTO_PX}px`, async ({ page }) => {
 		skipOnDesktop(page, MOBILE_ONLY);
+		skipAgainstDeployment('asserts the photo placeholder');
 		await page.goto('/en/dishes/tortilla');
 		// No MEDIA_BASE_URL in E2E: every <Photo> is its placeholder box.
 		expect(await boxHeight(page.locator('.placeholder').first())).toBe(HERO_PX);

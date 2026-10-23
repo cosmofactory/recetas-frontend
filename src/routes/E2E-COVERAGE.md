@@ -7,7 +7,7 @@ How to read the columns:
 - **Locales**: the locales the test(s) assert. "any" means the behaviour doesn't depend on the language and one locale is checked on purpose.
 - **Layouts**: M = mobile, D = desktop. On PRs and `main` an untagged test runs at 390 (M) and 1280 (D); `@layout` adds 360/430 and 860/1440, and `@cross-browser` adds WebKit (iPhone, desktop 1440) and Firefox 1280 (stack.md F4). Nightly and `E2E_MATRIX=full` run every test in all 9 projects. "HTTP" means a request-level check that runs in one project.
 - **Status**: covered, partial (a known part is checked elsewhere or not at all), gap, or manual/demo (needs a real device, a screenshot comparison by `qa-tester`, a real backend or the demo deployment). Unit and component checks are named where they carry the bullet.
-- **Against a deployment** (`E2E_BASE_URL`): specs that need the local server skip themselves through `skipAgainstDeployment` (`src/testutil/e2e-target.ts`): `startAppServer`-based checks, the JS budget, `APP_ENV`-specific robots and noindex checks, the "no proxy headers" check and spoofed `Host` headers.
+- **Against a deployment** (`E2E_BASE_URL`): specs that need the local server skip themselves through `skipAgainstDeployment` (`src/testutil/e2e-target.ts`): `startAppServer`-based checks, the JS budget, the mock-only `/readyz` 503, the photo placeholder sizes, the "no proxy headers" check and spoofed `Host` headers. `robots-noindex` keeps running and expects demo (noindex, robots disallows everything) unless `E2E_APP_ENV=prod`.
 
 ## FE-1 i18n and routing
 

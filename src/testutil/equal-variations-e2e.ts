@@ -4,20 +4,29 @@ import { expect, type Locator } from '@playwright/test';
 // distinguished anywhere"): every variation of a dish is equal, so no row or
 // card may be styled, marked or badged differently from its siblings.
 
-// What a row looks like: its own box styles, then each descendant's tag and
-// text styles. Background images are left out: a photo (or its placeholder)
-// differs per variation by design, and that isn't a highlight.
+// What a row looks like: its own box (every border side, outline,
+// background) and text styles, then each descendant's tag and text styles.
+// The photo subtree is left out: a real photo and its placeholder differ by
+// design, and that isn't a highlight.
 function looksOf(rows: Element[]): string[] {
-	const BOX = ['background-color', 'border-bottom-color', 'border-bottom-width', 'box-shadow'];
+	const SIDES = ['top', 'right', 'bottom', 'left'];
+	const BORDERS = SIDES.flatMap((side) =>
+		['width', 'style', 'color'].map((part) => `border-${side}-${part}`)
+	);
+	const BOX = [...BORDERS, 'background-color', 'background-image', 'box-shadow'];
+	const OUTLINE = ['outline-style', 'outline-width', 'outline-color'];
 	const TEXT = ['font-weight', 'font-size', 'font-style', 'color', 'text-decoration-line'];
-	const OTHER = ['opacity', 'outline-style', 'transform'];
+	const PHOTO = 'picture, .placeholder';
 	const styleOf = (el: Element, props: string[]) => {
 		const style = getComputedStyle(el);
 		return props.map((p) => style.getPropertyValue(p)).join(',');
 	};
+	const outsidePhoto = (el: Element) => !el.matches(PHOTO) && !el.closest(PHOTO);
 	return rows.map((row) => {
-		const own = styleOf(row, [...BOX, ...TEXT, ...OTHER]);
-		const inner = [...row.querySelectorAll('*')].map((el) => `${el.tagName}:${styleOf(el, TEXT)}`);
+		const own = styleOf(row, [...BOX, ...OUTLINE, ...TEXT, 'opacity', 'transform']);
+		const inner = [...row.querySelectorAll('*')]
+			.filter(outsidePhoto)
+			.map((el) => `${el.tagName}:${styleOf(el, TEXT)}`);
 		return [own, ...inner].join('|');
 	});
 }

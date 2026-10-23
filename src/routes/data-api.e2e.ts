@@ -100,9 +100,8 @@ test.describe('DATA_SOURCE=api: pages render from the Go API', () => {
 		}
 		await expect(page.getByRole('heading', { level: 1 })).toHaveText('Betanzos-style runny');
 		const elsewhere = requests.filter((url) => new URL(url).origin !== app);
+		// Off the app origin includes the API host (the fake backend's own port).
 		expect(elsewhere, `got requests off the app origin ${app}`).toEqual([]);
-		const toBackend = requests.filter((url) => url.startsWith(started!.backend.baseURL));
-		expect(toBackend, 'got browser requests to the API host').toEqual([]);
 	});
 });
 

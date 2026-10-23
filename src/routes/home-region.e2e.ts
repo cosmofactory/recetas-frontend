@@ -703,6 +703,8 @@ test.describe('every region', () => {
 		'a tap on each of the 14 regions opens it at its URL; Back returns home',
 		{ tag: '@layout' },
 		async ({ page }) => {
+			// 14 sheet open/close cycles: ~20s on mobile, two thirds of the default timeout.
+			test.slow();
 			await gotoHydrated(page, '/es/');
 			for (const region of mapRegions('es')) {
 				await tapRegion(page, region.key, 'es');
