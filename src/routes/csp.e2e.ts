@@ -27,6 +27,7 @@ import { DISHES, resultGroup, searchFor } from '../testutil/search-e2e';
 import { searchDropdown, typeInDesktopSearch } from '../testutil/desktop-search-e2e';
 import { loadedImagesFrom, stubMediaHost } from '../testutil/media-e2e';
 import { variationCards } from '../testutil/variations-e2e';
+import { skipAgainstDeployment } from '../testutil/e2e-target';
 
 // FE-8 PR 3, Security: the Content-Security-Policy (stage FE-8 -> Security,
 // D-FE8-1: SvelteKit owns the CSP, `kit.csp` in mode 'auto'; Caddy (INF-5)
@@ -188,6 +189,7 @@ test.describe('CSP header on every HTML response', () => {
 			baseURL
 		}, testInfo) => {
 			onlyInOneProject(testInfo);
+			skipAgainstDeployment('a deployment may set MEDIA_BASE_URL');
 			expectImgSrc((await fetchPolicy(baseURL!, request, url)).csp, []);
 		});
 
@@ -223,6 +225,7 @@ test.describe('CSP header on every HTML response', () => {
 });
 
 test.describe('CSP img-src follows MEDIA_BASE_URL at runtime', () => {
+	skipAgainstDeployment('starts its own node build');
 	let server: AppServer | undefined;
 
 	test.beforeAll(async () => {
@@ -247,6 +250,7 @@ test.describe('CSP img-src follows MEDIA_BASE_URL at runtime', () => {
 });
 
 test.describe('D-FE8-1: the proxy headers are Caddy’s, not the app’s', () => {
+	skipAgainstDeployment('a deployment has Caddy in front, which adds them');
 	const urls = [...HTML_RESPONSES.map((r) => r.url), '/robots.txt', '/sitemap.xml', '/healthz'];
 	for (const url of urls) {
 		test(`${url} sends no HSTS, nosniff, Referrer- or Permissions-Policy`, async ({
@@ -338,6 +342,7 @@ test.describe('no CSP violations on the key flows', () => {
 // from the media origin: the runtime img-src must let them load, in every
 // engine, with no violation.
 test.describe('no CSP violations with photos from MEDIA_BASE_URL', () => {
+	skipAgainstDeployment('starts its own node build against a fake API');
 	const PHOTOS = {
 		tortilla: {
 			thumb: 'dishes/tortilla/thumb-1a2b3c4d',

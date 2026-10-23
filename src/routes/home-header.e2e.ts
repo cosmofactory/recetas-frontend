@@ -1,9 +1,12 @@
 import { expect, test, type Locator, type Page } from '../testutil/e2e-test';
+import { backPill } from '../testutil/desktop-pages-e2e';
+import { desktopSearchInput } from '../testutil/desktop-search-e2e';
 import { LOCALES } from '../testutil/e2e';
 import {
 	bottom,
 	boxOf,
 	computedStyle,
+	DESKTOP_MIN_WIDTH,
 	expectPx,
 	gotoHydrated,
 	HOME_COPY,
@@ -13,6 +16,7 @@ import {
 	tab,
 	tokenValue
 } from '../testutil/home-e2e';
+import { backLink } from '../testutil/variations-e2e';
 
 // FE-4 PR 2, the home header (stage FE-4 -> Header: "Logo "Asadorov" (never
 // translated), the language button (... a placeholder is fine until FE-7;
@@ -294,4 +298,47 @@ test.describe('desktop top bar (≥ 860px)', () => {
 			expectPx((await boxOf(header, 'the top bar')).height, TOP_BAR_OUTER_HEIGHT, 'top bar height');
 		}
 	);
+});
+
+// FE-3 acceptance: "At 860px the desktop layout applies, and at 859px the
+// mobile one does." Each page sets the two widths itself (and crosses them
+// live), so it needs no other project widths.
+const LAST_MOBILE_WIDTH = DESKTOP_MIN_WIDTH - 1;
+const BOUNDARY_HEIGHT = 800;
+
+type LayoutMarkers = {
+	path: string;
+	mobile: (page: Page) => Locator;
+	desktop: (page: Page) => Locator;
+};
+
+const BOUNDARY_PAGES: LayoutMarkers[] = [
+	{
+		path: '/en/',
+		mobile: (page) => searchButton(page, HOME_COPY.en.search),
+		desktop: (page) => desktopSearchInput(page, 'en')
+	},
+	{ path: '/en/dishes/tortilla', mobile: (page) => backLink(page, 'en'), desktop: backPill }
+];
+
+async function expectLayoutAt(page: Page, width: number, markers: LayoutMarkers) {
+	await page.setViewportSize({ width, height: BOUNDARY_HEIGHT });
+	const [shown, hidden] =
+		width >= DESKTOP_MIN_WIDTH
+			? [markers.desktop, markers.mobile]
+			: [markers.mobile, markers.desktop];
+	await expect(shown(page), `want this layout's marker visible at ${width}px`).toBeVisible();
+	await expect(hidden(page), `want the other layout's marker hidden at ${width}px`).toBeHidden();
+}
+
+test.describe('the 860px switch', () => {
+	for (const markers of BOUNDARY_PAGES) {
+		test(`${markers.path}: 859px is mobile, 860px desktop, live both ways`, async ({ page }) => {
+			await page.setViewportSize({ width: LAST_MOBILE_WIDTH, height: BOUNDARY_HEIGHT });
+			await gotoHydrated(page, markers.path);
+			await expectLayoutAt(page, LAST_MOBILE_WIDTH, markers);
+			await expectLayoutAt(page, DESKTOP_MIN_WIDTH, markers);
+			await expectLayoutAt(page, LAST_MOBILE_WIDTH, markers);
+		});
+	}
 });

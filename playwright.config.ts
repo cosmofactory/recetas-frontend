@@ -1,8 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 import { APP_ENV } from './src/testutil/e2e-app-env';
 import { PUBLIC_ORIGIN } from './src/testutil/e2e-origin';
+import { EXTERNAL_BASE_URL } from './src/testutil/e2e-target';
 
 const PORT = 4173;
+const LOCAL_BASE_URL = `http://127.0.0.1:${PORT}`;
 
 // Viewports from specs/stack.md F6 (mobile < 860px, desktop >= 860px) and
 // browsers from X10. Every viewport runs on Chromium; WebKit covers iOS
@@ -37,24 +39,29 @@ export default defineConfig({
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 1 : 0,
 	reporter: process.env.CI ? [['github'], ['list']] : 'list',
-	use: { baseURL: `http://127.0.0.1:${PORT}`, trace: 'retain-on-failure' },
-	webServer: {
-		// The production server (adapter-node), not the Vite preview.
-		command: 'pnpm build && node build',
-		url: `http://127.0.0.1:${PORT}/healthz`,
-		env: {
-			PORT: String(PORT),
-			HOST: '127.0.0.1',
-			// Canonical and hreflang URLs are built from this, not the request host.
-			PUBLIC_ORIGIN,
-			// Required outside `vite dev` (FE-8): demo, so the site is noindex.
-			APP_ENV,
-			// The vendored content bundle: E2E runs (and CI) need no backend.
-			DATA_SOURCE: 'mock'
-		},
-		reuseExistingServer: !process.env.CI,
-		timeout: 120_000
-	},
+	// E2E_BASE_URL (e.g. the nightly run against demo) targets a deployment
+	// and starts no server; specs that need the local one skip themselves
+	// (skipAgainstDeployment in src/testutil/e2e-target.ts).
+	use: { baseURL: EXTERNAL_BASE_URL ?? LOCAL_BASE_URL, trace: 'retain-on-failure' },
+	webServer: EXTERNAL_BASE_URL
+		? undefined
+		: {
+				// The production server (adapter-node), not the Vite preview.
+				command: 'pnpm build && node build',
+				url: `${LOCAL_BASE_URL}/healthz`,
+				env: {
+					PORT: String(PORT),
+					HOST: '127.0.0.1',
+					// Canonical and hreflang URLs are built from this, not the request host.
+					PUBLIC_ORIGIN,
+					// Required outside `vite dev` (FE-8): demo, so the site is noindex.
+					APP_ENV,
+					// The vendored content bundle: E2E runs (and CI) need no backend.
+					DATA_SOURCE: 'mock'
+				},
+				reuseExistingServer: !process.env.CI,
+				timeout: 120_000
+			},
 	projects: [
 		...mobile.map((p) => ({
 			name: `chromium-${p.name}`,

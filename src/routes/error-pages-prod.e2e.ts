@@ -7,6 +7,9 @@ import {
 	type AppServer
 } from '../testutil/app-server-e2e';
 import { getRaw, headerTokens, LOCALES, type Locale } from '../testutil/e2e';
+import { skipAgainstDeployment } from '../testutil/e2e-target';
+
+skipAgainstDeployment('starts its own node build with a broken or stopped backend');
 
 // FE-8 PR 3, Security: "Error pages don't leak anything in production",
 // against the production build (`node build`) with DATA_SOURCE=api.

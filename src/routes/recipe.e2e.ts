@@ -12,6 +12,7 @@ import {
 	gotoHydrated,
 	markDocument
 } from '../testutil/home-e2e';
+import { skipAgainstDeployment } from '../testutil/e2e-target';
 import { skipOnDesktop } from '../testutil/popular-e2e';
 import { historyLength } from '../testutil/region-e2e';
 import {
@@ -160,6 +161,7 @@ test.describe('Recipe page without JavaScript', () => {
 		{ tag: '@layout' },
 		async ({ page }) => {
 			skipOnDesktop(page, MOBILE_ONLY);
+			skipAgainstDeployment('asserts the photo placeholder');
 			await page.goto(BETANZOS_EN);
 			// No MEDIA_BASE_URL in E2E: the hero <Photo> is its placeholder box.
 			const hero = await page.locator('.placeholder').first().boundingBox();

@@ -7,6 +7,8 @@ import {
 	LOWEST_DISH,
 	seeAllFromSheet
 } from '../testutil/home-flow-e2e';
+import { skipAgainstDeployment } from '../testutil/e2e-target';
+import { expectNoVariationStandsOut } from '../testutil/equal-variations-e2e';
 import { expectSameDocument, gotoHydrated, markDocument } from '../testutil/home-e2e';
 import { TORTILLA_SHEET, VARIATION_REGIONS } from '../testutil/popular-copy';
 import { skipOnDesktop } from '../testutil/popular-e2e';
@@ -116,6 +118,7 @@ test.describe('Variations page without JavaScript', () => {
 
 	test(`hero photo ${HERO_PX}px, card photos ${CARD_PHOTO_PX}px`, async ({ page }) => {
 		skipOnDesktop(page, MOBILE_ONLY);
+		skipAgainstDeployment('asserts the photo placeholder');
 		await page.goto('/en/dishes/tortilla');
 		// No MEDIA_BASE_URL in E2E: every <Photo> is its placeholder box.
 		expect(await boxHeight(page.locator('.placeholder').first())).toBe(HERO_PX);
@@ -248,6 +251,15 @@ test.describe('Variations page: cards open the recipe', () => {
 			await expect(page.getByRole('heading', { level: 1 })).toHaveText(second.name);
 		});
 	}
+});
+
+// Root CLAUDE.md scope rule: "All variations of a dish are equal" (no best or
+// primary variation highlight), on both layouts.
+test.describe('Variations page: every variation is equal', () => {
+	test('no card stands out: every card looks the same, none is marked', async ({ page }) => {
+		await gotoHydrated(page, '/en/dishes/tortilla');
+		await expectNoVariationStandsOut(variationCards(page), 'variation cards');
+	});
 });
 
 test.describe('Variations page: page push from home', () => {
