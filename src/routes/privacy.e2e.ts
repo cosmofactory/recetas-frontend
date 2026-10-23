@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../testutil/e2e-test';
 import { getRaw, LOCALES, localePath, PAGES, setCookieHeaders } from '../testutil/e2e';
 import { installStorageSpy, recordedWrites } from '../testutil/storage-spy';
 

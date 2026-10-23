@@ -1,9 +1,12 @@
 import { APP_ENV } from '$app/env/private';
+import { MEDIA_BASE_URL } from '$app/env/public';
 import type { Handle, HandleServerError, ServerInit } from '@sveltejs/kit/hooks';
 import { INTERNAL_SERVER_ERROR } from '#lib/http-status.ts';
 import { localeFromPath } from '#lib/i18n/locales.ts';
 import { setErrorReporter } from '#lib/report-error.ts';
 import { isIndexable } from '#lib/server/app-env.ts';
+import { withCacheControl } from '#lib/server/cache-control.ts';
+import { withMediaImgSrc } from '#lib/server/csp.ts';
 import { log } from '#lib/server/log.ts';
 import { withRequestLocale } from '#lib/server/request-locale.ts';
 
@@ -42,7 +45,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 				html.replace(HTML_LANG_PLACEHOLDER, `<html lang="${locale}">`)
 		})
 	);
-	return withRobotsTag(response);
+	return withRobotsTag(withCacheControl(withMediaImgSrc(response, MEDIA_BASE_URL)));
 };
 
 // Only prod may be indexed (stage FE-8). Every response the app resolves

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../testutil/e2e-test';
 
 test('home page renders', { tag: '@cross-browser' }, async ({ page }) => {
 	const response = await page.goto('/');

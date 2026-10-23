@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from '../testutil/e2e-test';
 import { expectNoViolations } from '../testutil/axe-e2e';
 import {
 	expectHomeRestored,

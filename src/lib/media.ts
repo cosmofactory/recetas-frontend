@@ -50,6 +50,11 @@ const FALLBACK_EXTENSION = 'jpg';
 // no extension, nothing that could point the URL somewhere else.
 const PREFIX_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*(\/[a-z0-9]+(-[a-z0-9]+)*)*$/;
 
+// The origin is copied into the CSP img-src header, where WHATWG-legal host
+// characters such as `;` (new directive) and `,` (new policy) would inject.
+// URL.parse already lowercases and punycodes the host.
+const MEDIA_HOSTNAME_PATTERN = /^[a-z0-9.-]+$/;
+
 const variantUrl = (url: string, width: number, extension: string) =>
 	`${url}-${width}w.${extension}`;
 
@@ -108,7 +113,12 @@ export function jpegUrls({ baseUrl, prefix, role }: ImageSetOptions): string[] |
 export function parseMediaBaseUrl(value: string | undefined): string | undefined {
 	if (!value) return undefined;
 	const url = URL.parse(value);
-	const valid = url?.protocol === 'https:' && !url.username && !url.password && !/[?#]/.test(value);
+	const valid =
+		url?.protocol === 'https:' &&
+		MEDIA_HOSTNAME_PATTERN.test(url.hostname) &&
+		!url.username &&
+		!url.password &&
+		!/[?#]/.test(value);
 	if (!valid) {
 		throw new Error(
 			`MEDIA_BASE_URL must be an https origin with an optional path, got ${JSON.stringify(value)}`

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../testutil/e2e-test';
 import { getRaw, redirectTarget, setCookieHeaders } from '../testutil/e2e';
 
 // FE-1 acceptance: GET /set-lang?to=<lang>&next=<path> is the only response

@@ -1,4 +1,4 @@
-import { expect, test, type TestInfo } from '@playwright/test';
+import { expect, test, type TestInfo } from '../testutil/e2e-test';
 import { getRaw } from '../testutil/e2e';
 import { APP_ENV } from '../testutil/e2e-app-env';
 

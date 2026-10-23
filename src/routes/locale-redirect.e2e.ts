@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../testutil/e2e-test';
 import { getRaw, headerTokens, redirectTarget, setCookieHeaders } from '../testutil/e2e';
 
 // FE-1 acceptance: a bare `/` redirects (302) by the `lang` cookie, then

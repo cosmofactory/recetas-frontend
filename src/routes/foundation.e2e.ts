@@ -1,4 +1,4 @@
-import { expect, test, type Page, type Request } from '@playwright/test';
+import { expect, test, type Page, type Request } from '../testutil/e2e-test';
 
 // FE-0 foundation: token-styled global layout and self-hosted fonts
 // (D-FE0-1). Runs in every Playwright project.

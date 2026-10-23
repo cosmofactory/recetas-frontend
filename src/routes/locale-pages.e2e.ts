@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from '../testutil/e2e-test';
 import { getRaw, htmlLang, LOCALES, localePath, PAGES, type Locale } from '../testutil/e2e';
 import { PUBLIC_ORIGIN } from '../testutil/e2e-origin';
 

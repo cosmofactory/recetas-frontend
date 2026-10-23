@@ -1,4 +1,4 @@
-import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { expect, test, type Page, type TestInfo } from '../testutil/e2e-test';
 import { gotoHydrated, HOME_COPY } from '../testutil/home-e2e';
 import { pageTitle, TORTILLA_PAGE, VARIATIONS_LOCALES } from '../testutil/variations-copy';
 import { variationCards } from '../testutil/variations-e2e';

@@ -1,4 +1,4 @@
-import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { expect, test, type Page, type TestInfo } from '../testutil/e2e-test';
 import { expectNoViolations, loadAxe, summary, WCAG_AA_TAGS } from '../testutil/axe-e2e';
 import { gotoHydrated } from '../testutil/home-e2e';
 import { nothingFor, type SearchLocale } from '../testutil/search-copy';
