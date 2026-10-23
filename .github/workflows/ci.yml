@@ -137,6 +137,53 @@ jobs:
       - name: All shards passed
         run: test "${{ needs.e2e-shard.result }}" = success
 
+  # D-FE8-2 (specs/stack.md F4 "Performance budgets"): median LCP and CLS of
+  # the home, Variations and Recipe pages on Lighthouse's mobile and desktop
+  # presets, against the production build with mock data. The runner's
+  # Google Chrome runs it (as a normal user, so no --no-sandbox). The gzip JS
+  # budget is a Playwright spec and runs in the E2E shards.
+  lighthouse:
+    name: Lighthouse
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Lighthouse mobile
+        run: pnpm lhci:mobile
+
+      # Runs even when mobile failed, so one push reports both presets.
+      - name: Lighthouse desktop
+        if: ${{ !cancelled() }}
+        run: pnpm lhci:desktop
+
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci/
+          # upload-artifact skips dot-folders unless told otherwise.
+          include-hidden-files: true
+          retention-days: 7
+
   build-and-push-image:
     name: Build And Push Image
     runs-on: ubuntu-latest
@@ -144,6 +191,7 @@ jobs:
     needs:
       - quality
       - e2e
+      - lighthouse
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read

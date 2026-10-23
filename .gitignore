@@ -29,3 +29,6 @@ test-results
 
 # Vitest coverage (pnpm test:coverage)
 /coverage
+
+# Lighthouse CI results (pnpm lhci:mobile / lhci:desktop)
+/.lighthouseci

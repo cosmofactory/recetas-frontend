@@ -10,6 +10,31 @@ const BUILD_TARGETS = ['chrome111', 'edge111', 'firefox114', 'safari16', 'ios16'
 // data: URLs, so the CSP's img-src and font-src need no `data:`.
 const NEVER_INLINED_ASSET = /\.(woff2?|svg)$/;
 
+// D-FE8-2 (mobile LCP): Rolldown's default split gave the home page ~30
+// modulepreloaded chunks, and on a slow phone link each one costs a round
+// trip before first paint. Two groups cut that to ~9: every library in one
+// `vendor` chunk and the app code shared by two or more routes in one `lib`
+// chunk; code only one route uses stays in its node. Kit's client-entry
+// module is excluded so it stays its own small stub chunk: Kit's start
+// script imports it dynamically and finds it by that import (the build fails
+// with "Could not find the client runtime chunk" otherwise). The runtime code
+// it re-exports still lands in `vendor`. Client build only; the server build
+// keeps its split.
+const KIT_CLIENT_RUNTIME = /@sveltejs[\\/]kit[\\/]src[\\/]runtime[\\/]client[\\/]/;
+const APP_SOURCE = /[\\/]src[\\/]/;
+const isDependency = (id: string) => id.includes('node_modules');
+const MIN_ROUTES_FOR_SHARED_CHUNK = 2;
+const CLIENT_CHUNK_GROUPS = {
+	groups: [
+		{ name: 'vendor', test: (id: string) => isDependency(id) && !KIT_CLIENT_RUNTIME.test(id) },
+		{
+			name: 'lib',
+			test: (id: string) => !isDependency(id) && APP_SOURCE.test(id),
+			minShareCount: MIN_ROUTES_FOR_SHARED_CHUNK
+		}
+	]
+};
+
 // Stage FE-8, Small decisions -> CSP; D-FE8-1 (Caddy sets HSTS and the other
 // proxy headers). Kit adds a nonce (SSR) or hash (prerendered) for its own
 // inline scripts and styles. Style attributes (app.html, map tile colours,
@@ -49,6 +74,9 @@ export default defineConfig({
 			tracing: { server: true }
 		})
 	],
+	environments: {
+		client: { build: { rolldownOptions: { output: { codeSplitting: CLIENT_CHUNK_GROUPS } } } }
+	},
 	build: {
 		// stack.md X10 supports iOS/Safari 16; Vite's default baseline starts at
 		// 16.4, and its CSS minifier would then rewrite `min-width` queries
