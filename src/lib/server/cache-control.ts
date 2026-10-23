@@ -13,7 +13,7 @@ export const NO_STORE = 'no-store';
 
 const HTML_CONTENT_TYPE = 'text/html';
 
-const isHtml = (response: Response) =>
+export const isHtml = (response: Response) =>
 	response.headers.get('content-type')?.startsWith(HTML_CONTENT_TYPE) ?? false;
 
 // The one place page and error caching is decided, for every response

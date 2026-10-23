@@ -6,6 +6,7 @@ import { localeFromPath } from '#lib/i18n/locales.ts';
 import { setErrorReporter } from '#lib/report-error.ts';
 import { isIndexable } from '#lib/server/app-env.ts';
 import { withCacheControl } from '#lib/server/cache-control.ts';
+import { withGzip } from '#lib/server/compression.ts';
 import { withMediaImgSrc } from '#lib/server/csp.ts';
 import { log } from '#lib/server/log.ts';
 import { withRequestLocale } from '#lib/server/request-locale.ts';
@@ -45,7 +46,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 				html.replace(HTML_LANG_PLACEHOLDER, `<html lang="${locale}">`)
 		})
 	);
-	return withRobotsTag(withCacheControl(withMediaImgSrc(response, MEDIA_BASE_URL)));
+	const withHeaders = withRobotsTag(withCacheControl(withMediaImgSrc(response, MEDIA_BASE_URL)));
+	return withGzip(event.request, withHeaders);
 };
 
 // Only prod may be indexed (stage FE-8). Every response the app resolves
