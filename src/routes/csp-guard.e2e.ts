@@ -10,14 +10,19 @@ const PROBE_PATH = '/__csp-guard-probe';
 const PROBE_POLICY = "script-src 'none'";
 const PROBE_HTML = '<!doctype html><title>probe</title><script>document.title = "ran";</script>';
 
-test('the page fixture fails a test whose page has a CSP violation', async ({ page }) => {
-	test.fail(true, 'the blocked inline script must fail the test via the page fixture');
-	await page.route(`**${PROBE_PATH}`, (route) =>
-		route.fulfill({
-			contentType: 'text/html',
-			headers: { 'content-security-policy': PROBE_POLICY },
-			body: PROBE_HTML
-		})
-	);
-	await page.goto(PROBE_PATH);
-});
+// Tagged @cross-browser because each engine reports violations differently.
+test(
+	'the page fixture fails a test whose page has a CSP violation',
+	{ tag: ['@cross-browser'] },
+	async ({ page }) => {
+		test.fail(true, 'the blocked inline script must fail the test via the page fixture');
+		await page.route(`**${PROBE_PATH}`, (route) =>
+			route.fulfill({
+				contentType: 'text/html',
+				headers: { 'content-security-policy': PROBE_POLICY },
+				body: PROBE_HTML
+			})
+		);
+		await page.goto(PROBE_PATH);
+	}
+);
