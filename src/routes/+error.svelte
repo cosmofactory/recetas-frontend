@@ -22,3 +22,17 @@
 	<p>{copy.body}</p>
 	<a href={localizedHref('/', locale)}>{copy.backHome}</a>
 </main>
+
+<style>
+	/* Accessibility: the one-line link grows its hit area to 44px (the --hit-inset pattern). */
+	a {
+		position: relative;
+		display: inline-block;
+	}
+
+	a::before {
+		content: '';
+		position: absolute;
+		inset: var(--hit-inset);
+	}
+</style>

@@ -11,14 +11,17 @@
 	 * WCAG AA overrides (stack.md X10 "Contrast overrides", owner decision):
 	 * these design text colours miss 4.5:1 on the cream backgrounds, so they
 	 * are nudged to the nearest passing value here; tokens.css stays the
-	 * design's byte mirror. --ink-2 .60 → .64, --ink-3 .50 → .63, the
-	 * eyebrow ("ink-3 at .55") → .63. Accent-coloured text uses
+	 * design's byte mirror. --ink-2 .60 → .64, --ink-3 .50 → .65 (FE-8:
+	 * .63 missed on the active and hovered rows, --bg-surface-muted and
+	 * --bg-hover-subtle over the page), the eyebrow ("ink-3 at .55") → .63,
+	 * the search placeholder .40 → .63. Accent-coloured text uses
 	 * --accent-text (AA on both page and surface); backgrounds, borders,
 	 * buttons and the map keep --accent.
 	 */
 	--ink-2: rgba(43, 30, 22, 0.64);
-	--ink-3: rgba(43, 30, 22, 0.63);
+	--ink-3: rgba(43, 30, 22, 0.65);
 	--ink-eyebrow: rgba(43, 30, 22, 0.63);
+	--ink-placeholder: rgba(43, 30, 22, 0.63);
 	--accent-text: #b44e2a;
 	/*
 	 * --accent-text sits next to --accent-hover (#B44B27), so its hover

@@ -169,6 +169,7 @@
 
 	/* "Row: padding 12px, radius 9px, 14px/500, hover --bg-surface-muted"; prototype gap 10px. */
 	.row {
+		position: relative;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -178,6 +179,16 @@
 		color: var(--ink);
 		text-decoration: none;
 		transition: background-color var(--dur-colour);
+	}
+
+	/*
+	 * Accessibility: the rows are 39–41px, so each grows its hit area to
+	 * 44px (the --hit-inset pattern); neighbouring rows share the overlap.
+	 */
+	.row::before {
+		content: '';
+		position: absolute;
+		inset: var(--hit-inset);
 	}
 
 	.row.current {

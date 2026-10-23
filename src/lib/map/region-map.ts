@@ -15,7 +15,11 @@ export const mapSize = { columns: mapGrid.columns, rows: mapGrid.rows };
 // A label's centre as CSS percentages of the map box.
 export type LabelPlacement = { left: string; top: string };
 
-export type RegionShape = { cells: GridCell[]; label: LabelPlacement };
+// A run of a region's cells in one row, as CSS grid lines (end exclusive).
+export type RowSpan = { row: number; columnStart: number; columnEnd: number };
+
+// bottomEdge: the region's cells on the map's bottom row, if any.
+export type RegionShape = { cells: GridCell[]; label: LabelPlacement; bottomEdge: RowSpan | null };
 
 export type MapRegionData = CatalogRegion;
 
@@ -26,8 +30,21 @@ function placement(cells: GridCell[], key: string): LabelPlacement {
 	return { left: `${(x / mapGrid.columns) * PERCENT}%`, top: `${(y / mapGrid.rows) * PERCENT}%` };
 }
 
+function bottomEdge(cells: GridCell[]): RowSpan | null {
+	const columns = cells.filter((cell) => cell.row === mapGrid.rows).map((cell) => cell.col);
+	if (columns.length === 0) return null;
+	return {
+		row: mapGrid.rows,
+		columnStart: Math.min(...columns),
+		columnEnd: Math.max(...columns) + 1
+	};
+}
+
 const shapes = new Map(
-	[...cellsByRegion].map(([key, cells]) => [key, { cells, label: placement(cells, key) }])
+	[...cellsByRegion].map(([key, cells]): [string, RegionShape] => [
+		key,
+		{ cells, label: placement(cells, key), bottomEdge: bottomEdge(cells) }
+	])
 );
 
 // The regions the map can draw, in the caller's (API) order, with their shapes.

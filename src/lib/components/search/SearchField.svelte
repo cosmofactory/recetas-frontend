@@ -46,7 +46,14 @@
 	const desktop = $derived(size === 'desktop');
 </script>
 
-<div class="field" class:desktop class:open data-testid="search-field">
+<div
+	class="field"
+	class:desktop
+	class:open
+	class:clearable={Boolean(query)}
+	data-testid="search-field"
+	style:--magnifier-size="{MAGNIFIER_PX}px"
+>
 	<span class="magnifier" aria-hidden="true"><Magnifier size={MAGNIFIER_PX} /></span>
 	<input
 		bind:this={input}
@@ -81,14 +88,19 @@
 	 * 15px/500"; the prototype's gap is 10px.
 	 */
 	.field {
+		--field-border-width: 1.5px;
+		--field-padding-inline: 14px;
+		--field-gap: 10px;
+		--clear-size: 22px;
+		position: relative;
 		display: flex;
 		flex: 1;
 		align-items: center;
-		gap: 10px;
+		gap: var(--field-gap);
 		box-sizing: border-box;
 		height: 46px;
-		padding: 0 14px;
-		border: 1.5px solid var(--border-field);
+		padding: 0 var(--field-padding-inline);
+		border: var(--field-border-width) solid var(--border-field);
 		border-radius: var(--radius-pill);
 		background: var(--bg-surface);
 	}
@@ -100,9 +112,9 @@
 	 * rgba(43,30,22,.45) while the dropdown is open.
 	 */
 	.field.desktop {
+		--field-padding-inline: 16px;
 		box-sizing: content-box;
 		height: 44px;
-		padding: 0 16px;
 		transition: border-color var(--dur-colour);
 	}
 
@@ -116,11 +128,26 @@
 		color: var(--ink-3);
 	}
 
+	/*
+	 * Accessibility (44px targets, FE-8): the input covers the pill, border
+	 * included, up to the "×" (which keeps its own target), so a press
+	 * anywhere else on the pill lands in the field; its padding keeps the
+	 * text after the magnifier. Its pill radius keeps the focus ring
+	 * pill-shaped.
+	 */
 	input {
-		flex: 1;
-		min-width: 0;
-		padding: 0;
+		position: absolute;
+		top: calc(-1 * var(--field-border-width));
+		left: calc(-1 * var(--field-border-width));
+		width: calc(100% + 2 * var(--field-border-width));
+		height: calc(100% + 2 * var(--field-border-width));
+		padding: 0 calc(var(--field-border-width) + var(--field-padding-inline)) 0
+			calc(
+				var(--field-border-width) + var(--field-padding-inline) + var(--magnifier-size) +
+					var(--field-gap)
+			);
 		border: none;
+		border-radius: inherit;
 		background: transparent;
 		color: var(--ink);
 		font: 500 15px var(--font-text);
@@ -131,19 +158,28 @@
 		font-size: 14px;
 	}
 
+	.clearable input {
+		width: calc(
+			100% + var(--field-border-width) - var(--field-padding-inline) - var(--clear-size) -
+				var(--field-gap)
+		);
+		padding-right: 0;
+	}
+
 	input::placeholder {
 		color: var(--ink-placeholder);
 	}
 
-	/* "a 22px "×" clear button appears when there's text". */
+	/* "a 22px "×" clear button appears when there's text", at the field's end. */
 	.clear {
 		position: relative;
 		display: flex;
 		flex: none;
 		align-items: center;
 		justify-content: center;
-		width: 22px;
-		height: 22px;
+		width: var(--clear-size);
+		height: var(--clear-size);
+		margin-left: auto;
 		padding: 0;
 		border: none;
 		border-radius: var(--radius-pill);
