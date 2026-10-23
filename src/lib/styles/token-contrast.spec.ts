@@ -10,8 +10,8 @@ import { tokenColour } from '../../testutil/css-tokens';
 //
 // The pairs are the ones the app paints: every text token on the
 // backgrounds it sits on (the X10 list first, then the other text colours
-// the components use), plus the UI-component boundaries the design draws
-// (WCAG 1.4.11, 3:1) and the shared focus ring. All of the app's text is
+// the components use), plus the shared focus ring (WCAG 1.4.11, 3:1); the
+// chip and field borders are the X10 exemption pinned below. All of the app's text is
 // under 24px regular / 18.66px bold except the serif titles, which are ink,
 // so every text pair is held to the normal-text 4.5:1.
 
@@ -63,15 +63,18 @@ const OTHER_TEXT_PAIRS: Pair[] = [
 
 // WCAG 1.4.11: the visible boundary of a control, and the focus indicator.
 const NON_TEXT_PAIRS: Pair[] = [
-	...boundaryOn('--border-field', 'search field border (SearchField)', PAGE, SURFACE),
-	...boundaryOn(
-		'--border-chip',
-		'chip, icon button and stepper border (Chip, IconButton)',
-		PAGE,
-		SURFACE
-	),
 	...boundaryOn('--focus-ring', 'the shared :focus-visible ring (layout.css)', PAGE, SURFACE, MUTED)
 ];
+
+// stack.md X10 "Component borders" (owner decision, 2026-10-23): these
+// borders stay as designed and are exempt from WCAG 1.4.11's 3:1, because
+// the border alone doesn't identify the control. The list is deliberate:
+// adding a border here needs a new X10 entry.
+const EXEMPT_BORDERS = [
+	{ token: '--border-chip', identifiedBy: 'its text label (Chip, IconButton, stepper)' },
+	{ token: '--border-field', identifiedBy: 'its icon, placeholder and pill shape (SearchField)' }
+];
+const X10_EXEMPT_BORDER_TOKENS = ['--border-chip', '--border-field'];
 
 // The stack composited bottom-up into one opaque colour.
 function flatten(backdrop: string[]): Rgba {
@@ -103,7 +106,25 @@ describePairs(
 	'token contrast: other text the components paint (AA, normal text)',
 	OTHER_TEXT_PAIRS
 );
-describePairs('token contrast: control boundaries and focus ring (AA, non-text)', NON_TEXT_PAIRS);
+describePairs('token contrast: the focus ring (AA, non-text)', NON_TEXT_PAIRS);
+
+describe('token contrast: the X10 component-border exemption', () => {
+	it('exempts exactly the borders X10 lists', () => {
+		const got = EXEMPT_BORDERS.map((border) => border.token).sort();
+		expect(got, `got exempt borders ${got.join(', ')}`).toEqual(X10_EXEMPT_BORDER_TOKENS);
+	});
+
+	// A border that reaches 3:1 no longer needs the exemption: drop it from the list.
+	for (const { token, identifiedBy } of EXEMPT_BORDERS) {
+		it(`${token} is still below ${AA_NON_TEXT}:1, so exempt (identified by ${identifiedBy})`, () => {
+			const ratios = [PAGE, SURFACE].map((backdrop) =>
+				ratioOf({ foreground: token, backdrop, min: AA_NON_TEXT, where: identifiedBy })
+			);
+			const passing = ratios.every((ratio) => ratio >= AA_NON_TEXT);
+			expect(passing, `got ${ratios.map((r) => r.toFixed(2)).join(', ')}:1`).toBe(false);
+		});
+	}
+});
 
 describe('token contrast: the stack helper', () => {
 	it('flattens a translucent layer over an opaque one', () => {
