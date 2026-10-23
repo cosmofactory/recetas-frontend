@@ -9,7 +9,9 @@ import { evaluateWith } from './in-page-e2e';
 //   (the app's `inset: var(--hit-inset)` pattern, CLAUDE.md UI primitives),
 //   whose insets resolve against the padding box;
 // - for a map region (a link spanning the whole map whose cells alone take
-//   pointer events, FE-4), the bounding box of its cells;
+//   pointer events, FE-4), the bounding box of its cells plus its invisible
+//   `.hit-extension` below the map (a bottom-row region, FE-8 PR 5a); the
+//   extension must not overlap another region's cells or extension;
 // - cut to any clipping ancestor (overflow other than visible) it sits in.
 // The one documented exception, stage FE-3 -> Acceptance (2026-10-20): a
 // chip (a toggle button) in a wrapping row extends only half the row gap
@@ -79,10 +81,45 @@ function pseudoBox(el: Element, pseudo: string): Box | null {
 }
 
 // A map region's cells, the only part of its link that takes pointer events.
+// What of a map region takes a press: its cells and its hit extension.
+function mapPieces(el: Element): Box[] {
+	const pieces = [...el.querySelectorAll('[data-map-cell], .hit-extension')];
+	return pieces.map((piece) => boxOfRect(piece.getBoundingClientRect()));
+}
+
 function cellsBox(el: Element): Box | null {
-	const cells = [...el.querySelectorAll('[data-map-cell]')];
-	if (cells.length === 0) return null;
-	return cells.map((cell) => boxOfRect(cell.getBoundingClientRect())).reduce(union);
+	if (!el.querySelector('[data-map-cell]')) return null;
+	return mapPieces(el).reduce(union);
+}
+
+function intersects(a: Box, b: Box): boolean {
+	return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+}
+
+// A map region whose hit extension lands on another region's target.
+function mapOverlap(el: Element, all: Element[]): Undersized | null {
+	const extensions = [...el.querySelectorAll('.hit-extension')].map((x) =>
+		boxOfRect(x.getBoundingClientRect())
+	);
+	const other = all.find(
+		(region) =>
+			region !== el &&
+			mapPieces(region).some((piece) => extensions.some((x) => intersects(x, piece)))
+	);
+	if (!other) return null;
+	return {
+		target: targetName(el),
+		width: 0,
+		height: 0,
+		want: `no overlap with ${targetName(other)}`
+	};
+}
+
+function mapOverlaps(): Undersized[] {
+	const regions = [...document.querySelectorAll('a[href]')].filter((a) =>
+		a.querySelector('[data-map-cell]')
+	);
+	return regions.map((el) => mapOverlap(el, regions)).filter((found) => found !== null);
 }
 
 function ownHitBox(el: Element): Box {
@@ -176,7 +213,8 @@ function undersized(arg: { selector: string; min: number; tolerance: number }): 
 	return [...document.querySelectorAll(arg.selector)]
 		.filter(isTarget)
 		.map((el) => measure(el, arg.min, arg.tolerance))
-		.filter((found) => found !== null);
+		.filter((found) => found !== null)
+		.concat(mapOverlaps());
 }
 
 const IN_PAGE_HELPERS = [
@@ -184,7 +222,11 @@ const IN_PAGE_HELPERS = [
 	union,
 	paddingBox,
 	pseudoBox,
+	mapPieces,
 	cellsBox,
+	intersects,
+	mapOverlap,
+	mapOverlaps,
 	ownHitBox,
 	clipsOn,
 	restsInside,
