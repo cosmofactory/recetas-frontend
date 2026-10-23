@@ -46,42 +46,54 @@
 	const desktop = $derived(size === 'desktop');
 </script>
 
-<div
-	class="field"
-	class:desktop
-	class:open
-	class:clearable={Boolean(query)}
-	data-testid="search-field"
-	style:--magnifier-size="{MAGNIFIER_PX}px"
->
-	<span class="magnifier" aria-hidden="true"><Magnifier size={MAGNIFIER_PX} /></span>
-	<input
-		bind:this={input}
-		type="text"
-		role="combobox"
-		autocomplete="off"
-		spellcheck="false"
-		aria-label={m.a11y_search()}
-		aria-autocomplete="list"
-		aria-expanded={listboxId !== undefined}
-		aria-controls={listboxId}
-		aria-activedescendant={activeId}
-		placeholder={desktop ? m.desktop_ph() : m.search_placeholder()}
-		{disabled}
-		value={query}
-		oninput={(event) => onInput(event.currentTarget.value)}
-		onkeydown={onKeydown}
-		onfocus={onFocus}
-		onclick={onClick}
-	/>
-	{#if query}
-		<button type="button" class="clear" aria-label={m.a11y_clearSearch()} onclick={onClear}>
-			<Clear size={CLEAR_ICON_PX} aria-hidden={true} />
-		</button>
-	{/if}
+<div class="pill">
+	<div
+		class="field"
+		class:desktop
+		class:open
+		class:clearable={Boolean(query)}
+		data-testid="search-field"
+		style:--magnifier-size="{MAGNIFIER_PX}px"
+	>
+		<span class="magnifier" aria-hidden="true"><Magnifier size={MAGNIFIER_PX} /></span>
+		<input
+			bind:this={input}
+			type="text"
+			role="combobox"
+			autocomplete="off"
+			spellcheck="false"
+			aria-label={m.a11y_search()}
+			aria-autocomplete="list"
+			aria-expanded={listboxId !== undefined}
+			aria-controls={listboxId}
+			aria-activedescendant={activeId}
+			placeholder={desktop ? m.desktop_ph() : m.search_placeholder()}
+			{disabled}
+			value={query}
+			oninput={(event) => onInput(event.currentTarget.value)}
+			onkeydown={onKeydown}
+			onfocus={onFocus}
+			onclick={onClick}
+		/>
+		{#if query}
+			<button type="button" class="clear" aria-label={m.a11y_clearSearch()} onclick={onClear}>
+				<Clear size={CLEAR_ICON_PX} aria-hidden={true} />
+			</button>
+		{/if}
+	</div>
 </div>
 
 <style>
+	/*
+	 * The positioned box the input covers: exactly the field's border box,
+	 * however the browser rounds the field's 1.5px border.
+	 */
+	.pill {
+		position: relative;
+		display: flex;
+		flex: 1;
+	}
+
 	/*
 	 * Mobile README -> Overlay — Search: "field — height 46px, pill, bg
 	 * surface, 1.5px --border-field, padding 0 14px, magnifier icon, input
@@ -92,7 +104,6 @@
 		--field-padding-inline: 14px;
 		--field-gap: 10px;
 		--clear-size: 22px;
-		position: relative;
 		display: flex;
 		flex: 1;
 		align-items: center;
@@ -133,20 +144,18 @@
 	 * included, up to the "×" (which keeps its own target), so a press
 	 * anywhere else on the pill lands in the field; its padding keeps the
 	 * text after the magnifier. Its pill radius keeps the focus ring
-	 * pill-shaped.
+	 * pill-shaped. It never reaches past the field's border box, so the
+	 * field stays its whole background (axe can decide its contrast); its
+	 * transparent border rounds like the field's, so the text stays in line.
 	 */
 	input {
 		position: absolute;
-		top: calc(-1 * var(--field-border-width));
-		left: calc(-1 * var(--field-border-width));
-		width: calc(100% + 2 * var(--field-border-width));
-		height: calc(100% + 2 * var(--field-border-width));
-		padding: 0 calc(var(--field-border-width) + var(--field-padding-inline)) 0
-			calc(
-				var(--field-border-width) + var(--field-padding-inline) + var(--magnifier-size) +
-					var(--field-gap)
-			);
-		border: none;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		padding: 0 var(--field-padding-inline) 0
+			calc(var(--field-padding-inline) + var(--magnifier-size) + var(--field-gap));
+		border: var(--field-border-width) solid transparent;
 		border-radius: inherit;
 		background: transparent;
 		color: var(--ink);
@@ -160,7 +169,7 @@
 
 	.clearable input {
 		width: calc(
-			100% + var(--field-border-width) - var(--field-padding-inline) - var(--clear-size) -
+			100% - var(--field-border-width) - var(--field-padding-inline) - var(--clear-size) -
 				var(--field-gap)
 		);
 		padding-right: 0;
