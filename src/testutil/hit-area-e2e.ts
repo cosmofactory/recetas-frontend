@@ -10,16 +10,27 @@ import { evaluateWith } from './in-page-e2e';
 //   whose insets resolve against the padding box;
 // - for a map region (a link spanning the whole map whose cells alone take
 //   pointer events, FE-4), the bounding box of its cells plus its invisible
-//   `.hit-extension` below the map (a bottom-row region, FE-8 PR 5a); the
-//   extension must not overlap another region's cells or extension;
-// - cut to any clipping ancestor (overflow other than visible) it sits in.
+//   `.hit-extension` below the map (a bottom-row region, FE-8 PR 5a), each
+//   piece dropped if a press at its centre lands on another region or on
+//   the bare map (the gaps between cells take no press, so a centre line
+//   would understate a region); the extension must not overlap another region's cells or
+//   extension;
+// - cut to any clipping ancestor (overflow other than visible) it sits in;
+// - then, for a target on screen, what a press really reaches: along the
+//   lines through the box's centre, the run of points where
+//   elementFromPoint lands on the target or inside it (a neighbour painted
+//   over its ::before takes those points). A target whose centre is covered
+//   (by a scrim, an open sheet or overlay) isn't pressable in that state, and
+//   it and one partly off screen keep the geometric measure.
 // The one documented exception, stage FE-3 -> Acceptance (2026-10-20): a
 // chip (a toggle button) in a wrapping row extends only half the row gap
 // above and below, so its height must be its border box plus the row gap.
 
 export const HIT_MIN_PX = 44;
-// Sub-pixel layout (fractional clamps, 1.5px borders).
-const TOLERANCE_PX = 0.5;
+// Sub-pixel layout (fractional clamps, 1.5px borders) and the press
+// sampling: elementFromPoint at a fractional edge can go either way, so a
+// sampled run reads up to about 0.75px short of the painted box.
+const TOLERANCE_PX = 1;
 
 // Everything a press or a keyboard can operate.
 const INTERACTIVE = [
@@ -80,7 +91,6 @@ function pseudoBox(el: Element, pseudo: string): Box | null {
 	};
 }
 
-// A map region's cells, the only part of its link that takes pointer events.
 // What of a map region takes a press: its cells and its hit extension.
 function mapPieces(el: Element): Box[] {
 	const pieces = [...el.querySelectorAll('[data-map-cell], .hit-extension')];
@@ -198,10 +208,74 @@ function targetName(el: Element): string {
 	return `<${el.tagName.toLowerCase()}> ${role} "${name.slice(0, 40)}"${href ? ` ${href}` : ''}`;
 }
 
+function lands(el: Element, x: number, y: number): boolean {
+	const hit = document.elementFromPoint(x, y);
+	return hit !== null && (hit === el || el.contains(hit));
+}
+
+function onScreen(box: Box): boolean {
+	return box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight;
+}
+
+// Sampling step of the press reach, in px (in-page code can't see a module constant).
+function reachStep(): number {
+	return 0.25;
+}
+
+type Ray = { x: number; y: number; dx: number; dy: number; limit: number };
+
+// How far along the ray, within its limit, presses keep landing on the
+// target (short by under a step).
+function reachAlong(el: Element, ray: Ray): number {
+	const step = reachStep();
+	let distance = 0;
+	const next = () => distance + step;
+	while (next() <= ray.limit && lands(el, ray.x + ray.dx * next(), ray.y + ray.dy * next()))
+		distance = next();
+	return distance;
+}
+
+type Size = { width: number; height: number };
+
+function sizeOf(box: Box): Size {
+	return { width: box.right - box.left, height: box.bottom - box.top };
+}
+
+// A piece of a map region is lost when a press at its centre lands elsewhere
+// on the map (another region, or the map itself: an extension that takes no
+// press). Landing outside the map means an overlay covers it in this state.
+function pieceLost(el: Element, piece: Box): boolean {
+	const hit = document.elementFromPoint(
+		(piece.left + piece.right) / 2,
+		(piece.top + piece.bottom) / 2
+	);
+	if (!hit || hit === el || el.contains(hit)) return false;
+	return hit.closest('[data-testid="region-map"]') !== null;
+}
+
+// A map region: the bounding box of the pieces a press can reach.
+function mapPressableSize(el: Element, box: Box): Size {
+	if (!onScreen(box)) return sizeOf(box);
+	const kept = mapPieces(el).filter((piece) => !pieceLost(el, piece));
+	return kept.length === 0 ? { width: 0, height: 0 } : sizeOf(kept.reduce(union));
+}
+
+// The pressable size along the centre lines, or the geometry when it can't be sampled.
+function pressableSize(el: Element, box: Box): Size {
+	if (el.querySelector('[data-map-cell]')) return mapPressableSize(el, box);
+	const geometric = sizeOf(box);
+	const centre = { x: (box.left + box.right) / 2, y: (box.top + box.bottom) / 2 };
+	if (!onScreen(box) || !lands(el, centre.x, centre.y)) return geometric;
+	// Both ways from the centre, plus the sampled centre point's own step.
+	const across = (dx: number, dy: number, limit: number) =>
+		reachAlong(el, { ...centre, dx, dy, limit }) +
+		reachAlong(el, { ...centre, dx: -dx, dy: -dy, limit }) +
+		reachStep();
+	return { width: across(1, 0, geometric.width / 2), height: across(0, 1, geometric.height / 2) };
+}
+
 function measure(el: Element, min: number, tolerance: number): Undersized | null {
-	const box = clipped(el, ownHitBox(el));
-	const width = box.right - box.left;
-	const height = box.bottom - box.top;
+	const { width, height } = pressableSize(el, clipped(el, ownHitBox(el)));
 	const minHeight = wantedHeight(el, min);
 	if (width >= min - tolerance && height >= minHeight - tolerance) return null;
 	const round = (n: number) => Math.round(n * 10) / 10;
@@ -235,6 +309,14 @@ const IN_PAGE_HELPERS = [
 	wantedHeight,
 	isTarget,
 	targetName,
+	lands,
+	onScreen,
+	reachStep,
+	reachAlong,
+	sizeOf,
+	pieceLost,
+	mapPressableSize,
+	pressableSize,
 	measure
 ];
 

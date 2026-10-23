@@ -19,6 +19,9 @@ import { describeUndersized, HIT_MIN_PX, undersizedTargets } from '../testutil/h
 // the one documented exception (FE-3: chips in a wrapping row) are in
 // hit-area-e2e.ts.
 //
+// The English run is @layout: hit areas follow the width (Canarias' row
+// height follows the map's width), so it also runs at 360/430 and 860/1440.
+//
 // Assumption (flagged in the FE-8 PR 5a report): the READMEs say "tall";
 // this asks 44px on both axes, the WCAG 2.5.5 target size and the
 // --hit-inset pattern's own contract (it grows "on each axis").
@@ -29,7 +32,8 @@ test.describe(`hit areas ${page44} on every route and overlay state`, () => {
 	for (const state of UI_STATES) {
 		for (const lang of LOCALES) {
 			const title = stateTitle(state, lang);
-			test(`${title}: every target is ${page44}`, async ({ page }) => {
+			const tag = lang === 'en' ? ['@layout'] : [];
+			test(`${title}: every target is ${page44}`, { tag }, async ({ page }) => {
 				skipUnlessLayout(page, state.layouts);
 				await enterState(page, state, lang);
 				const found = await undersizedTargets(page);

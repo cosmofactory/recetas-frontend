@@ -98,12 +98,15 @@ export async function expectOnlyFades(page: Page, what: string) {
 }
 
 // The positive control: without reduced motion the same change slides, so
-// the recorder does see movement.
-export async function expectMovement(page: Page, what: string) {
+// the recorder does see movement (on a label containing `on`, when given,
+// e.g. a ::view-transition pseudo-element).
+export async function expectMovement(page: Page, what: string, on = '') {
 	const log = await readLog(page);
+	const seen = log.moving.filter((move) => move.includes(on));
+	const where = on ? ` on ${on}` : '';
 	expect(
-		log.moving.length,
-		`got no movement recorded while ${what}, want the slide`
+		seen.length,
+		`got no movement${where} while ${what}:\n${log.moving.join('\n')}`
 	).toBeGreaterThan(0);
 	await resetAnimationLog(page);
 }

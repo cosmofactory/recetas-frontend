@@ -160,8 +160,13 @@ test.describe('reduced motion: menus and overlays fade on both layouts', () => {
 	);
 });
 
-// The recorder's positive control: with motion allowed, the language menu
-// drops in (translateY −6px → 0), and the recorder must see it move.
+// The recorder's positive controls: with motion allowed, each kind of
+// motion the app runs is seen moving: a CSS transition (the language menu
+// drops in, translateY −6px → 0; the region sheet slides up, BottomSheet's
+// transform transition) and a view transition (the mobile page push,
+// ::view-transition-new(root) translateX 102% → 0). The app has no Svelte
+// (script) transitions; the recorder reads those through the same
+// document.getAnimations().
 test.describe('without reduced motion the recorder sees the slides', () => {
 	test.use({ reducedMotion: 'no-preference' });
 
@@ -171,5 +176,25 @@ test.describe('without reduced motion the recorder sees the slides', () => {
 		await openMenu(page, 'en');
 		await expectPageSettled(page);
 		await expectMovement(page, 'opening the language menu');
+	});
+
+	test('the region sheet slides up', async ({ page }) => {
+		skipUnlessLayout(page, MOBILE);
+		await gotoHydrated(page, '/en/');
+		await resetAnimationLog(page);
+		await tapRegion(page, 'gal');
+		await expectSheetPeek(page, GALICIA_EN.name);
+		await expectPageSettled(page);
+		await expectMovement(page, 'opening the region sheet');
+	});
+
+	test('a page push slides in', async ({ page }) => {
+		skipUnlessLayout(page, MOBILE);
+		await gotoHydrated(page, '/en/regions/gal');
+		await resetAnimationLog(page);
+		await regionSheet(page).locator('a[href="/en/dishes/tortilla/gal"]').click();
+		await expectPath(page, '/en/dishes/tortilla/gal');
+		await expectPageSettled(page);
+		await expectMovement(page, 'pushing the recipe page', 'view-transition');
 	});
 });

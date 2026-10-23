@@ -63,18 +63,27 @@ const OTHER_TEXT_PAIRS: Pair[] = [
 
 // WCAG 1.4.11: the visible boundary of a control, and the focus indicator.
 const NON_TEXT_PAIRS: Pair[] = [
-	...boundaryOn('--focus-ring', 'the shared :focus-visible ring (layout.css)', PAGE, SURFACE, MUTED)
+	...boundaryOn(
+		'--focus-ring',
+		'the shared :focus-visible ring (layout.css)',
+		PAGE,
+		SURFACE,
+		MUTED
+	),
+	...boundaryOn('--on-accent', 'the done ✓ on its accent circle (IngredientList, MethodSteps)', [
+		'--accent'
+	])
 ];
 
 // stack.md X10 "Component borders" (owner decision, 2026-10-23): these
 // borders stay as designed and are exempt from WCAG 1.4.11's 3:1, because
 // the border alone doesn't identify the control. The list is deliberate:
-// adding a border here needs a new X10 entry.
+// adding a border here needs a new X10 entry, and a border that reaches 3:1
+// fails below until it is dropped from the list.
 const EXEMPT_BORDERS = [
 	{ token: '--border-chip', identifiedBy: 'its text label (Chip, IconButton, stepper)' },
 	{ token: '--border-field', identifiedBy: 'its icon, placeholder and pill shape (SearchField)' }
 ];
-const X10_EXEMPT_BORDER_TOKENS = ['--border-chip', '--border-field'];
 
 // The stack composited bottom-up into one opaque colour.
 function flatten(backdrop: string[]): Rgba {
@@ -109,11 +118,6 @@ describePairs(
 describePairs('token contrast: the focus ring (AA, non-text)', NON_TEXT_PAIRS);
 
 describe('token contrast: the X10 component-border exemption', () => {
-	it('exempts exactly the borders X10 lists', () => {
-		const got = EXEMPT_BORDERS.map((border) => border.token).sort();
-		expect(got, `got exempt borders ${got.join(', ')}`).toEqual(X10_EXEMPT_BORDER_TOKENS);
-	});
-
 	// A border that reaches 3:1 no longer needs the exemption: drop it from the list.
 	for (const { token, identifiedBy } of EXEMPT_BORDERS) {
 		it(`${token} is still below ${AA_NON_TEXT}:1, so exempt (identified by ${identifiedBy})`, () => {
