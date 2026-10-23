@@ -167,28 +167,22 @@
 		text-transform: uppercase;
 	}
 
-	/* "Row: padding 12px, radius 9px, 14px/500, hover --bg-surface-muted"; prototype gap 10px. */
+	/*
+	 * "Row: padding 12px, radius 9px, 14px/500, hover --bg-surface-muted";
+	 * prototype gap 10px. Accessibility: the rows are 44px tall (owner
+	 * decision 2026-10-23, FE-8), the text centred in them.
+	 */
 	.row {
-		position: relative;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 10px;
+		min-height: var(--hit-min);
 		padding: 12px;
 		border-radius: 9px;
 		color: var(--ink);
 		text-decoration: none;
 		transition: background-color var(--dur-colour);
-	}
-
-	/*
-	 * Accessibility: the rows are 39–41px, so each grows its hit area to
-	 * 44px (the --hit-inset pattern); neighbouring rows share the overlap.
-	 */
-	.row::before {
-		content: '';
-		position: absolute;
-		inset: var(--hit-inset);
 	}
 
 	.row.current {
