@@ -14,10 +14,12 @@ const NEVER_INLINED_ASSET = /\.(woff2?|svg)$/;
 // modulepreloaded chunks, and on a slow phone link each one costs a round
 // trip before first paint. Two groups cut that to ~9: every library in one
 // `vendor` chunk and the app code shared by two or more routes in one `lib`
-// chunk; code only one route uses stays in its node. Kit's client runtime
-// stays out of `vendor`: Kit's entry imports it dynamically and finds it by
-// that import (the build fails with "Could not find the client runtime
-// chunk" otherwise). Client build only; the server build keeps its split.
+// chunk; code only one route uses stays in its node. Kit's client-entry
+// module is excluded so it stays its own small stub chunk: Kit's start
+// script imports it dynamically and finds it by that import (the build fails
+// with "Could not find the client runtime chunk" otherwise). The runtime code
+// it re-exports still lands in `vendor`. Client build only; the server build
+// keeps its split.
 const KIT_CLIENT_RUNTIME = /@sveltejs[\\/]kit[\\/]src[\\/]runtime[\\/]client[\\/]/;
 const APP_SOURCE = /[\\/]src[\\/]/;
 const isDependency = (id: string) => id.includes('node_modules');

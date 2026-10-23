@@ -25,6 +25,8 @@ export function acceptsGzip(acceptEncoding: string | null): boolean {
 
 // Every HTML response varies on Accept-Encoding, so a shared cache never
 // hands the gzip body to a client that didn't ask for it.
+// CompressionStream doesn't flush per chunk: if a page ever streams load
+// promises, skip gzip for it, or its early flush waits for a zlib block.
 export function withGzip(request: Request, response: Response): Response {
 	if (!response.body || !isHtml(response) || response.headers.has(CONTENT_ENCODING_HEADER)) {
 		return response;

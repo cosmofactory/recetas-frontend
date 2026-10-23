@@ -189,6 +189,7 @@ jobs:
     needs:
       - quality
       - e2e
+      - lighthouse
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
