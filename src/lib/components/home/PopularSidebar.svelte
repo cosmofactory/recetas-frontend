@@ -55,6 +55,8 @@
 		max-height: calc(100dvh - var(--panel-top));
 		overflow-y: auto;
 		overscroll-behavior: contain;
+		/* Room for the last chip row's hit area (half the row gap, ChipRow), which the scroller would clip. */
+		padding-bottom: calc(var(--chip-gap-desktop) / 2);
 	}
 
 	.header {

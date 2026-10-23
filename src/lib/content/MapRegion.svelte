@@ -44,6 +44,15 @@
 			style:grid-column={cell.col}
 		></span>
 	{/each}
+	{#if region.shape.bottomEdge}
+		{@const edge = region.shape.bottomEdge}
+		<span
+			class="hit-extension"
+			aria-hidden="true"
+			style:grid-row={edge.row}
+			style:grid-column="{edge.columnStart} / {edge.columnEnd}"
+		></span>
+	{/if}
 	<span
 		class="map-label"
 		data-map-label
@@ -78,6 +87,22 @@
 		transition:
 			background-color var(--dur-colour),
 			filter var(--dur-colour);
+	}
+
+	/*
+	 * Accessibility (44px targets, FE-8): Canarias is one row tall (about
+	 * 23px on a phone), so a region on the map's bottom row grows its target
+	 * invisibly below the map, where no other region is, to --hit-min from
+	 * the row's top. Positioned in the row's grid area, so 100% is the row.
+	 */
+	.hit-extension {
+		position: absolute;
+		top: 100%;
+		right: 0;
+		left: 0;
+		height: max(0px, calc(var(--hit-min) - 100%));
+		cursor: pointer;
+		pointer-events: auto;
 	}
 
 	/* A colour the server rejected (region-colour.ts) draws as the placeholder. */

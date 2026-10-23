@@ -167,12 +167,17 @@
 		text-transform: uppercase;
 	}
 
-	/* "Row: padding 12px, radius 9px, 14px/500, hover --bg-surface-muted"; prototype gap 10px. */
+	/*
+	 * "Row: padding 12px, radius 9px, 14px/500, hover --bg-surface-muted";
+	 * prototype gap 10px. Accessibility: the rows are 44px tall (owner
+	 * decision 2026-10-23, FE-8), the text centred in them.
+	 */
 	.row {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 10px;
+		min-height: var(--hit-min);
 		padding: 12px;
 		border-radius: 9px;
 		color: var(--ink);

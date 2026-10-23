@@ -44,16 +44,18 @@
 	}
 
 	.chips {
+		--chips-gap: 8px;
 		display: flex;
 		flex-wrap: wrap;
-		gap: 8px;
+		gap: var(--chips-gap);
 	}
 
 	/* "padding:9px 14px;border:1px solid rgba(43,30,22,.2);border-radius:999px;font-size:13px;font-weight:500". */
 	.chip {
+		--chip-border: 1px;
 		position: relative;
 		padding: 9px 14px;
-		border: 1px solid var(--border-search-chip);
+		border: var(--chip-border) solid var(--border-search-chip);
 		border-radius: var(--radius-pill);
 		background: transparent;
 		color: var(--ink);
@@ -62,10 +64,17 @@
 		transition: background-color var(--dur-colour);
 	}
 
+	/*
+	 * The chips wrap, so a 44px hit area would overlap the next line: they
+	 * extend only half the gap above and below, and fully sideways (the FE-3
+	 * wrapping-chip exception, as in ChipRow). The block insets are from the
+	 * padding box, hence the border term.
+	 */
 	.chip::before {
 		content: '';
 		position: absolute;
-		inset: var(--hit-inset);
+		inset-inline: var(--hit-inset);
+		inset-block: calc(-1 * var(--chip-border) - var(--chips-gap) / 2);
 	}
 
 	@media (hover: hover) {

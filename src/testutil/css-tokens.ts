@@ -14,8 +14,12 @@ function declarations(): Map<string, string> {
 	return new Map([...css.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]));
 }
 
+// A token whose value is another token (`--focus-ring: var(--ink)`) is followed.
+const ALIAS = /^var\((--[\w-]+)\)$/;
+
 export function tokenColour(name: string): Rgba {
 	const value = declarations().get(name);
 	if (value === undefined) throw new Error(`no ${name} in ${TOKEN_FILES.join(' or ')}`);
-	return parseColour(value);
+	const alias = ALIAS.exec(value);
+	return alias ? tokenColour(alias[1]) : parseColour(value);
 }
