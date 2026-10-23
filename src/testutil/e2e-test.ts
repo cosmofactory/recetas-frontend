@@ -1,4 +1,4 @@
-import { expect, test as base } from '@playwright/test';
+import { expect, test as base, type Page } from '@playwright/test';
 import { watchCspViolations } from './csp-e2e';
 
 // The `test` every E2E spec imports (instead of @playwright/test's): the
@@ -9,10 +9,28 @@ import { watchCspViolations } from './csp-e2e';
 
 export * from '@playwright/test';
 
+// A navigation still in flight when the test ends destroys the context the
+// flush runs in; the new document has nothing pending yet, so that's fine.
+const NAVIGATION_RACE = /Execution context was destroyed/;
+
+// `securitypolicyviolation` is dispatched in a later task than the blocked
+// load, and its report reaches the runner through an async binding, so let
+// the page run one more task before reading the list.
+async function flushPendingViolations(page: Page): Promise<void> {
+	if (page.isClosed()) return;
+	try {
+		await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
+	} catch (err) {
+		if (page.isClosed() || NAVIGATION_RACE.test(String(err))) return;
+		throw err;
+	}
+}
+
 export const test = base.extend({
 	page: async ({ page }, use) => {
 		const violations = await watchCspViolations(page);
 		await use(page);
+		await flushPendingViolations(page);
 		expect(violations, `got CSP violations ${JSON.stringify(violations)}, want none`).toEqual([]);
 	}
 });

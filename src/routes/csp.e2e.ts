@@ -1,5 +1,11 @@
 import { expect, test, type APIResponse, type Page, type TestInfo } from '../testutil/e2e-test';
-import { startAppServer, type AppServer } from '../testutil/app-server-e2e';
+import {
+	startAppServer,
+	startAppWithBackend,
+	type AppServer,
+	type AppWithBackend
+} from '../testutil/app-server-e2e';
+import { catalogBackend } from '../testutil/catalog-backend-e2e';
 import {
 	effectiveSources,
 	executableInlineScripts,
@@ -19,6 +25,7 @@ import { ingredientRows, moreButton, stepRows } from '../testutil/recipe-e2e';
 import { expectSheetPeek, tapRegion } from '../testutil/region-e2e';
 import { DISHES, resultGroup, searchFor } from '../testutil/search-e2e';
 import { searchDropdown, typeInDesktopSearch } from '../testutil/desktop-search-e2e';
+import { loadedImagesFrom, stubMediaHost } from '../testutil/media-e2e';
 import { variationCards } from '../testutil/variations-e2e';
 
 // FE-8 PR 3, Security: the Content-Security-Policy (stage FE-8 -> Security,
@@ -37,9 +44,8 @@ import { variationCards } from '../testutil/variations-e2e';
 //   form-action 'self'; object-src 'none'.
 // - img-src is 'self' plus the MEDIA_BASE_URL origin when it is set, read at
 //   RUNTIME (kit.csp is fixed at build time, so the server must add it per
-//   response). `data:` is allowed but not required: the favicon is currently
-//   inlined by Vite as a data: URL (assetsInlineLimit); the writer may keep
-//   `data:` or emit the favicon as a file. No other host or scheme.
+//   response). No `data:`: fonts and the favicon are emitted as files, never
+//   inlined (assetsInlineLimit). No other host or scheme.
 // - script-src: 'self' (or 'strict-dynamic') plus Kit's nonce or hashes,
 //   never 'unsafe-inline' / 'unsafe-eval' / a host; every executable inline
 //   script carries the header's nonce or its hash is listed; a nonce is
@@ -54,6 +60,8 @@ import { variationCards } from '../testutil/variations-e2e';
 //   CSP does not govern.
 
 const PROJECT = 'chromium-desktop-1280';
+// The in-browser tours check engine behaviour; the header tests stay in PROJECT.
+const CROSS_BROWSER = { tag: ['@cross-browser'] };
 const MEDIA_ORIGIN = 'https://media.example.test';
 const MEDIA_BASE_URL = `${MEDIA_ORIGIN}/media`;
 
@@ -105,11 +113,9 @@ const sorted = (values: string[] | undefined) => [...(values ?? [])].sort();
 function expectImgSrc(csp: Csp, media: string[]) {
 	const got = csp.get('img-src');
 	expect(got, `got no img-src, want 'self' ${media.join(' ')}`).toBeDefined();
-	const allowed = new Set(["'self'", 'data:', ...media]);
+	const allowed = new Set(["'self'", ...media]);
 	const extra = got!.filter((s) => !allowed.has(s));
-	expect(extra, `got img-src ${JSON.stringify(got)}, want only 'self' [data:] ${media}`).toEqual(
-		[]
-	);
+	expect(extra, `got img-src ${JSON.stringify(got)}, want only 'self' ${media}`).toEqual([]);
 	for (const source of ["'self'", ...media]) {
 		expect(got, `got img-src ${JSON.stringify(got)}, want ${source}`).toContain(source);
 	}
@@ -286,40 +292,79 @@ async function languageSwitch(page: Page) {
 }
 
 test.describe('no CSP violations on the key flows', () => {
-	test('mobile: home, region sheet, Popular + dish sheet, search, language, Variations, Recipe, error', async ({
-		page
-	}) => {
-		test.skip(isDesktopPage(page), 'the mobile tour');
-		await gotoWithCsp(page, '/en/');
-		await tapRegion(page, 'gal');
-		await expectSheetPeek(page, 'Galicia');
-		await gotoWithCsp(page, '/en/?tab=popular&f=tapas&f=mains&f=desserts');
-		await dishCard(page, 'tortilla').click();
-		await page.waitForURL((url) => url.searchParams.get('dish') === 'tortilla');
-		await expect(dishSheet(page)).toBeVisible();
-		await gotoHydrated(page, '/en/');
-		await searchFor(page, 'en', 'tortilla');
-		await expect(resultGroup(page, 'en', DISHES)).toBeVisible();
-		await page.keyboard.press('Escape');
-		await languageSwitch(page);
-		await recipeFlow(page);
-		await gotoWithCsp(page, '/en/dishes/no-such-dish', 404);
+	test(
+		'mobile: home, region sheet, Popular + dish sheet, search, language, Variations, Recipe, error',
+		CROSS_BROWSER,
+		async ({ page }) => {
+			test.skip(isDesktopPage(page), 'the mobile tour');
+			await gotoWithCsp(page, '/en/');
+			await tapRegion(page, 'gal');
+			await expectSheetPeek(page, 'Galicia');
+			await gotoWithCsp(page, '/en/?tab=popular&f=tapas&f=mains&f=desserts');
+			await dishCard(page, 'tortilla').click();
+			await page.waitForURL((url) => url.searchParams.get('dish') === 'tortilla');
+			await expect(dishSheet(page)).toBeVisible();
+			await gotoHydrated(page, '/en/');
+			await searchFor(page, 'en', 'tortilla');
+			await expect(resultGroup(page, 'en', DISHES)).toBeVisible();
+			await page.keyboard.press('Escape');
+			await languageSwitch(page);
+			await recipeFlow(page);
+			await gotoWithCsp(page, '/en/dishes/no-such-dish', 404);
+		}
+	);
+
+	test(
+		'desktop: home, region panel, Popular filters, search dropdown, language, Variations, Recipe, error',
+		CROSS_BROWSER,
+		async ({ page }) => {
+			test.skip(!isDesktopPage(page), 'the desktop tour');
+			await gotoWithCsp(page, '/en/');
+			await tapRegion(page, 'gal');
+			await gotoWithCsp(page, '/en/?tab=popular');
+			await sidebarChip(page, 'en', 'vegetarian').click();
+			await page.waitForURL((url) => url.searchParams.getAll('f').includes('vegetarian'));
+			await typeInDesktopSearch(page, 'en', 'tortilla');
+			await expect(searchDropdown(page)).toBeVisible();
+			await page.keyboard.press('Escape');
+			await languageSwitch(page);
+			await recipeFlow(page);
+			await gotoWithCsp(page, '/fr/', 404);
+		}
+	);
+});
+
+// With MEDIA_BASE_URL set (and a backend that has photo prefixes), photos come
+// from the media origin: the runtime img-src must let them load, in every
+// engine, with no violation.
+test.describe('no CSP violations with photos from MEDIA_BASE_URL', () => {
+	const PHOTOS = {
+		tortilla: {
+			thumb: 'dishes/tortilla/thumb-1a2b3c4d',
+			card: 'dishes/tortilla/card-5e6f7a8b',
+			hero: 'dishes/tortilla/hero-9c0d1e2f'
+		}
+	};
+	let started: AppWithBackend | undefined;
+
+	test.beforeAll(async () => {
+		started = await startAppWithBackend(catalogBackend(PHOTOS), { MEDIA_BASE_URL });
+	});
+	test.afterAll(async () => {
+		await started?.stop();
 	});
 
-	test('desktop: home, region panel, Popular filters, search dropdown, language, Variations, Recipe, error', async ({
-		page
-	}) => {
-		test.skip(!isDesktopPage(page), 'the desktop tour');
-		await gotoWithCsp(page, '/en/');
-		await tapRegion(page, 'gal');
-		await gotoWithCsp(page, '/en/?tab=popular');
-		await sidebarChip(page, 'en', 'vegetarian').click();
-		await page.waitForURL((url) => url.searchParams.getAll('f').includes('vegetarian'));
-		await typeInDesktopSearch(page, 'en', 'tortilla');
-		await expect(searchDropdown(page)).toBeVisible();
-		await page.keyboard.press('Escape');
-		await languageSwitch(page);
-		await recipeFlow(page);
-		await gotoWithCsp(page, '/fr/', 404);
-	});
+	test(
+		'Variations: the dish photo loads from the media origin',
+		CROSS_BROWSER,
+		async ({ page }) => {
+			const requested = await stubMediaHost(page, MEDIA_ORIGIN);
+			await gotoWithCsp(page, `${started!.app.baseURL}/en/dishes/tortilla`);
+			await expect
+				.poll(() => loadedImagesFrom(page, MEDIA_BASE_URL), {
+					message: `want a photo loaded from ${MEDIA_BASE_URL}; requested ${requested}`
+				})
+				.toBeGreaterThan(0);
+		}
+	);
 });

@@ -158,6 +158,17 @@ describe('parseMediaBaseUrl', () => {
 			expect(() => parse(value)).toThrow(/MEDIA_BASE_URL/);
 		});
 	}
+
+	// WHATWG URL accepts `;` and `,` in a host, but the origin lands in the
+	// CSP header's img-src, where `;` starts a new directive and `,` a new
+	// policy (FE-8 review).
+	const injecting = ['https://a;sandbox', 'https://media.asadorov.es;script-src', 'https://a,b'];
+	for (const value of injecting) {
+		it(`rejects ${JSON.stringify(value)}: its host would inject into the CSP`, async () => {
+			const parse = await loadParser();
+			expect(() => parse(value)).toThrow(/MEDIA_BASE_URL/);
+		});
+	}
 });
 
 // For rendering, a contract-violating prefix must not fail the whole page:

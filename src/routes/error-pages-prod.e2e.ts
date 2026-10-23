@@ -3,9 +3,8 @@ import { expect, test, type APIResponse, type TestInfo } from '../testutil/e2e-t
 import {
 	freePort,
 	startAppServer,
-	startFakeBackend,
-	type AppServer,
-	type FakeBackend
+	startAppWithBackend,
+	type AppServer
 } from '../testutil/app-server-e2e';
 import { getRaw, headerTokens, LOCALES, type Locale } from '../testutil/e2e';
 
@@ -84,15 +83,10 @@ type Scenario = { name: string; status: number; start: () => Promise<Started> };
 type Started = { app: AppServer; backendOrigin: string; stop: () => Promise<void> };
 
 async function withBrokenBackend(): Promise<Started> {
-	const backend: FakeBackend = await startFakeBackend((_req, res) => {
+	const { app, backend, stop } = await startAppWithBackend((_req, res) => {
 		res.writeHead(BAD_REQUEST, { 'content-type': 'application/json' });
 		res.end(JSON.stringify({ title: SECRET_DETAIL }));
 	});
-	const app = await startAppServer({ DATA_SOURCE: 'api', BACKEND_API_BASE_URL: backend.baseURL });
-	const stop = async () => {
-		await app.stop();
-		await backend.stop();
-	};
 	return { app, backendOrigin: backend.baseURL, stop };
 }
 

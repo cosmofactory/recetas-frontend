@@ -11,7 +11,11 @@ import { PUBLIC_ORIGIN } from './e2e-origin';
 // broken backend). It listens on a free port, so parallel workers never clash.
 
 const HOST = '127.0.0.1';
-const READY_TIMEOUT_MS = 30_000;
+// Below Playwright's default 30s hook timeout, so a server that never comes up
+// fails with our error (and its stderr), not a bare beforeAll timeout.
+const READY_TIMEOUT_MS = 20_000;
+// Enough of the server's stderr to show why it failed to start.
+const STDERR_TAIL_CHARS = 4_000;
 const BUILD_DIR = 'build';
 
 export type AppServer = { baseURL: string; stop: () => Promise<void> };
@@ -36,25 +40,51 @@ async function healthStatus(baseURL: string): Promise<number> {
 }
 
 function stopped(child: ChildProcess): Promise<void> {
-	if (child.exitCode !== null) return Promise.resolve();
+	if (child.exitCode !== null || child.signalCode !== null) return Promise.resolve();
 	return new Promise((resolve) => {
 		child.once('exit', () => resolve());
 		child.kill();
 	});
 }
 
-// `env` overrides the base environment; a value of undefined unsets it.
-export async function startAppServer(env: Record<string, string | undefined>): Promise<AppServer> {
-	const port = await freePort();
-	const merged = { ...process.env, ...BASE_ENV, PORT: String(port), ...env };
-	const child = spawn(process.execPath, [BUILD_DIR], { env: merged, stdio: 'ignore' });
-	const baseURL = `http://${HOST}:${port}`;
+// The tail of the child's stderr; reading it also keeps the pipe drained.
+function stderrTail(child: ChildProcess): () => string {
+	let tail = '';
+	child.stderr?.setEncoding('utf8');
+	child.stderr?.on('data', (chunk: string) => {
+		tail = (tail + chunk).slice(-STDERR_TAIL_CHARS);
+	});
+	return () => tail;
+}
+
+async function waitUntilHealthy(baseURL: string): Promise<void> {
 	await expect
 		.poll(() => healthStatus(baseURL), {
 			message: `want node build on ${baseURL} healthy`,
 			timeout: READY_TIMEOUT_MS
 		})
 		.toBe(200);
+}
+
+// `env` overrides the base environment; a value of undefined unsets it.
+// A server that never gets healthy is killed, and the error carries its stderr.
+export async function startAppServer(env: Record<string, string | undefined>): Promise<AppServer> {
+	const port = await freePort();
+	const merged = { ...process.env, ...BASE_ENV, PORT: String(port), ...env };
+	const child = spawn(process.execPath, [BUILD_DIR], {
+		env: merged,
+		stdio: ['ignore', 'ignore', 'pipe']
+	});
+	const stderr = stderrTail(child);
+	const baseURL = `http://${HOST}:${port}`;
+	try {
+		await waitUntilHealthy(baseURL);
+	} catch (err) {
+		await stopped(child);
+		throw new Error(`node build on ${baseURL} never got healthy; stderr:\n${stderr()}`, {
+			cause: err
+		});
+	}
 	return { baseURL, stop: () => stopped(child) };
 }
 
@@ -67,4 +97,25 @@ export async function startFakeBackend(handler: RequestListener): Promise<FakeBa
 	const { port } = server.address() as AddressInfo;
 	const stop = () => new Promise<void>((resolve) => server.close(() => resolve()));
 	return { baseURL: `http://${HOST}:${port}`, stop };
+}
+
+export type AppWithBackend = { app: AppServer; backend: FakeBackend; stop: () => Promise<void> };
+
+// An app server reading the API (DATA_SOURCE=api) from a fake backend; if the
+// app fails to start, the backend is closed before the error propagates.
+export async function startAppWithBackend(
+	handler: RequestListener,
+	env: Record<string, string | undefined> = {}
+): Promise<AppWithBackend> {
+	const backend = await startFakeBackend(handler);
+	const apiEnv = { DATA_SOURCE: 'api', BACKEND_API_BASE_URL: backend.baseURL, ...env };
+	const app = await startAppServer(apiEnv).catch(async (err: unknown) => {
+		await backend.stop();
+		throw err;
+	});
+	const stop = async () => {
+		await app.stop();
+		await backend.stop();
+	};
+	return { app, backend, stop };
 }
