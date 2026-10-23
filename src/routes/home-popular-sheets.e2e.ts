@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page, type TestInfo } from '../testutil/e2e-test';
 import { LOCALES } from '../testutil/e2e';
+import { expectNoVariationStandsOut } from '../testutil/equal-variations-e2e';
 import {
 	computedStyle,
 	expectSameDocument,
@@ -534,6 +535,15 @@ test.describe('dish sheet (mobile): opening', () => {
 		await tapCard(page, 'paella');
 		const want = VARIATION_REGIONS.paella.map((r) => `/en/dishes/paella/${r}`);
 		await expect.poll(() => sheetRowHrefs(page)).toEqual(want);
+	});
+
+	// FE-5 acceptance: "No variation is visually distinguished anywhere on this tab."
+	test('no variation stands out: every row looks the same, none is marked', async ({ page }) => {
+		await openPopular(page, 'en');
+		await tapCard(page, 'tortilla');
+		await expect.poll(() => sheetRowHrefs(page)).toHaveLength(VARIATION_REGIONS.tortilla.length);
+		const rows = dishSheet(page).locator('a[href^="/en/dishes/tortilla/"]');
+		await expectNoVariationStandsOut(rows, 'dish sheet rows');
 	});
 
 	test('the card link keeps the filters and opens the sheet over the filtered list', async ({

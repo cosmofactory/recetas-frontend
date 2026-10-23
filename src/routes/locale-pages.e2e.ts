@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '../testutil/e2e-test';
 import { getRaw, htmlLang, LOCALES, localePath, PAGES, type Locale } from '../testutil/e2e';
 import { PUBLIC_ORIGIN } from '../testutil/e2e-origin';
+import { skipAgainstDeployment } from '../testutil/e2e-target';
 
 // FE-1 acceptance: every page lives under /:lang/, the URL alone decides the
 // language, the head carries canonical + hreflang, and unknown prefixes get a
@@ -140,6 +141,7 @@ test.describe('head URLs and query params', () => {
 });
 
 test.describe('head URLs ignore the request host', () => {
+	skipAgainstDeployment('the proxy in front routes by Host');
 	const spoofed: { name: string; headers: Record<string, string> }[] = [
 		{ name: 'a foreign Host header', headers: { host: 'evil.example' } },
 		{ name: 'X-Forwarded-Host', headers: { 'x-forwarded-host': 'evil.example' } },

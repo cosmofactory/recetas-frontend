@@ -8,13 +8,16 @@ import { createMockSource } from '../lib/server/mock/mock-source.ts';
 // A fake Go API serving the vendored content bundle (through the mock source,
 // which answers exactly as the API would), with photo prefixes added to some
 // dishes: the bundle has none, so a MEDIA_BASE_URL run would otherwise only
-// draw placeholders. Answers the list and dish endpoints; an unknown key or
-// endpoint is a 404, anything else a 500.
+// draw placeholders. Answers every catalog endpoint the app reads (the two
+// lists, a region, a dish and a recipe); an unknown key or endpoint is a 404,
+// anything else a 500.
 
 const OK = 200;
 const NOT_FOUND = 404;
 const INTERNAL = 500;
 const DISH_PATH = /^\/v1\/dishes\/([a-z0-9-]+)$/;
+const REGION_PATH = /^\/v1\/regions\/([a-z0-9-]+)$/;
+const RECIPE_PATH = /^\/v1\/dishes\/([a-z0-9-]+)\/variations\/([a-z0-9-]+)\/recipe$/;
 
 export type DishPhotos = Record<string, Photos>;
 
@@ -35,6 +38,10 @@ async function answer(source: CatalogSource, photos: DishPhotos, req: IncomingMe
 	if (url.pathname === '/v1/dishes') return (await source.listDishes(lang)).map(withPhotos);
 	const dishKey = DISH_PATH.exec(url.pathname)?.[1];
 	if (dishKey) return withPhotos(await source.getDish(lang, dishKey));
+	const regionKey = REGION_PATH.exec(url.pathname)?.[1];
+	if (regionKey) return source.getRegion(lang, regionKey);
+	const recipe = RECIPE_PATH.exec(url.pathname);
+	if (recipe) return source.getRecipe(lang, { dishKey: recipe[1], regionKey: recipe[2] });
 	throw new NotFoundError(`no fake for ${url.pathname}`);
 }
 

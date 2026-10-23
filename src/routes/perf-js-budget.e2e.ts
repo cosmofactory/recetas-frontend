@@ -2,6 +2,9 @@ import { gzipSync } from 'node:zlib';
 import { expect, test, type Page, type Response, type TestInfo } from '../testutil/e2e-test';
 import { LOCALES } from '../testutil/e2e';
 import { BUDGETED_PATHS, JS_GZIP_BUDGET_BYTES } from '../testutil/perf-budgets';
+import { skipAgainstDeployment } from '../testutil/e2e-target';
+
+skipAgainstDeployment('the budget is measured on the local production build');
 
 // FE-8 PR 4, D-FE8-2: ≤ 90 KB of gzip JavaScript on the initial load of the
 // home, Variations and Recipe pages, in every locale (stack.md F4

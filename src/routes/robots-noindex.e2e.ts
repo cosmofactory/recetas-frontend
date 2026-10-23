@@ -1,6 +1,9 @@
 import { expect, test, type TestInfo } from '../testutil/e2e-test';
 import { getRaw } from '../testutil/e2e';
 import { APP_ENV } from '../testutil/e2e-app-env';
+import { skipAgainstDeployment } from '../testutil/e2e-target';
+
+skipAgainstDeployment(`asserts the local server's APP_ENV=${APP_ENV}`);
 
 // FE-8 PR 1 acceptance ("Demo responds with noindex and robots disallows
 // everything"), against the production server, which runs with APP_ENV=demo

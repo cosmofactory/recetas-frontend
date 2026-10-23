@@ -13,6 +13,7 @@ import {
 } from '../testutil/a11y-states-e2e';
 import { freePort, startAppServer, type AppServer } from '../testutil/app-server-e2e';
 import { expectNoViolations } from '../testutil/axe-e2e';
+import { skipAgainstDeployment } from '../testutil/e2e-target';
 
 // FE-8 Accessibility: "Run @axe-core/playwright on every route type, in all
 // three locales, on mobile and desktop layouts, with sheets and overlays
@@ -62,6 +63,7 @@ const UNAVAILABLE_STATE: UiState = {
 };
 
 test.describe('axe: the 503 page', () => {
+	skipAgainstDeployment('starts its own node build with the backend down');
 	let app: AppServer | undefined;
 
 	test.beforeAll(async () => {

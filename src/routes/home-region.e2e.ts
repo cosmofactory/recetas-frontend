@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page, type TestInfo } from '../testutil/e2e-test';
+import { LOCALES, type Locale } from '../testutil/e2e';
 import {
 	expectSameDocument,
 	gotoHydrated,
@@ -32,6 +33,12 @@ import {
 	tapScrim,
 	type RegionCopy
 } from '../testutil/region-e2e';
+import {
+	mapRegions,
+	REGION_COUNT,
+	regionLinkName,
+	type MapRegionCopy
+} from '../testutil/map-regions-e2e';
 
 // FE-4 PR 3, region details on the home screen (stage FE-4 -> Delivery 3,
 // Region sheet, Desktop Regional, Selection state, Acceptance).
@@ -646,4 +653,84 @@ test.describe('desktop home fits the viewport', () => {
 			});
 		}
 	}
+});
+
+// FE-4 acceptance: "Each of the 14 regions can be selected with a tap and
+// with the keyboard. Its URL updates, and back/forward restore the
+// selection." and "The screen-reader fallback list is present": the map is
+// that list (a <ul> of one link per region, FE-4 PR 1), so it is checked in
+// every locale. On mobile a region opens its sheet in peek, on desktop the
+// panel; either way only that region is aria-current.
+
+async function expectRegionShown(page: Page, lang: Locale, region: MapRegionCopy) {
+	await page.waitForURL((url) => url.pathname === `/${lang}/regions/${region.key}`);
+	await expect(regionLink(page, region.key, lang)).toHaveAttribute('aria-current', 'true');
+	await expect(selectedRegions(page)).toHaveCount(1);
+	if (isDesktopPage(page)) {
+		await expect(regionPanel(page, region.name)).toBeVisible();
+		return;
+	}
+	await expectSheetPeek(page, region.name);
+}
+
+// Back on the bare home: mobile hides the sheet, desktop shows the default.
+async function expectHomeAgain(page: Page, lang: Locale) {
+	await page.waitForURL((url) => url.pathname === `/${lang}/`);
+	if (isDesktopPage(page)) {
+		await expect(regionPanel(page, ANDALUCIA_EN.name)).toBeVisible();
+		return;
+	}
+	await expectSheetHidden(page);
+}
+
+test.describe('every region', () => {
+	for (const lang of LOCALES) {
+		test(`/${lang}/: the map is the list of the 14 regions, each link named by it`, async ({
+			page
+		}) => {
+			await gotoHydrated(page, `/${lang}/`);
+			const map = visibleMap(page);
+			await expect(map).toHaveAttribute('role', 'list');
+			await expect(map.getByRole('listitem')).toHaveCount(REGION_COUNT);
+			for (const region of mapRegions(lang)) {
+				const link = regionLink(page, region.key, lang);
+				await expect(link).toHaveAccessibleName(regionLinkName(region));
+			}
+		});
+	}
+
+	test(
+		'a tap on each of the 14 regions opens it at its URL; Back returns home',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			await gotoHydrated(page, '/es/');
+			for (const region of mapRegions('es')) {
+				await tapRegion(page, region.key, 'es');
+				await expectRegionShown(page, 'es', region);
+				await page.goBack();
+				await expectHomeAgain(page, 'es');
+			}
+		}
+	);
+
+	test(
+		'ru: each region opens from the keyboard; Back and Forward walk the selections',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			const regions = mapRegions('ru');
+			await gotoHydrated(page, '/ru/');
+			for (const region of regions) {
+				await activateRegion(page, region.key, 'ru');
+				await expectRegionShown(page, 'ru', region);
+			}
+			for (const region of regions.slice(0, -1).reverse()) {
+				await page.goBack();
+				await expectRegionShown(page, 'ru', region);
+			}
+			for (const region of regions.slice(1)) {
+				await page.goForward();
+				await expectRegionShown(page, 'ru', region);
+			}
+		}
+	);
 });
