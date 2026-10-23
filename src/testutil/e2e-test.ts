@@ -15,7 +15,8 @@ const NAVIGATION_RACE = /Execution context was destroyed/;
 
 // `securitypolicyviolation` is dispatched in a later task than the blocked
 // load, and its report reaches the runner through an async binding, so let
-// the page run one more task before reading the list.
+// the page run one more task before reading the list. Skipped without
+// JavaScript: the page's timers never fire, so the flush would hang.
 async function flushPendingViolations(page: Page): Promise<void> {
 	if (page.isClosed()) return;
 	try {
@@ -27,10 +28,10 @@ async function flushPendingViolations(page: Page): Promise<void> {
 }
 
 export const test = base.extend({
-	page: async ({ page }, use) => {
+	page: async ({ page, javaScriptEnabled }, use) => {
 		const violations = await watchCspViolations(page);
 		await use(page);
-		await flushPendingViolations(page);
+		if (javaScriptEnabled) await flushPendingViolations(page);
 		expect(violations, `got CSP violations ${JSON.stringify(violations)}, want none`).toEqual([]);
 	}
 });
