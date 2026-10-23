@@ -16,7 +16,8 @@ import { describeUndersized, HIT_MIN_PX, undersizedTargets } from '../testutil/h
 // state (a11y-states-e2e.ts), in each locale (the Russian labels are the
 // longest) and on both layouts, every visible, enabled interactive element
 // has a hit area of at least 44×44 CSS px; how the hit area is measured and
-// the one documented exception (FE-3: chips in a wrapping row) are in
+// the one documented exception (FE-3:89, extended in FE-8: chips in a
+// wrapping row, filter and search suggestion chips alike) are in
 // hit-area-e2e.ts.
 //
 // The English run is @layout: hit areas follow the width (Canarias' row

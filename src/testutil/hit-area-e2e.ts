@@ -22,9 +22,12 @@ import { evaluateWith } from './in-page-e2e';
 //   over its ::before takes those points). A target whose centre is covered
 //   (by a scrim, an open sheet or overlay) isn't pressable in that state, and
 //   it and one partly off screen keep the geometric measure.
-// The one documented exception, stage FE-3 -> Acceptance (2026-10-20): a
-// chip (a toggle button) in a wrapping row extends only half the row gap
-// above and below, so its height must be its border box plus the row gap.
+// The one documented exception, stage FE-3 -> Acceptance (FE-3:89,
+// 2026-10-20): a chip in a wrapping row extends only half the row gap above
+// and below, so its height must be its border box plus the row gap (its
+// width the full 44px). FE-8 (2026-10-23) applies it to every chip button
+// in a wrapping row: the filter chips (ChipRow wrap) and the search
+// suggestion chips (SearchSuggestions).
 
 export const HIT_MIN_PX = 44;
 // Sub-pixel layout (fractional clamps, 1.5px borders) and the press
@@ -184,10 +187,10 @@ function clipped(el: Element, box: Box): Box {
 	return result;
 }
 
-// The FE-3 exception: a chip in a wrapping row needs its height plus the row gap.
+// The FE-3 exception: a chip (a button) in a wrapping row needs its height plus the row gap.
 function wantedHeight(el: Element, min: number): number {
 	const row = el.parentElement;
-	const isChip = el.matches('button[aria-pressed]');
+	const isChip = el.matches('button');
 	if (!row || !isChip || getComputedStyle(row).flexWrap !== 'wrap') return min;
 	const gap = parseFloat(getComputedStyle(row).rowGap) || 0;
 	return Math.min(min, el.getBoundingClientRect().height + gap);
