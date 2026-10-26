@@ -1,0 +1,87 @@
+name: Nightly Demo E2E
+
+# INF-2: the full Playwright matrix against the deployed demo, behind Caddy
+# and on the real Go API (seeded from content.design.json, the same data as
+# the mock bundle). No build and no local server: with E2E_BASE_URL set,
+# playwright.config.ts starts nothing, and specs that need the local server
+# call skipAgainstDeployment. Demo is public, so no secrets.
+on:
+  # 04:43 UTC, off-peak in Spain and after CI's own nightly full matrix (03:17).
+  schedule:
+    - cron: '43 4 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-demo-e2e
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  DEMO_URL: https://demo.asadorov.es
+
+jobs:
+  e2e-shard:
+    name: Demo E2E Shard ${{ matrix.shard }}/${{ strategy.job-total }}
+    runs-on: ubuntu-latest
+    # Every test goes over the network to demo, so allow more than CI's 30.
+    timeout-minutes: 45
+    # Does nothing until demo exists (the same variable as Deploy Demo).
+    if: vars.DEPLOY_ENABLED == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    # Same image as ci.yml's E2E shards; keep the tag equal to the
+    # @playwright/test version.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Fails fast with one clear line when demo (or its backend) is down,
+      # instead of every test timing out. /readyz asks the backend's /healthz.
+      - name: Check demo is ready
+        env:
+          READY_TIMEOUT_MS: '15000'
+        run: |
+          node -e "
+            const url = process.env.DEMO_URL + '/readyz';
+            const signal = AbortSignal.timeout(Number(process.env.READY_TIMEOUT_MS));
+            fetch(url, { signal }).then(
+              (res) => { console.log(url, res.status); process.exit(res.ok ? 0 : 1); },
+              (err) => { console.error(url, err); process.exit(1); }
+            );
+          "
+
+      - name: Playwright against demo
+        # Firefox refuses to start as root with a HOME it doesn't own, and
+        # Actions resets HOME to /github/home for every step.
+        env:
+          HOME: /root
+          E2E_BASE_URL: ${{ env.DEMO_URL }}
+          E2E_MATRIX: full
+        run: pnpm test:e2e --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: demo-playwright-results-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 7
