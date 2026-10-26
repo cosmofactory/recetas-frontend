@@ -67,6 +67,8 @@ Owner setup, once the VM exists (INF-0):
 
 - This repo's own repository variable **`DEPLOY_ENABLED=true`** (Settings → Secrets and variables → Actions → Variables). Until then the job is skipped. Set it only once recetas-infra's first demo deploy has installed `/srv/recetas/scripts` and `/srv/recetas/demo/tags.env` names both `BACKEND_IMAGE_TAG` and `FRONTEND_IMAGE_TAG` (recetas-infra README, First demo deploy): the demo compose file requires both, so a deploy with either tag missing fails at compose validation.
 
+**Nightly demo E2E.** Once `DEPLOY_ENABLED=true`, `.github/workflows/nightly-demo-e2e.yml` runs the full Playwright matrix against `https://demo.asadorov.es` every night (04:43 UTC; also Actions → Nightly Demo E2E → Run workflow). Nothing is built or started locally, and tests that need the local server skip themselves. Run it by hand with `E2E_BASE_URL=https://demo.asadorov.es E2E_MATRIX=full pnpm test:e2e`; add `E2E_APP_ENV=prod` against the production site.
+
 `pnpm lint:actions` lints the workflows locally (actionlint in Docker, the same pinned image as recetas-infra and recetas-backend).
 
 See `CLAUDE.md` for conventions and `../specs/` for the roadmap.
