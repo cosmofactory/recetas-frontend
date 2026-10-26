@@ -16,6 +16,7 @@
 		"check": "svelte-kit sync && pnpm run --silent i18n:compile && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "eslint . && prettier --check . && pnpm run --silent check:strings && pnpm run --silent check:colors",
+		"lint:actions": "docker run --rm -u \"$(id -u):$(id -g)\" -v \"$PWD\":/work -w /work rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color",
 		"format": "prettier --write .",
 		"test": "vitest run --passWithNoTests",
 		"test:coverage": "vitest run --coverage",
