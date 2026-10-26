@@ -48,4 +48,25 @@ APP_ENV=local PUBLIC_ORIGIN=http://localhost:3000 DATA_SOURCE=mock pnpm start   
 
 Pages live under `/en/`, `/es/` and `/ru/`. UI copy is compiled by Paraglide JS from `messages/{en,es,ru}.json`, which `pnpm strings:import` generates from the design `strings.json` plus `src/lib/i18n/extra-strings.json`. Don't edit `messages/` by hand.
 
+## Deploy
+
+On a push to `main`, CI pushes `ghcr.io/cosmofactory/recetas-frontend:sha-<7>`, and the **Deploy Demo** job runs `/srv/recetas/scripts/deploy-service.sh demo frontend sha-<7>` on the VM over ssh, then `curl -fsSL` against `https://demo.asadorov.es/` and `/readyz` (bounded retries). The job fails when the new image doesn't turn healthy (the VM brings the previous tag back) or the smoke fails. The key is restricted on the VM to recetas-infra's `ssh-gate.sh frontend demo`, which runs only that command; a failed rollout's container logs stay in `/srv/recetas/demo/deploy.log` on the VM.
+
+Rollback: re-run only the `Deploy Demo` job of an older run, never "Re-run all jobs" (that rebuilds and re-pushes the same `sha-` tag). Or, as the owner (logged in as `admin`, then `sudo -iu deploy`), `/srv/recetas/scripts/deploy-service.sh demo frontend sha-<old>`.
+
+Owner setup, once the VM exists (INF-0):
+
+- GitHub environment **`demo`** (Settings → Environments), deployment branches limited to `main`, with the secrets:
+
+  | Secret            | Value                                                                                        |
+  | ----------------- | -------------------------------------------------------------------------------------------- |
+  | `SSH_HOST`        | Terraform output `vm_ipv4`                                                                   |
+  | `SSH_USER`        | `deploy`                                                                                     |
+  | `SSH_PRIVATE_KEY` | Private half of `frontend_demo_deploy_ssh_public_key` (this repo's own key, gated on the VM) |
+  | `SSH_KNOWN_HOSTS` | `ssh-keyscan <vm>` output, taken from a trusted machine                                      |
+
+- This repo's own repository variable **`DEPLOY_ENABLED=true`** (Settings → Secrets and variables → Actions → Variables). Until then the job is skipped. Set it only once recetas-infra's first demo deploy has installed `/srv/recetas/scripts` and `/srv/recetas/demo/tags.env` names both `BACKEND_IMAGE_TAG` and `FRONTEND_IMAGE_TAG` (recetas-infra README, First demo deploy): the demo compose file requires both, so a deploy with either tag missing fails at compose validation.
+
+`pnpm lint:actions` lints the workflows locally (actionlint in Docker, the same pinned image as recetas-infra and recetas-backend).
+
 See `CLAUDE.md` for conventions and `../specs/` for the roadmap.
