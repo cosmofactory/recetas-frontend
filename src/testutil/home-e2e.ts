@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { ABOUT_COPY } from './about-copy';
 import type { Locale } from './e2e';
 
 // Shared fixtures for the FE-4 home shell Playwright specs (home-*.e2e.ts).
@@ -19,7 +20,7 @@ export type HomeCopy = {
 	search: string;
 };
 
-// strings.json home.* / desktop.*; extra-strings.json a11y.search,
+// strings.json home.* / desktop.* (the about copy from about-copy.ts); extra-strings.json a11y.search,
 // a11y.homeTabs (the switch's tablist name) and home.region (the plural
 // eyebrow; 14 reads as the design's home.regionsCount).
 export const HOME_COPY: Record<Locale, HomeCopy> = {
@@ -30,9 +31,8 @@ export const HOME_COPY: Record<Locale, HomeCopy> = {
 		regionsCount: '14 regions',
 		tapRegion: 'Tap a region to preview',
 		clickRegion: 'Click a region to explore',
-		aboutTitle: 'How Spain really cooks',
-		aboutBody:
-			'Asadorov is an atlas of Spanish home cooking. Pick a region to see its dishes, or follow one dish across the country — every region cooks it a little differently, and each variation comes with its own recipe.',
+		aboutTitle: ABOUT_COPY.en.title,
+		aboutBody: ABOUT_COPY.en.body,
 		language: 'Language',
 		search: 'Search'
 	},
@@ -43,9 +43,8 @@ export const HOME_COPY: Record<Locale, HomeCopy> = {
 		regionsCount: '14 regiones',
 		tapRegion: 'Toca una región',
 		clickRegion: 'Haz clic en una región',
-		aboutTitle: 'Así cocina España de verdad',
-		aboutBody:
-			'Asadorov es un atlas de la cocina casera española. Elige una región para ver sus platos o sigue un plato por todo el país: cada región lo cocina a su manera, y cada variante tiene su propia receta.',
+		aboutTitle: ABOUT_COPY.es.title,
+		aboutBody: ABOUT_COPY.es.body,
 		language: 'Idioma',
 		search: 'Buscar'
 	},
@@ -56,9 +55,8 @@ export const HOME_COPY: Record<Locale, HomeCopy> = {
 		regionsCount: '14 регионов',
 		tapRegion: 'Нажмите на регион',
 		clickRegion: 'Выберите регион на карте',
-		aboutTitle: 'Как на самом деле готовит Испания',
-		aboutBody:
-			'Asadorov — атлас испанской домашней кухни. Выберите регион, чтобы увидеть его блюда, или проследите одно блюдо по всей стране: в каждом регионе его готовят по-своему, и у каждого варианта есть свой рецепт.',
+		aboutTitle: ABOUT_COPY.ru.title,
+		aboutBody: ABOUT_COPY.ru.body,
 		language: 'Язык',
 		search: 'Поиск'
 	}

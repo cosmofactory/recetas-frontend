@@ -2,6 +2,7 @@ import { expect, test, type Page } from '../testutil/e2e-test';
 import { getRaw, htmlLang, LOCALES, localePath, PAGES, type Locale } from '../testutil/e2e';
 import { PUBLIC_ORIGIN } from '../testutil/e2e-origin';
 import { skipAgainstDeployment } from '../testutil/e2e-target';
+import { ABOUT_COPY } from '../testutil/about-copy';
 
 // FE-1 acceptance: every page lives under /:lang/, the URL alone decides the
 // language, the head carries canonical + hreflang, and unknown prefixes get a
@@ -208,9 +209,9 @@ test.describe('localised 404', () => {
 	});
 });
 
-// FE-4 PR 2: the home shows one visible <h1>; on desktop it is the "How
-// Spain really cooks" title (home-regional.e2e.ts pins that), on mobile,
-// where that block is hidden, the shell picks its own.
+// FE-4 PR 2: the home shows one visible <h1>. FE-9 FB-8 (D-FE9-4): on both
+// layouts it is the about title "How Spain really cooks" (mobile README ->
+// Regional tab — body -> About: "The title is the page's one h1").
 test.describe('smoke in every locale', () => {
 	for (const locale of LOCALES) {
 		// ru (Cyrillic fallback fonts, the longest labels) is the engine check.
@@ -221,7 +222,7 @@ test.describe('smoke in every locale', () => {
 			await expect(page.locator('html')).toHaveAttribute('lang', locale);
 			const h1 = page.locator('h1').filter({ visible: true });
 			await expect(h1, 'want exactly one visible <h1>').toHaveCount(1);
-			await expect(h1).not.toHaveText('');
+			await expect(h1).toHaveText(ABOUT_COPY[locale].title);
 			await expect(page.getByTestId('app-shell')).toHaveCount(1);
 			const m = await page.evaluate(() => ({
 				scroll: document.documentElement.scrollWidth,

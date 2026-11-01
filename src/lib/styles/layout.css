@@ -196,12 +196,19 @@
 	 * paragraph rgba(43,30,22,.64), the title clamp and the column gap.
 	 */
 	--map-max-width-desktop: max(560px, calc((100vh - 360px) * 14 / 11));
-	/* Mobile: the map inside its size-container frame (cq units), "max-height: 100%" at 14/11. */
+	/* Mobile: the map inside its size-container scroller (cq units), "max-height: 100%" at 14/11. */
 	--map-max-width-mobile: min(100cqw, calc(100cqh * 14 / 11));
 	--border-about: rgba(43, 30, 22, 0.12);
 	--ink-about: rgba(43, 30, 22, 0.64);
 	--about-title-size: clamp(28px, 2.6vw, 38px);
 	--about-gap: clamp(20px, 3vw, 40px);
+	/*
+	 * Mobile README -> Regional tab — body -> About (D-FE9-4): title
+	 * "Instrument Serif ≈28px", paragraph "≈14px, lh ≈1.55".
+	 */
+	--about-title-size-mobile: 28px;
+	--about-body-size-mobile: 14px;
+	--about-body-line-height-mobile: 1.55;
 
 	/*
 	 * Region sheet and panel (RegionDetails). Both prototypes draw the dish

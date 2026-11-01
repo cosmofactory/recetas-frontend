@@ -49,19 +49,21 @@
 <div class="regional page-container">
 	<div class="map-column">
 		<MetaRow regionCount={regions.length} />
-		<div class="map-frame">
-			<!-- reset false: focus stays on the region link, so closing returns it there. -->
-			<div class="map-box" data-sveltekit-reset="false">
-				<RegionMap
-					{regions}
-					selectedKey={mapKey}
-					{defaultKey}
-					{hrefFor}
-					onActivate={regionOpener.remember}
-				/>
+		<div class="map-scroller">
+			<div class="map-frame">
+				<!-- reset false: focus stays on the region link, so closing returns it there. -->
+				<div class="map-box" data-sveltekit-reset="false">
+					<RegionMap
+						{regions}
+						selectedKey={mapKey}
+						{defaultKey}
+						{hrefFor}
+						onActivate={regionOpener.remember}
+					/>
+				</div>
 			</div>
+			<AboutBlock />
 		</div>
-		<AboutBlock />
 	</div>
 	<div class="panel-column desktop-only">
 		{#if panelRegion}
@@ -99,8 +101,10 @@
 	 * Mobile README -> Regional tab: "body (flex:1, padding 14px 16px 16px,
 	 * column, gap 10px)". The prototype's map wrapper is "flex:1; min-height:0;
 	 * justify-content:center; padding-top:6px" and the map "width:100%;
-	 * max-height:100%; aspect-ratio:14/11": the frame is a size container, so
-	 * the map's width follows the height left in it (a landscape phone).
+	 * max-height:100%; aspect-ratio:14/11". Under the meta row the map and the
+	 * about block (D-FE9-4, "reached by scrolling") scroll inside the frame;
+	 * the scroller is a size container, so the map's width follows the height
+	 * it shows (a landscape phone) and the about block sits right below it.
 	 */
 	@media not all and (min-width: 860px) {
 		.regional {
@@ -108,7 +112,7 @@
 			flex: 1;
 			flex-direction: column;
 			min-height: 0;
-			padding: 14px 16px 16px;
+			padding: 14px 16px 0;
 		}
 
 		.map-column {
@@ -117,14 +121,17 @@
 			min-height: 0;
 		}
 
-		.map-frame {
+		.map-scroller {
 			container-type: size;
-			display: flex;
 			flex: 1;
-			align-items: flex-start;
-			justify-content: center;
 			min-height: 0;
-			padding-top: 6px;
+			padding: 6px 0 16px;
+			overflow-y: auto;
+		}
+
+		.map-frame {
+			display: flex;
+			justify-content: center;
 		}
 
 		.map-box {
@@ -148,6 +155,10 @@
 
 		.map-column {
 			gap: 14px;
+		}
+
+		.map-scroller {
+			display: contents;
 		}
 
 		.map-frame {

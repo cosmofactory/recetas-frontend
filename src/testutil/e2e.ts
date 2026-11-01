@@ -6,10 +6,10 @@ export const LOCALES = ['en', 'es', 'ru'] as const;
 export type Locale = (typeof LOCALES)[number];
 
 // The pages and a localised text each one server-renders. `h1: true` when
-// that text is the page's <h1>. home: desktop.aboutTitle (strings.json), the
-// h1 of the desktop "How Spain really cooks" block (FE-4); region: the
-// localised region name, an <h2> in the region sheet / panel (FE-4 PR 3:
-// the page's <h1> stays the logo / the about title); dish and
+// that text is the page's <h1>. home: home.aboutTitle (strings.json), the
+// h1 of the "How Spain really cooks" block on both layouts (FE-4; mobile
+// since FE-9 FB-8); region: the localised region name, an <h2> in the
+// region sheet / panel (FE-4 PR 3: the page's <h1> stays the about title); dish and
 // recipe: the dish and variation name from the catalog (DATA_SOURCE=mock
 // serves the bundle).
 export type PageFixture = {

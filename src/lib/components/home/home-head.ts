@@ -4,13 +4,13 @@ import { POPULAR, type HomeTab } from '#lib/ui/home-tab.ts';
 
 // The design has no meta strings (stage FE-4, Small decisions): the home is
 // "Asadorov · {aboutTitle}", Popular adds its tab label, and the
-// description is the desktop about paragraph. A region page is
+// description is the about paragraph. A region page is
 // "Asadorov · {region name}" (its description is the region's).
 export function homeTitle(tab: HomeTab): string {
 	const tabLabel = tab === POPULAR ? [m.home_popular()] : [];
-	return pageTitle(...tabLabel, m.desktop_aboutTitle());
+	return pageTitle(...tabLabel, m.home_aboutTitle());
 }
 
 export const regionTitle = (regionName: string): string => pageTitle(regionName);
 
-export const homeDescription = (): string => m.desktop_aboutBody();
+export const homeDescription = (): string => m.home_aboutBody();
