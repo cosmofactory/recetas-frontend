@@ -16,8 +16,10 @@ import {
 	tileColorOf
 } from '../../testutil/map';
 import {
+	animates,
 	computed,
 	emulateForcedColors,
+	emulateReducedMotion,
 	expectFullyVisible,
 	loadContent,
 	loadMapExport,
@@ -35,9 +37,11 @@ import {
 // grid. Sources, by line:
 // - Mobile README -> Map (shared) L114–117: "CSS grid, 14 columns × 11 rows,
 //   aspect-ratio: 14 / 11, width 100%, gap 3px. Cells are square." "Each
-//   cell: radius 4px, bg = region tileColor; the selected region's cells are
-//   --region-selected. Hover brightness(1.1). Bg transition 200ms. Whole
-//   region is one tap target (any cell selects it)." "Labels: one per region,
+//   cell: radius 4px, bg = region tileColor; while a region is selected, it
+//   keeps its tileColor and every other region's cells drop to
+//   --region-dimmed-opacity (labels and their chips are not dimmed; D-FE9-3).
+//   Hover brightness(1.1). Bg transition 200ms. Whole region is one tap
+//   target (any cell selects it)." "Labels: one per region,
 //   absolutely positioned at the centroid of its cells plus labelNudges (in
 //   cell units), translate(-50%,-50%). Style: 9.5px/700 ink, bg
 //   --map-label-bg, padding 2px 4px, radius 4px, nowrap, pointer-events none."
@@ -47,14 +51,20 @@ import {
 // - Desktop README -> Regional L54: "width 100% with max-width max(560px,
 //   calc((100vh − 360px) × 14/11)), cell gap 5px, radius 6px. Hover: cell
 //   brightness(1.12), its label turns solid surface with a shadow. Selected:
-//   ink cells, ink label with --on-accent text. Labels 12px/700, padding 3px
-//   8px, radius 6px." L57: "the map never shrinks below 560px". Desktop
+//   the region keeps its tileColor while every other region's cells drop to
+//   --region-dimmed-opacity (labels not dimmed), 200ms; its label stays ink
+//   with --on-accent text (D-FE9-3). Labels 12px/700, padding 3px 8px,
+//   radius 6px." L57: "the map never shrinks below 560px". Desktop
 //   prototype (Asadorov Desktop.dc.html) L90–100 and L757–774: max-width on
 //   the aspect-ratio box itself, cells `transition:background .2s,filter
 //   .15s`, no brightness on the selected region (`key === hov && key !==
 //   sel`), label bg `on ? ink : (h ? #FBF7EC : rgba(251,247,236,.85))`, fg
 //   `on ? #F8F1E4 : ink`, shadow `(on || h) ? 0 3px 10px rgba(43,30,22,.22)`,
 //   label `transition:background .15s,color .15s`.
+// - Stage FE-9 -> FB-4 (D-FE9-3): dimming is opacity on the cells only, with
+//   the existing 200ms transition, instant under prefers-reduced-motion; no
+//   selection: every region at full colour. The desktop default (defaultKey,
+//   no JavaScript) looks selected from 860px only, so it dims too.
 // - Accessibility (both READMEs): "Map regions need accessible names
 //   ("Galicia") and must be keyboard-focusable. Provide the region list as a
 //   fallback for screen readers." Stage FE-4: "one <button> or link per
@@ -108,10 +118,17 @@ import {
 type RegionMapProps = {
 	regions: MapRegion[];
 	selectedKey?: string;
+	defaultKey?: string;
 	hrefFor: (key: string) => string;
 };
 
-type RenderOptions = { lang?: Lang; width?: number; regions?: MapRegion[]; selectedKey?: string };
+type RenderOptions = {
+	lang?: Lang;
+	width?: number;
+	regions?: MapRegion[];
+	selectedKey?: string;
+	defaultKey?: string;
+};
 
 const MAP_TEST_ID = 'region-map';
 const CELL = '[data-map-cell]';
@@ -147,7 +164,8 @@ async function renderMap(options: RenderOptions = {}, target = mapStage(options.
 	const props: RegionMapProps = {
 		regions: options.regions ?? regionsIn(lang),
 		hrefFor: regionHref(lang),
-		...(options.selectedKey ? { selectedKey: options.selectedKey } : {})
+		...(options.selectedKey ? { selectedKey: options.selectedKey } : {}),
+		...(options.defaultKey ? { defaultKey: options.defaultKey } : {})
 	};
 	await render(RegionMap, { target, props });
 	const map = page.getByTestId(MAP_TEST_ID);
@@ -183,6 +201,49 @@ function labelOf(link: Element): HTMLElement {
 	const labels = link.querySelectorAll<HTMLElement>(LABEL);
 	expect(labels.length, `got ${labels.length} labels in ${link.getAttribute('href')}`).toBe(1);
 	return labels[0];
+}
+
+// The opacity an element is painted with: its own times every ancestor's,
+// so dimming a whole region link would show on its label too.
+function effectiveOpacity(el: Element | null): number {
+	return el ? Number(style(el, 'opacity')) * effectiveOpacity(el.parentElement) : 1;
+}
+
+// --region-dimmed-opacity as the page resolves it. An undefined token would
+// compute to 1 and make "dimmed" pass as "full", so that fails here.
+function dimmedOpacity(): number {
+	const token = '--region-dimmed-opacity';
+	const declared = style(document.documentElement, token).trim();
+	expect(declared, `got no ${token} on :root, want the design token`).not.toBe('');
+	const value = Number(computed('opacity', `var(${token})`));
+	expect(value, `got ${token} ${value}, want it below 1`).toBeLessThan(1);
+	return value;
+}
+
+// Every region's cells in its own tileColor; with `selectedKey`, every other
+// region's cells at --region-dimmed-opacity; labels never dimmed.
+async function expectSelectionLook(map: HTMLElement, selectedKey: string | null) {
+	const dimmed = selectedKey ? dimmedOpacity() : 1;
+	for (const region of regionsIn('en')) {
+		const link = linkOf(map, region.key);
+		const colour = computed('background-color', tileColorOf(region));
+		const opacity = selectedKey && region.key !== selectedKey ? dimmed : 1;
+		for (const cell of cellsOf(link)) {
+			await expect
+				.poll(() => style(cell, 'background-color'), { message: `${region.key} colour` })
+				.toBe(colour);
+			await expect
+				.poll(() => effectiveOpacity(cell), { message: `${region.key} cell opacity` })
+				.toBeCloseTo(opacity, 3);
+		}
+		expect(effectiveOpacity(labelOf(link)), `${region.key} label opacity`).toBe(1);
+	}
+}
+
+function expectNothingDimmed(map: HTMLElement) {
+	expect(matchMedia('(forced-colors: active)').matches, 'want forced colours emulated').toBe(true);
+	const dimmed = allCells(map).filter((cell) => effectiveOpacity(cell) !== 1);
+	expect(dimmed.length, `got ${dimmed.length} dimmed cells, want none`).toBe(0);
 }
 
 function gridLines(cell: Element): GridCell {
@@ -595,6 +656,26 @@ describe('RegionMap in forced-colours mode', () => {
 			expect(style(cell, 'background-color')).not.toBe(highlight);
 		}
 	});
+
+	it('dims no region around the selection (Highlight marks it instead)', async () => {
+		expectNothingDimmed(await renderMap({ selectedKey: 'gal' }));
+	});
+});
+
+// FB-4 review: forced colours draw the selection as Highlight (layout.css),
+// so no region's cells are dimmed there, on desktop either.
+describe('RegionMap in forced-colours mode at ≥ 860px', () => {
+	useViewport(1280, 800);
+	beforeEach(() => emulateForcedColors());
+	afterEach(() => resetEmulatedMedia());
+
+	it('dims no region around the selection', async () => {
+		expectNothingDimmed(await renderMap({ width: 900, selectedKey: 'gal' }));
+	});
+
+	it('dims no region around the desktop default (defaultKey)', async () => {
+		expectNothingDimmed(await renderMap({ width: 900, defaultKey: 'and' }));
+	});
 });
 
 // --- mobile style (< 860px) -----------------------------------------------------
@@ -656,27 +737,25 @@ describe('RegionMap mobile style', () => {
 		for (const cell of allCells(map)) expect(style(cell, 'border-top-left-radius')).toBe(want);
 	});
 
-	it('fills each region’s cells with its tileColor, the selected one with --region-selected', async () => {
-		const map = await renderMap({ selectedKey: 'gal' });
-		for (const region of regionsIn('en')) {
-			const want =
-				region.key === 'gal'
-					? computed('background-color', 'var(--region-selected)')
-					: computed('background-color', tileColorOf(region));
-			for (const cell of cellsOf(linkOf(map, region.key))) {
-				await expect
-					.poll(() => style(cell, 'background-color'), { message: region.key })
-					.toBe(want);
-			}
-		}
+	it('with no selection, draws every region in its tileColor at full opacity', async () => {
+		await expectSelectionLook(await renderMap(), null);
 	});
 
-	it('transitions the cell background and filter over 200ms (--dur-colour)', async () => {
+	it('keeps the selected region’s tileColor and dims every other region’s cells', async () => {
+		await expectSelectionLook(await renderMap({ selectedKey: 'gal' }), 'gal');
+	});
+
+	it('dims nothing for the desktop default (defaultKey) below 860px', async () => {
+		await expectSelectionLook(await renderMap({ defaultKey: 'and' }), null);
+	});
+
+	it('transitions the cell background, filter and opacity over 200ms (--dur-colour)', async () => {
 		const map = await renderMap();
 		const want = computed('transition-duration', 'var(--dur-colour)');
 		const cell = allCells(map)[0];
 		expect(transitionDuration(cell, 'background-color'), 'background').toBe(want);
 		expect(transitionDuration(cell, 'filter'), 'filter').toBe(want);
+		expect(transitionDuration(cell, 'opacity'), 'opacity').toBe(want);
 	});
 
 	it('styles labels 9.5px/700 ink on --map-label-bg, padding 2px 4px, radius 4px, nowrap', async () => {
@@ -798,14 +877,21 @@ describe('RegionMap desktop style', () => {
 		for (const cell of cellsOf(linkOf(map, 'ast'))) expect(style(cell, 'filter')).toBe('none');
 	});
 
-	it('draws the selected region in ink: cells, label bg, --on-accent text, shadow', async () => {
+	it('with no selection, draws every region in its tileColor at full opacity', async () => {
+		await expectSelectionLook(await renderMap({ width: 900 }), null);
+	});
+
+	it('keeps the selected region’s tileColor and dims every other region’s cells', async () => {
+		await expectSelectionLook(await renderMap({ width: 900, selectedKey: 'gal' }), 'gal');
+	});
+
+	it('draws the desktop default (defaultKey) as selected: its colour kept, the rest dimmed', async () => {
+		await expectSelectionLook(await renderMap({ width: 900, defaultKey: 'and' }), 'and');
+	});
+
+	it('draws the selected label ink with --on-accent text and the shadow', async () => {
 		const map = await renderMap({ width: 900, selectedKey: 'gal' });
-		const link = linkOf(map, 'gal');
-		const ink = computed('background-color', 'var(--region-selected)');
-		for (const cell of cellsOf(link)) {
-			await expect.poll(() => style(cell, 'background-color')).toBe(ink);
-		}
-		const label = labelOf(link);
+		const label = labelOf(linkOf(map, 'gal'));
 		await expect
 			.poll(() => style(label, 'background-color'))
 			.toBe(computed('background-color', 'var(--ink)'));
@@ -828,6 +914,7 @@ describe('RegionMap desktop style', () => {
 		expect(transitionDuration(cell, 'filter'), 'cell filter').toBe(DESKTOP_FILTER_MS);
 		const background = computed('transition-duration', 'var(--dur-colour)');
 		expect(transitionDuration(cell, 'background-color'), 'cell background').toBe(background);
+		expect(transitionDuration(cell, 'opacity'), 'cell opacity').toBe(background);
 		expect(transitionDuration(label, 'background-color'), 'label bg').toBe(DESKTOP_LABEL_MS);
 		expect(transitionDuration(label, 'color'), 'label colour').toBe(DESKTOP_LABEL_MS);
 	});
@@ -841,6 +928,25 @@ describe('RegionMap desktop style', () => {
 		}
 	});
 });
+
+// Stage FE-9 -> FB-4: the dimming is instant under prefers-reduced-motion.
+for (const viewport of [
+	{ width: 390, height: 844, mapWidth: 358 },
+	{ width: 1280, height: 800, mapWidth: 900 }
+]) {
+	describe(`RegionMap dimming under reduced motion at ${viewport.width}px`, () => {
+		useViewport(viewport.width, viewport.height);
+		afterEach(() => resetEmulatedMedia());
+
+		it('changes the cells’ opacity without a transition', async () => {
+			await emulateReducedMotion('reduce');
+			const map = await renderMap({ width: viewport.mapWidth, selectedKey: 'gal' });
+			for (const cell of allCells(map)) {
+				expect(animates(cell, 'opacity'), 'got an opacity transition').toBe(false);
+			}
+		});
+	});
+}
 
 // Breakpoint crossings keep the map mounted; only the styles change.
 describe('RegionMap across 860px', () => {

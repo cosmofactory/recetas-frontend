@@ -86,7 +86,8 @@
 		pointer-events: auto;
 		transition:
 			background-color var(--dur-colour),
-			filter var(--dur-colour);
+			filter var(--dur-colour),
+			opacity var(--dur-colour);
 	}
 
 	/*
@@ -108,11 +109,6 @@
 	/* A colour the server rejected (region-colour.ts) draws as the placeholder. */
 	.untinted .cell {
 		background-image: var(--placeholder);
-	}
-
-	.map-region[aria-current='true'] .cell {
-		background-color: var(--region-selected);
-		background-image: none;
 	}
 
 	/* Above every region's cells; clicks fall through to the cell below. */
@@ -144,7 +140,8 @@
 			border-radius: var(--radius-map-cell-desktop);
 			transition:
 				background-color var(--dur-colour),
-				filter var(--dur-map-hover);
+				filter var(--dur-map-hover),
+				opacity var(--dur-colour);
 		}
 
 		.map-label {
@@ -155,11 +152,6 @@
 			transition:
 				background-color var(--dur-map-hover),
 				color var(--dur-map-hover);
-		}
-
-		.map-region[data-default] .cell {
-			background-color: var(--region-selected);
-			background-image: none;
 		}
 
 		.map-region:is([aria-current='true'], [data-default]) .map-label {
@@ -181,6 +173,13 @@
 				background-color: var(--bg-surface);
 				box-shadow: var(--shadow-map-label);
 			}
+		}
+	}
+
+	/* The dimming (RegionMap) is instant; this follows the desktop rules so it wins. */
+	@media (prefers-reduced-motion: reduce) {
+		.cell {
+			transition-property: background-color, filter;
 		}
 	}
 </style>

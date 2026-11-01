@@ -310,7 +310,8 @@
 /*
  * Forced colours (FE-4): the UA drops the tile backgrounds, so every map
  * cell keeps an outline and the selected region is Highlight. !important
- * because the component's scoped selection rule is more specific.
+ * so the `background` shorthand also clears the untinted placeholder image
+ * (MapRegion's `.untinted .cell` is more specific).
  */
 @media (forced-colors: active) {
 	.map-region .cell {

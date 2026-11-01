@@ -29,7 +29,7 @@
   --region-sand: #C3A574;
   --region-brown: #A8632F;
   --region-tan: #B98A5E;
-  --region-selected: #2B1E16;
+  --region-dimmed-opacity: .35;
   --map-label-bg: rgba(251,247,236,.82);
 
   --placeholder-a: #E4D8BF;
