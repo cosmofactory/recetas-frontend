@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { typeset } from '#lib/i18n/typeset.ts';
-	import { tabIndexForKey } from '#lib/ui/tablist.ts';
+	import { ThumbDrag } from '#lib/ui/segmented-thumb-drag.svelte.ts';
+	import { TablistFocus } from '#lib/ui/tablist-focus.svelte.ts';
+	import SegmentedSwitchThumb from './SegmentedSwitchThumb.svelte';
 
 	// panelId: the id of the tabpanel the tab controls; the tab is then
 	// `${panelId}-tab`, for the panel's aria-labelledby. href: the tab is a
@@ -15,8 +17,7 @@
 		onChange?: (value: string) => void;
 		// The desktop top bar's switch sets its labels a little larger.
 		size?: 'regular' | 'desktop';
-		// WAI-ARIA tabs: 'auto' selects as the keys move focus; 'manual' only
-		// moves focus (roving tabindex), and Enter or a click activates.
+		// WAI-ARIA tabs activation (TablistFocus).
 		activation?: 'auto' | 'manual';
 	};
 
@@ -31,10 +32,17 @@
 
 	const tabs: HTMLElement[] = $state([]);
 	const selectedIndex = $derived(options.findIndex((option) => option.value === value));
-	// Manual activation: the tab the keys last moved focus to.
-	let focusedIndex = $state<number | undefined>(undefined);
-	// A value no option has must not take the switch out of the Tab order.
-	const tabStop = $derived(focusedIndex ?? Math.max(selectedIndex, 0));
+	const keys = new TablistFocus({ tabs: () => tabs, activation: () => activation, select });
+	const tabStop = $derived(keys.tabStop(selectedIndex));
+
+	// A drag-select goes through the tab's own click, like a tap: a link
+	// tab navigates (a new history entry), a button tab calls onChange.
+	const drag = new ThumbDrag({
+		tabs: () => tabs,
+		selectedIndex: () => selectedIndex,
+		choose: (index) => tabs[index].click()
+	});
+	$effect(() => drag.forgetHeld(selectedIndex));
 
 	function select(index: number) {
 		if (index === selectedIndex) return;
@@ -45,25 +53,24 @@
 	function selectOnClick(index: number) {
 		if (options[index].href === undefined) select(index);
 	}
-
-	// Automatic activation: moving focus selects. Manual: it only moves focus.
-	function moveWithKey(event: KeyboardEvent, index: number) {
-		const next = tabIndexForKey(event.key, index, options.length);
-		if (next === undefined) return;
-		event.preventDefault();
-		if (activation === 'auto') select(next);
-		else focusedIndex = next;
-		tabs[next].focus();
-	}
-
-	// Leaving the switch hands the Tab stop back to the selected tab.
-	function forgetFocus(event: FocusEvent) {
-		const next = event.relatedTarget;
-		if (!(next instanceof HTMLElement) || !tabs.includes(next)) focusedIndex = undefined;
-	}
 </script>
 
-<div class="track" role="tablist" aria-label={label}>
+<!-- svelte-ignore a11y_interactive_supports_focus (the tabs take focus; dragging is pointer-only, keys move between tabs) -->
+<div
+	class="track"
+	role="tablist"
+	aria-label={label}
+	onpointerdown={drag.start}
+	onpointermove={drag.move}
+	onpointerup={drag.end}
+	onpointercancel={drag.cancel}
+	onclickcapture={drag.clickAfterDrag}
+>
+	<SegmentedSwitchThumb
+		index={drag.restingIndex(Math.max(selectedIndex, 0))}
+		count={options.length}
+		offset={drag.offset}
+	/>
 	{#each options as option, index (option.value)}
 		<!-- A link tab keeps focus on itself when the router navigates. -->
 		<svelte:element
@@ -72,6 +79,7 @@
 			type={option.href === undefined ? 'button' : undefined}
 			href={option.href}
 			data-sveltekit-reset={option.href === undefined ? undefined : 'false'}
+			draggable={option.href === undefined ? undefined : 'false'}
 			role="tab"
 			class="segment"
 			class:desktop={size === 'desktop'}
@@ -80,8 +88,8 @@
 			aria-selected={index === selectedIndex}
 			tabindex={index === tabStop ? 0 : -1}
 			onclick={() => selectOnClick(index)}
-			onkeydown={(event: KeyboardEvent) => moveWithKey(event, index)}
-			onfocusout={forgetFocus}
+			onkeydown={(event: KeyboardEvent) => keys.moveWithKey(event, index)}
+			onfocusout={keys.forgetFocus}
 		>
 			{typeset(option.label)}
 		</svelte:element>
@@ -91,11 +99,18 @@
 <style>
 	/* Mobile README -> Header: "track: bg --bg-segment-track, radius 12px, padding 4px, gap 4px". */
 	.track {
+		--track-padding: 4px;
+		--track-gap: 4px;
+		position: relative;
 		display: flex;
-		gap: 4px;
-		padding: 4px;
+		gap: var(--track-gap);
+		padding: var(--track-padding);
 		border-radius: var(--radius-segment-track);
 		background: var(--bg-segment-track);
+		/* D-FE9-2: a sideways drag moves the thumb; vertical pans still scroll. */
+		touch-action: pan-y;
+		-webkit-user-select: none;
+		user-select: none;
 	}
 
 	/* "Each segment flex:1, padding 9px 0, centred, Archivo 13px/600". */
@@ -113,7 +128,6 @@
 		text-decoration: none;
 		white-space: nowrap;
 		cursor: pointer;
-		transition: background-color var(--dur-colour);
 	}
 
 	/* Desktop prototype top bar: "font-size:13.5px;font-weight:600". */
@@ -125,11 +139,5 @@
 		content: '';
 		position: absolute;
 		inset: var(--hit-inset);
-	}
-
-	/* "Active: bg --bg-surface, radius 9px, shadow --shadow-segment-active". */
-	.segment[aria-selected='true'] {
-		background: var(--bg-surface);
-		box-shadow: var(--shadow-segment-active);
 	}
 </style>

@@ -56,6 +56,11 @@
 	/* Region sheet: "Scrim ... 400ms"; Filters sheet: "Scrim --scrim-filter, 300ms". */
 	--dur-scrim: 400ms;
 	--dur-scrim-filter: 300ms;
+	/*
+	 * Segmented switch thumb (FE-9 FB-3, D-FE9-2): the owner asked for a thumb
+	 * that slides "~250 ms" with --ease; the design has no token for it.
+	 */
+	--dur-segment-thumb: 250ms;
 	/* Filters sheet: "top radius 24px". */
 	--radius-filter-sheet: 24px;
 
