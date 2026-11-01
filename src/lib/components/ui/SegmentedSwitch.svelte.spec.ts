@@ -8,15 +8,16 @@ import {
 	loadUi,
 	stage,
 	style,
-	textLineCount,
-	transitionDuration
+	textLineCount
 } from '../../../testutil/ui';
 
 // FE-3 SegmentedSwitch: the "Regional | Popular" switch. Mobile README ->
 // Header: "track: bg `--bg-segment-track`, radius 12px, padding 4px, gap 4px.
 // Each segment flex:1, padding 9px 0, centred, Archivo 13px/600. Active: bg
-// `--bg-surface`, radius 9px, shadow `--shadow-segment-active`. Bg transition
-// 200ms." Desktop uses the same style at `clamp(240px, 22vw, 320px)` wide.
+// `--bg-surface`, radius 9px, shadow `--shadow-segment-active`." Desktop uses
+// the same style at `clamp(240px, 22vw, 320px)` wide. D-FE9-2 (FE-9 FB-3)
+// replaced the 200ms background fade with a sliding thumb
+// (SegmentedSwitchThumb.svelte.spec.ts).
 //
 // Semantics (stage FE-3): an ARIA tablist with roving tabindex. ArrowLeft /
 // ArrowRight move to the previous / next segment, wrapping at the ends; Home
@@ -52,7 +53,6 @@ const SWITCH_LABEL = 'Browse';
 const HIT_MIN_PX = 44;
 // Desktop top bar: switch "width `clamp(240px, 22vw, 320px)`"; its narrowest.
 const NARROWEST = 'width: 240px; padding: 40px 0';
-const TRANSPARENT = 'rgba(0, 0, 0, 0)';
 
 async function renderSwitch(props: Partial<SwitchProps> = {}, target = stage(NARROWEST)) {
 	const SegmentedSwitch = await loadUi<SwitchProps>('SegmentedSwitch');
@@ -224,31 +224,8 @@ describe('SegmentedSwitch look', () => {
 		}
 	});
 
-	// "Active: bg `--bg-surface`, radius 9px, shadow `--shadow-segment-active`".
-	it('paints the active segment: --bg-surface, radius 9px, --shadow-segment-active', async () => {
-		const { tabs } = await renderSwitch({ value: 'popular' });
-		const got = ['background-color', 'border-top-left-radius', 'box-shadow'].map((p) =>
-			style(tabs[1], p)
-		);
-		expect(got).toEqual([
-			computed('background-color', 'var(--bg-surface)'),
-			computed('border-top-left-radius', 'var(--radius-segment)'),
-			computed('box-shadow', 'var(--shadow-segment-active)')
-		]);
-	});
-
-	it('leaves the inactive segment unpainted: no background, no shadow', async () => {
-		const { tabs } = await renderSwitch({ value: 'popular' });
-		expect(style(tabs[0], 'background-color')).toBe(TRANSPARENT);
-		expect(style(tabs[0], 'box-shadow')).toBe('none');
-	});
-
-	// "Bg transition 200ms" = --dur-colour.
-	it('transitions the segment background over --dur-colour (200ms)', async () => {
-		const { tabs } = await renderSwitch();
-		const want = computed('transition-duration', 'var(--dur-colour)');
-		expect(tabs.map((t) => transitionDuration(t, 'background-color'))).toEqual([want, want]);
-	});
+	// The active segment's surface ("Active: bg --bg-surface, radius 9px,
+	// shadow") is one sliding thumb since D-FE9-2: SegmentedSwitchThumb.svelte.spec.ts.
 });
 
 describe('SegmentedSwitch fit', () => {
