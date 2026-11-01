@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '../testutil/e2e-test';
+import { ABOUT_COPY } from '../testutil/about-copy';
 import { LOCALES } from '../testutil/e2e';
 import {
 	bottom,
@@ -30,6 +31,15 @@ import {
 // - CLAUDE.md screen frame contract: the home screen is a viewport-sized,
 //   positioned frame with overflow hidden (PR 3's BottomSheet lives in it),
 //   so the mobile home never scrolls the document.
+// - FE-9 FB-8 (D-FE9-4), "About", below the map, reached by scrolling: top
+//   hairline, title (Instrument Serif ≈28px) and paragraph (≈14px, lh
+//   ≈1.55, ink-2), stacked; "same 16px side padding"; Regional tab only;
+//   the title is the page's one h1. Spec: stage FE-9 FB-8. The scrolling
+//   happens inside the frame (the document still doesn't scroll), so the
+//   frame contract above holds. Assumptions: the hairline spans the body's
+//   width (16px in from each side, like the map) and the text starts at
+//   most 4px further in (the meta row's inset); the ≈ values and the
+//   hairline colour are pinned in AboutBlock.svelte.spec.ts.
 //
 // Desktop (desktop README -> Layout & screens -> Regional; prototype
 // Asadorov Desktop.dc.html l.84–107; stage FE-4 -> Small decisions,
@@ -293,13 +303,6 @@ test.describe('mobile Regional layout (< 860px)', () => {
 		);
 	});
 
-	test('the desktop "How Spain really cooks" block is hidden', async ({ page }) => {
-		skipUnlessMobile(page);
-		await gotoHydrated(page, '/en/');
-		const title = onlyVisible(page.getByText(HOME_COPY.en.aboutTitle, { exact: true }));
-		await expect(title).toHaveCount(0);
-	});
-
 	test(
 		'every Russian map label lies within the viewport',
 		{ tag: ['@layout', '@cross-browser'] },
@@ -367,6 +370,154 @@ test.describe('mobile Regional layout (< 860px)', () => {
 			m.inner
 		);
 	});
+});
+
+// FE-9 FB-8 (D-FE9-4): the about block on mobile (see the header comment).
+const ABOUT_MOBILE = { textInsetMax: 4, shortViewport: { width: 390, height: 600 } };
+
+// Scrolls the paragraph's nearest user-scrollable ancestor (overflow-y auto
+// or scroll, with something to scroll: on mobile the map scroller under the
+// meta row) by `step` px, as a swipe would; engine-neutral, since Playwright
+// has no mouse wheel or touch scrolling in mobile WebKit. Returns whether the
+// scroller moved, or a fault when there is no such scroller.
+function scrollAboutScroller(page: Page, step: number): Promise<'moved' | 'stuck' | string> {
+	return page.evaluate(
+		({ text, by }) => {
+			const body = [...document.querySelectorAll('p')].find(
+				(p) => p.checkVisibility() && p.textContent?.trim() === text
+			);
+			if (!body) return 'no visible about paragraph';
+			const scrolls = (el: Element) => {
+				const overflow = getComputedStyle(el).overflowY;
+				return (overflow === 'auto' || overflow === 'scroll') && el.scrollHeight > el.clientHeight;
+			};
+			let scroller: Element | null = body.parentElement;
+			while (scroller && !scrolls(scroller)) scroller = scroller.parentElement;
+			scroller ??= document.scrollingElement;
+			if (!scroller) return 'no scroll container around the about paragraph';
+			const before = scroller.scrollTop;
+			scroller.scrollBy({ top: by, behavior: 'instant' });
+			return scroller.scrollTop > before ? 'moved' : 'stuck';
+		},
+		{ text: ABOUT_COPY.en.body, by: step }
+	);
+}
+
+const ABOUT_SCROLL_STEP_PX = 200;
+
+// Scrolls step by step until the paragraph is fully on screen and hittable;
+// fails if the scroller stops moving first.
+async function scrollToAboutBody(page: Page) {
+	await expect
+		.poll(
+			async () => {
+				if (await aboutBodyOnScreen(page)) return 'on screen';
+				return scrollAboutScroller(page, ABOUT_SCROLL_STEP_PX);
+			},
+			{ message: 'want the about paragraph scrolled fully on screen' }
+		)
+		.toBe('on screen');
+}
+
+function aboutBodyOnScreen(page: Page): Promise<boolean> {
+	return page.evaluate((text) => {
+		const body = [...document.querySelectorAll('p')].find(
+			(p) => p.checkVisibility() && p.textContent?.trim() === text
+		);
+		if (!body) return false;
+		const r = body.getBoundingClientRect();
+		const onScreen = r.top >= -0.5 && r.bottom <= window.innerHeight + 0.5;
+		const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+		return onScreen && hit !== null && body.contains(hit);
+	}, ABOUT_COPY.en.body);
+}
+
+test.describe('mobile about block (< 860px, FE-9 FB-8)', () => {
+	for (const locale of LOCALES) {
+		const about = ABOUT_COPY[locale];
+		const tag = locale === 'en' ? ['@layout', '@cross-browser'] : ['@layout'];
+		test(
+			`/${locale}/: the one visible <h1> is "${about.title}", with its paragraph`,
+			{ tag },
+			async ({ page }) => {
+				skipUnlessMobile(page);
+				await gotoHydrated(page, `/${locale}/`);
+				const h1 = onlyVisible(page.locator('h1'));
+				await expect(h1, 'want exactly one visible <h1>').toHaveCount(1);
+				await expect(h1).toHaveText(about.title);
+				const body = onlyVisible(page.getByText(about.body, { exact: true }));
+				await expect(body, 'want the about paragraph rendered on mobile').toHaveCount(1);
+			}
+		);
+	}
+
+	test(
+		'below the map: hairline 16px in from each side, title and paragraph stacked',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			skipUnlessMobile(page);
+			const m = await measureMobile(page);
+			const map = present(m.map, 'map').box;
+			const about = present(m.about, 'about block');
+			const title = present(m.title, 'about title').box;
+			const body = present(m.body, 'about paragraph').box;
+			expect(about.box.y, 'got the about block above the map bottom').toBeGreaterThanOrEqual(
+				bottom(map) - PX_TOLERANCE
+			);
+			expectPx(about.box.x, MOBILE.bodySide, 'about left');
+			expectPx(right(about.box), m.clientWidth - MOBILE.bodySide, 'about right');
+			expect(about.style['border-top-style']).toBe('solid');
+			expect(about.style['border-top-width']).toBe('1px');
+			for (const [what, box] of [
+				['title', title],
+				['paragraph', body]
+			] as const) {
+				const inset = box.x - MOBILE.bodySide;
+				expect(inset, `got ${what} inset ${inset}px`).toBeGreaterThanOrEqual(-PX_TOLERANCE);
+				expect(inset, `got ${what} inset ${inset}px`).toBeLessThanOrEqual(
+					ABOUT_MOBILE.textInsetMax + PX_TOLERANCE
+				);
+			}
+			expect(body.y, 'got the paragraph beside the title, want it below').toBeGreaterThanOrEqual(
+				bottom(title) - PX_TOLERANCE
+			);
+		}
+	);
+
+	test('the map stays first: the switch → meta row → map spacing is unchanged at the top', async ({
+		page
+	}) => {
+		skipUnlessMobile(page);
+		await page.setViewportSize(ABOUT_MOBILE.shortViewport);
+		const m = await measureMobile(page);
+		const map = present(m.map, 'map').box;
+		expectPx(map.y - bottom(present(m.meta, 'meta row').box), MOBILE.metaToMap, 'meta → map');
+		expect(map.y, 'got the map pushed off the top of the screen').toBeGreaterThanOrEqual(0);
+	});
+
+	test(
+		'a short phone (390×600) reaches the paragraph by scrolling',
+		{ tag: '@layout' },
+		async ({ page }) => {
+			skipUnlessMobile(page);
+			await page.setViewportSize(ABOUT_MOBILE.shortViewport);
+			await gotoHydrated(page, '/en/');
+			await scrollToAboutBody(page);
+			const faults = await unclippedOnceScrolled(page, ABOUT_COPY.en.body);
+			expect(faults, `got the about paragraph cut off: ${JSON.stringify(faults)}`).toEqual([]);
+		}
+	);
+});
+
+test.describe('the about block is Regional only (FE-9 FB-8)', () => {
+	for (const locale of LOCALES) {
+		const about = ABOUT_COPY[locale];
+		test(`/${locale}/?tab=popular shows no about title or paragraph`, async ({ page }) => {
+			await gotoHydrated(page, `/${locale}/?tab=popular`);
+			await expect(page.getByText(about.title, { exact: true })).toHaveCount(0);
+			await expect(page.getByText(about.body, { exact: true })).toHaveCount(0);
+		});
+	}
 });
 
 type Viewport = { width: number; height: number };

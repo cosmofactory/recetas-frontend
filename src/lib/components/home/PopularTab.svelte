@@ -71,7 +71,7 @@
 </script>
 
 <div class="popular">
-	<!-- The desktop <h1> lives in the Regional panel, so this panel names itself. -->
+	<!-- The page's one <h1> is in the Regional panel (D-FE9-4), so this panel names itself. -->
 	<h2 class="visually-hidden">{m.home_popular()}</h2>
 	<div class="layout page-container">
 		<PopularSidebar {active} onToggle={onToggleFilter} onClear={clearAll} />

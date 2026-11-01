@@ -18,10 +18,10 @@
 	let { tabs, language, search, languageMenu }: Props = $props();
 </script>
 
-<!-- The mobile home's one heading is the logo; desktop has its own (AboutBlock). -->
+<!-- The logo isn't a heading: the page's one <h1> is the about title (AboutBlock, D-FE9-4). -->
 <header class="mobile-header mobile-only">
 	<div class="row">
-		<h1 class="logo">Asadorov</h1>
+		<div class="logo">Asadorov</div>
 		<div class="actions">
 			<svelte:element this={language.summary ? 'details' : 'div'} class="language">
 				<LanguageButton {...language} />
@@ -63,7 +63,6 @@
 
 	/* "Logo "Asadorov" — Instrument Serif 28px, ink". */
 	.logo {
-		margin: 0;
 		color: var(--ink);
 		font: 400 28px var(--font-display);
 	}

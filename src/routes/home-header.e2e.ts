@@ -157,6 +157,16 @@ test.describe('mobile header (< 860px)', () => {
 		}
 	);
 
+	// FE-9 FB-8 (D-FE9-4): "The title is the page's one h1; the logo isn't a
+	// heading." It stays the same visible text.
+	test('the logo is visible and is not a heading', { tag: '@cross-browser' }, async ({ page }) => {
+		skipUnlessMobile(page);
+		await gotoHydrated(page, '/en/');
+		await expect(logo(page), 'want one visible "Asadorov" logo').toHaveCount(1);
+		const heading = page.getByRole('heading', { name: 'Asadorov', exact: true });
+		await expect(heading, 'got the logo exposed as a heading').toHaveCount(0);
+	});
+
 	test('row: the logo is centred on the buttons', { tag: '@layout' }, async ({ page }) => {
 		skipUnlessMobile(page);
 		await gotoHydrated(page, '/en/');

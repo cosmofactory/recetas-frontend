@@ -19,6 +19,9 @@ export const EXPECTED_MESSAGE_KEYS: readonly string[] = [
 	'home_popular',
 	'home_regionsCount',
 	'home_tapRegion',
+	// FE-9 FB-8 (D-FE9-4): moved from desktop.* to home.*, shared by both layouts.
+	'home_aboutTitle',
+	'home_aboutBody',
 	'home_seeAll',
 	'home_filters',
 	'home_clearAll',
@@ -68,9 +71,7 @@ export const EXPECTED_MESSAGE_KEYS: readonly string[] = [
 	'desktop_hint',
 	...indexed('desktop_g', 3),
 	...indexed('desktop_tries', 5),
-	'desktop_viewRecipe',
-	'desktop_aboutTitle',
-	'desktop_aboutBody'
+	'desktop_viewRecipe'
 ];
 
 // The inlang message-format shape of a plural message. Each form includes the
@@ -110,5 +111,8 @@ export const RETIRED_MESSAGE_KEYS = [
 	'devUi_search',
 	'devUi_back',
 	'devUi_close',
-	'devUi_check'
+	'devUi_check',
+	// FE-9 FB-8: now home_aboutTitle / home_aboutBody.
+	'desktop_aboutTitle',
+	'desktop_aboutBody'
 ] as const;

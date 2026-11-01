@@ -12,6 +12,7 @@ import {
 	type StartTag
 } from '../../../testutil/html';
 import type { Lang, Region } from '../../../testutil/map';
+import { ABOUT_COPY, ABOUT_LOCALES, LOGO } from '../../../testutil/about-copy';
 
 // FE-4 PR 2, the home shell rendered on the server (svelte/server). Stage
 // FE-4 -> Small decisions: home (/:lang/) and /:lang/regions/:regionKey
@@ -173,7 +174,7 @@ const COPY: Record<Lang, Copy> = {
 		popular: 'Popular',
 		tapRegion: 'Tap a region to preview',
 		clickRegion: 'Click a region to explore',
-		aboutTitle: 'How Spain really cooks',
+		aboutTitle: ABOUT_COPY.en.title,
 		language: 'Language',
 		search: 'Search'
 	},
@@ -182,7 +183,7 @@ const COPY: Record<Lang, Copy> = {
 		popular: 'Popular',
 		tapRegion: 'Toca una región',
 		clickRegion: 'Haz clic en una región',
-		aboutTitle: 'Así cocina España de verdad',
+		aboutTitle: ABOUT_COPY.es.title,
 		language: 'Idioma',
 		search: 'Buscar'
 	},
@@ -191,7 +192,7 @@ const COPY: Record<Lang, Copy> = {
 		popular: 'Популярное',
 		tapRegion: 'Нажмите на регион',
 		clickRegion: 'Выберите регион на карте',
-		aboutTitle: 'Как на самом деле готовит Испания',
+		aboutTitle: ABOUT_COPY.ru.title,
 		language: 'Язык',
 		search: 'Поиск'
 	}
@@ -324,7 +325,7 @@ describe('(home) layout: tabs are links', { timeout: COLD_COMPILE_TIMEOUT_MS }, 
 // <section> named by the region); both are in the HTML (CSS hides one), so
 // a no-JS page of either width has its content. On /:lang/ the sheet is
 // hidden (inert) and the panel shows Andalucía. The region name is an <h2>
-// (the page's <h1>s stay the logo and the about title).
+// (the page's one <h1> is the about title, FE-9 FB-8).
 
 function sheetTag(html: string): StartTag {
 	const dialogs = startTags(html).filter((t) => t.attrs.role === 'dialog');
@@ -450,11 +451,53 @@ describe('(home) layout: region headings', { timeout: COLD_COMPILE_TIMEOUT_MS },
 		expect(headingTexts(html, 1), 'got the region name as an <h1>').not.toContain('Galicia');
 	});
 
-	it('/en/regions/gal: the <h1>s stay the logo and the about title', async () => {
+	it('/en/regions/gal: the one <h1> stays the about title', async () => {
 		const html = await renderHome({ lang: 'en', path: '/en/regions/gal' });
-		expect(headingTexts(html, 1).sort()).toEqual(['Asadorov', COPY.en.aboutTitle].sort());
+		expect(headingTexts(html, 1)).toEqual([COPY.en.aboutTitle]);
 	});
 });
+
+// FE-9 FB-8 (D-FE9-4): mobile README -> Regional tab — body -> About: "The
+// title is the page's one h1; the logo isn't a heading", and the block is
+// "Regional tab only". The server renders both layouts in one HTML, so one
+// AboutBlock serves both (two would be two <h1>s).
+describe(
+	'(home) layout: the about block is the one <h1>',
+	{ timeout: COLD_COMPILE_TIMEOUT_MS },
+	() => {
+		for (const lang of ABOUT_LOCALES) {
+			const about = ABOUT_COPY[lang];
+
+			it(`/${lang}/: exactly one <h1>, "${about.title}"`, async () => {
+				const html = await renderHome({ lang });
+				expect(headingTexts(html, 1)).toEqual([about.title]);
+			});
+
+			it(`/${lang}/: renders the about paragraph once`, async () => {
+				const text = visibleText(await renderHome({ lang }));
+				expect(
+					text.split(about.body).length - 1,
+					'got the about paragraph a wrong number of times'
+				).toBe(1);
+			});
+
+			it(`/${lang}/?tab=popular: no about title or paragraph`, async () => {
+				const text = visibleText(await renderHome({ lang, path: `/${lang}/?tab=popular` }));
+				expect(text, 'got the about title on Popular').not.toContain(about.title);
+				expect(text, 'got the about paragraph on Popular').not.toContain(about.body);
+			});
+		}
+
+		for (const path of ['/en/', '/en/?tab=popular', '/en/regions/gal']) {
+			it(`${path}: the logo "${LOGO}" is not a heading`, async () => {
+				const html = await renderHome({ lang: 'en', path });
+				for (const level of [1, 2, 3] as const) {
+					expect(headingTexts(html, level), `got the logo as an <h${level}>`).not.toContain(LOGO);
+				}
+			});
+		}
+	}
+);
 
 // FE-4 PR 3 review (WCAG 1.3.1, axe best-practice landmark-one-main / region):
 // the page content sits in exactly one <main>; the mobile header and the

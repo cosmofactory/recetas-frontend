@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page, type TestInfo } from '../testutil/e2e-test';
+import { ABOUT_COPY } from '../testutil/about-copy';
 import { LOCALES, type Locale } from '../testutil/e2e';
 import {
 	expectSameDocument,
@@ -428,13 +429,16 @@ test.describe('desktop region panel without JavaScript', () => {
 });
 
 // Decision: the region name is an <h2> in both layouts; the page's one
-// visible <h1> stays the mobile logo / the desktop "How Spain really cooks".
+// visible <h1> stays the about title "How Spain really cooks" (on mobile too
+// since FE-9 FB-8, D-FE9-4; the sheet covers it like the rest of the page).
 test.describe('region page headings', () => {
 	test('/en/regions/gal: one visible <h1> and the region name as a visible <h2>', async ({
 		page
 	}) => {
 		await gotoHydrated(page, '/en/regions/gal');
-		await expect(onlyVisible(page.locator('h1')), 'want exactly one visible <h1>').toHaveCount(1);
+		const h1 = onlyVisible(page.locator('h1'));
+		await expect(h1, 'want exactly one visible <h1>').toHaveCount(1);
+		await expect(h1).toHaveText(ABOUT_COPY.en.title);
 		const h2 = page.getByRole('heading', { level: 2, name: GALICIA_EN.name, exact: true });
 		await expect(onlyVisible(h2), 'want Galicia as one visible <h2>').toHaveCount(1);
 	});
