@@ -284,6 +284,21 @@
 }
 
 /*
+ * The other exception (FE-9 FB-7): the search field's input is narrowed
+ * before its "×", so the ring is drawn on the whole pill (SearchField)
+ * while the input or the "×" has focus. The input draws none of its own;
+ * the "×" keeps the shared ring inside the pill's, so Tab to it shows.
+ */
+.search-field:focus-within {
+	outline: var(--focus-ring-width) solid var(--focus-ring);
+	outline-offset: var(--focus-ring-offset);
+}
+
+.search-field input:focus-visible {
+	outline: none;
+}
+
+/*
  * Forced colours (FE-4): the UA drops the tile backgrounds, so every map
  * cell keeps an outline and the selected region is Highlight. !important
  * because the component's scoped selection rule is more specific.
