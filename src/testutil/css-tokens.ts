@@ -23,3 +23,12 @@ export function tokenColour(name: string): Rgba {
 	const alias = ALIAS.exec(value);
 	return alias ? tokenColour(alias[1]) : parseColour(value);
 }
+
+// A unitless number token (`--region-dimmed-opacity: .35`).
+export function tokenNumber(name: string): number {
+	const value = declarations().get(name);
+	if (value === undefined) throw new Error(`no ${name} in ${TOKEN_FILES.join(' or ')}`);
+	const number = Number(value);
+	if (Number.isNaN(number)) throw new Error(`${name} is ${value}, want a number`);
+	return number;
+}

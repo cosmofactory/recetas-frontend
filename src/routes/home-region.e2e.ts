@@ -39,6 +39,7 @@ import {
 	regionLinkName,
 	type MapRegionCopy
 } from '../testutil/map-regions-e2e';
+import { expectMapSelection } from '../testutil/map-dim-e2e';
 
 // FE-4 PR 3, region details on the home screen (stage FE-4 -> Delivery 3,
 // Region sheet, Desktop Regional, Selection state, Acceptance).
@@ -583,34 +584,33 @@ test.describe('region details start scrolled to the top', () => {
 // width, so it renders the mobile selection (none) and aria-current stays
 // client-only (decision: an SSR aria-current would be wrong below 860px,
 // where /:lang/ selects nothing). The desktop default must still LOOK
-// selected from the HTML and CSS alone, and only at ≥ 860px.
-async function selectedCellCount(page: Page, regionKey: string | null): Promise<number> {
-	const ink = await tokenValue(page, 'background-color', 'var(--region-selected)');
-	const cells = regionKey
-		? regionLink(page, regionKey).locator('[data-map-cell]')
-		: visibleMap(page).locator('[data-map-cell]');
-	const colours = await cells.evaluateAll((els) =>
-		els.map((el) => getComputedStyle(el).backgroundColor)
-	);
-	return colours.filter((colour) => colour === ink).length;
-}
-
+// selected from the HTML and CSS alone, and only at ≥ 860px. Since FE-9
+// FB-4 (D-FE9-3) "selected" looks like: the region keeps its tileColor and
+// every other region's cells are dimmed to --region-dimmed-opacity; on
+// desktop its label is ink with --on-accent text.
 test.describe('the desktop default selection without JavaScript', () => {
 	test.use({ javaScriptEnabled: false });
 
 	test(
-		'≥ 860px /en/: Andalucía’s cells, and only those, are --region-selected',
+		'≥ 860px /en/: Andalucía keeps its colour, every other region is dimmed',
 		{ tag: '@layout' },
 		async ({ page }) => {
 			skipUnlessDesktop(page);
 			await page.goto('/en/');
-			const andalucia = await regionLink(page, 'and').locator('[data-map-cell]').count();
-			expect(await selectedCellCount(page, 'and'), 'want every Andalucía cell ink').toBe(andalucia);
-			expect(await selectedCellCount(page, null), 'got other regions drawn selected').toBe(
-				andalucia
-			);
+			await expectMapSelection(page, 'and');
 		}
 	);
+
+	test('≥ 860px /en/: Andalucía’s label is ink with --on-accent text', async ({ page }) => {
+		skipUnlessDesktop(page);
+		await page.goto('/en/');
+		const label = regionLink(page, 'and').locator('[data-map-label]');
+		await expect(label).toHaveCSS(
+			'background-color',
+			await tokenValue(page, 'background-color', 'var(--ink)')
+		);
+		await expect(label).toHaveCSS('color', await tokenValue(page, 'color', 'var(--on-accent)'));
+	});
 
 	test('≥ 860px /en/: aria-current stays client-only', async ({ page }) => {
 		skipUnlessDesktop(page);
@@ -621,7 +621,7 @@ test.describe('the desktop default selection without JavaScript', () => {
 	test('< 860px /en/: no region looks selected', { tag: '@layout' }, async ({ page }) => {
 		skipUnlessMobile(page);
 		await page.goto('/en/');
-		expect(await selectedCellCount(page, null), 'got a region drawn selected on mobile').toBe(0);
+		await expectMapSelection(page, null);
 	});
 });
 

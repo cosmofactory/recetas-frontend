@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { composite, contrastRatio, parseColour, type Rgba } from '../../testutil/contrast';
-import { tokenColour } from '../../testutil/css-tokens';
+import { tokenColour, tokenNumber } from '../../testutil/css-tokens';
 import { regionsIn, tileColorOf } from '../../testutil/map';
 
 // FE-4 map labels, WCAG 2.2 AA 1.4.3. The labels are 9.5px/700 (mobile) and
 // 12px/700 (desktop): normal text, so 4.5:1. axe can't decide them (their
 // translucent background spans several cells: elmPartiallyObscured), so
 // home-a11y.e2e.ts skips them and this spec checks every underlay instead.
-// A label can sit over any of its region's tile colours, the selected
-// region's ink (--region-selected) or a cell gap (--bg-page), so its
-// background is the label bg composited over each.
+// A label can sit over any region's tile colour, the same tile dimmed to
+// --region-dimmed-opacity over the page while another region is selected
+// (D-FE9-3; labels themselves are never dimmed) or a cell gap (--bg-page),
+// so its background is the label bg composited over each.
 // - Mobile: ink text on --map-label-bg (tokens.css).
 // - Desktop: ink text on --map-label-bg-desktop (layout.css, prototype .85);
 //   hovered labels turn solid --bg-surface; the selected label is
@@ -22,16 +23,20 @@ const token = tokenColour;
 
 type Underlay = { name: string; colour: Rgba };
 
+function dimmed(tile: Underlay): Underlay {
+	const alpha = tokenNumber('--region-dimmed-opacity');
+	return {
+		name: `${tile.name} dimmed`,
+		colour: composite({ ...tile.colour, a: alpha }, token('--bg-page'))
+	};
+}
+
 function underlays(): Underlay[] {
 	const tiles = regionsIn('en').map((r) => ({
 		name: `${r.key} tile`,
 		colour: parseColour(tileColorOf(r))
 	}));
-	return [
-		...tiles,
-		{ name: '--region-selected', colour: token('--region-selected') },
-		{ name: '--bg-page', colour: token('--bg-page') }
-	];
+	return [...tiles, ...tiles.map(dimmed), { name: '--bg-page', colour: token('--bg-page') }];
 }
 
 function expectAa(text: Rgba, background: Rgba, what: string) {
@@ -49,7 +54,7 @@ describe('map label contrast (AA, normal text)', () => {
 
 	const labelBgs = ['--map-label-bg', '--map-label-bg-desktop'];
 	for (const bg of labelBgs) {
-		it(`--ink on ${bg} over every tile, the selected ink and the page`, () => {
+		it(`--ink on ${bg} over every tile, dimmed or not, and the page`, () => {
 			for (const underlay of underlays()) {
 				expectAa(
 					token('--ink'),
