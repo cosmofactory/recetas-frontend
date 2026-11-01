@@ -18,6 +18,8 @@ import { loadNormalize, show } from '../../testutil/search';
 // - A breve on и survives even when another mark is stacked on the same и, in
 //   either order (NFD sorts a dot below, U+0323, in front of the breve).
 // - normalize does not trim or collapse spaces; search() trims the query.
+// - A no-break space (U+00A0) becomes a plain space (FE-9 FB-1): the page
+//   binds short words with it, so a query copied from the page has it.
 
 const BREVE = '\u0306';
 const ACUTE = '\u0301';
@@ -51,6 +53,12 @@ const SAME: [string, string, string][] = [
 	['keeps й with a dot below after the breve', `и${BREVE}${DOT_BELOW}`, 'й'],
 	['keeps й with a dot below before the breve', `и${DOT_BELOW}${BREVE}`, 'й'],
 	['keeps й with an acute before the breve', `и${ACUTE}${BREVE}`, 'й'],
+	[
+		'folds a no-break space to a plain space (FE-9 FB-1)',
+		'Кастилия и\u00a0Леон',
+		'кастилия и леон'
+	],
+	['folds every no-break space', 'y\u00a0en\u00a0Galicia', 'y en galicia'],
 	['returns the empty string unchanged', '', '']
 ];
 
@@ -61,7 +69,8 @@ const MATCHING: [string, string][] = [
 	['ёлка', 'елка'],
 	['pulpo a feira', 'Pulpo á feira'],
 	['nino', 'niño'],
-	['ЙОГУРТ', 'йогурт']
+	['ЙОГУРТ', 'йогурт'],
+	['кастилия и\u00a0леон', 'Кастилия и Леон']
 ];
 
 // Pairs that must stay different (D-FE7-1: й is its own letter).

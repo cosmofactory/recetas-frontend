@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import { ICONS } from '#lib/components/ui/icons.ts';
 	import { m } from '#lib/paraglide/messages.js';
 
@@ -16,7 +17,7 @@
 </script>
 
 <section class="method">
-	<h2 class="heading">{m.recipe_method()}</h2>
+	<h2 class="heading">{typeset(m.recipe_method())}</h2>
 	<ol class="steps" role="list">
 		{#each steps as text, i (i)}
 			<li>
@@ -37,7 +38,7 @@
 							{i + 1}
 						{/if}
 					</span>
-					<span class="text">{text}</span>
+					<span class="text">{typeset(text)}</span>
 				</button>
 			</li>
 		{/each}

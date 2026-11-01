@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import { m } from '#lib/paraglide/messages.js';
 	import ServingsStepper from './ServingsStepper.svelte';
 
@@ -9,11 +10,11 @@
 
 <div class="info-strip">
 	<div class="cell">
-		<span class="label">{m.recipe_time()}</span>
-		<span class="time" data-testid="recipe-time">{time}</span>
+		<span class="label">{typeset(m.recipe_time())}</span>
+		<span class="time" data-testid="recipe-time">{typeset(time)}</span>
 	</div>
 	<div class="cell">
-		<span class="label">{m.recipe_serves()}</span>
+		<span class="label">{typeset(m.recipe_serves())}</span>
 		<ServingsStepper bind:servings />
 	</div>
 </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import { isPastThreshold } from '#lib/ui/scroll-threshold.ts';
 	import { watchScroll } from '#lib/ui/scroll-position.ts';
 	import { ICONS } from './icons.ts';
@@ -32,7 +33,7 @@
 		<Back size={BACK_ICON_PX} aria-hidden={true} />
 	</a>
 	<!-- While faded the page's <h1> already names the page. -->
-	<span class="title" aria-hidden={past ? undefined : 'true'}>{title}</span>
+	<span class="title" aria-hidden={past ? undefined : 'true'}>{typeset(title)}</span>
 </div>
 
 <style>

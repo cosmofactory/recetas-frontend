@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import { tabIndexForKey } from '#lib/ui/tablist.ts';
 
 	// panelId: the id of the tabpanel the tab controls; the tab is then
@@ -82,7 +83,7 @@
 			onkeydown={(event: KeyboardEvent) => moveWithKey(event, index)}
 			onfocusout={forgetFocus}
 		>
-			{option.label}
+			{typeset(option.label)}
 		</svelte:element>
 	{/each}
 </div>

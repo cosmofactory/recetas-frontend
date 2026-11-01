@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import type { components } from '#lib/api/schema.d.ts';
 	import PrimaryButton from '#lib/components/ui/PrimaryButton.svelte';
 	import { m } from '#lib/paraglide/messages.js';
@@ -19,10 +20,10 @@
 
 <div class="dish-details" data-testid="dish-details">
 	<div class="title-row">
-		<h2 class="name">{dish.name}</h2>
-		<span class="count">{m.home_variation({ count: dish.variations.length })}</span>
+		<h2 class="name">{typeset(dish.name)}</h2>
+		<span class="count">{typeset(m.home_variation({ count: dish.variations.length }))}</span>
 	</div>
-	<p class="description">{dish.description}</p>
+	<p class="description">{typeset(dish.description)}</p>
 	<ul class="rows" role="list">
 		{#each dish.variations as variation (variation.regionKey)}
 			<li>

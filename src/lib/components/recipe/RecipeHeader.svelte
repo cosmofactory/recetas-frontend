@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import type { Snippet } from 'svelte';
 	import type { components } from '#lib/api/schema.d.ts';
 	import Photo from '#lib/components/Photo.svelte';
@@ -31,10 +32,10 @@
 	</div>
 	<div class="text">
 		<span class="eyebrow" data-testid="recipe-eyebrow"
-			>{recipe.regionName}{DOT_SEPARATOR}{recipe.dishName}</span
+			>{typeset(recipe.regionName)}{DOT_SEPARATOR}{typeset(recipe.dishName)}</span
 		>
-		<h1 class="name">{recipe.name}</h1>
-		<p class="description">{recipe.description}</p>
+		<h1 class="name">{typeset(recipe.name)}</h1>
+		<p class="description">{typeset(recipe.description)}</p>
 		{@render strip()}
 	</div>
 </header>

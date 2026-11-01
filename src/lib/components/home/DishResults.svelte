@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import { MediaQuery } from 'svelte/reactivity';
 	import type { components } from '#lib/api/schema.d.ts';
 	import TextButton from '#lib/components/ui/TextButton.svelte';
@@ -53,7 +54,7 @@
 		</ul>
 	{:else}
 		<div class="no-match" data-testid="no-match">
-			<p class="no-match-text">{m.desktop_noMatch()}</p>
+			<p class="no-match-text">{typeset(m.desktop_noMatch())}</p>
 			<TextButton
 				label={m.home_clearAll()}
 				href={clearFiltersHref(url)}

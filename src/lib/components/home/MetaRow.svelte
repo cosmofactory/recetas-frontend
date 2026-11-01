@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import { m } from '#lib/paraglide/messages.js';
 
 	// regionCount: how many regions the API returned (the eyebrow's plural).
@@ -8,9 +9,9 @@
 </script>
 
 <div class="meta-row">
-	<span class="eyebrow">{m.home_region({ count: regionCount })}</span>
-	<span class="hint mobile-only">{m.home_tapRegion()}</span>
-	<span class="hint desktop-only">{m.desktop_clickRegion()}</span>
+	<span class="eyebrow">{typeset(m.home_region({ count: regionCount }))}</span>
+	<span class="hint mobile-only">{typeset(m.home_tapRegion())}</span>
+	<span class="hint desktop-only">{typeset(m.desktop_clickRegion())}</span>
 </div>
 
 <style>

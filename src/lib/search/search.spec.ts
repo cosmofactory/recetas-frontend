@@ -119,6 +119,15 @@ describe('search: matching (mock catalog)', () => {
 		await expectRefs(lang, query, want);
 	});
 
+	it('a query with a no-break space finds what the plain-space query finds (FE-9 FB-1)', async () => {
+		const plain = await searchMock('ru', 'кастилия и леон');
+		expect(refsIn(plain, 'region'), 'the plain-space query must find the region').toContain(
+			'region:cyl'
+		);
+		const withNbsp = await searchMock('ru', 'кастилия и\u00a0леон');
+		expect(withNbsp, `got ${show(withNbsp)}, want ${show(plain)}`).toEqual(plain);
+	});
+
 	it('"paella" finds the paella dish and its variation in ru (stage case)', async () => {
 		await expectContains('ru', 'paella', 'dish', 'dish:paella');
 		await expectContains('ru', 'paella', 'variation', 'variation:paella/val');

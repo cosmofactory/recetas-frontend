@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import { m } from '#lib/paraglide/messages.js';
 
 	// No results: `{nothing} “{query}”`, curly quotes in every language
@@ -9,8 +10,8 @@
 </script>
 
 <div class="nothing">
-	<p class="title">{m.search_nothing()} “{query}”</p>
-	<p class="hint">{m.search_hint()}</p>
+	<p class="title">{typeset(m.search_nothing())} “{query}”</p>
+	<p class="hint">{typeset(m.search_hint())}</p>
 </div>
 
 <style>

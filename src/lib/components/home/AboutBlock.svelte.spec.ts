@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { render } from 'vitest-browser-svelte';
+import { bindShortWords } from '#lib/i18n/typography.ts';
 import { getLocale, overwriteGetLocale } from '#lib/paraglide/runtime.js';
 import { ABOUT_COPY, ABOUT_LOCALES, type AboutLocale } from '../../../testutil/about-copy';
 import { computed, loadHome, stage, style, useViewport } from '../../../testutil/ui';
@@ -64,8 +65,8 @@ describe('AboutBlock copy', () => {
 		const copy = ABOUT_COPY[lang];
 		it(`${lang}: the <h1> reads "${copy.title}" and the paragraph the about copy`, async () => {
 			const { title, body } = await renderAbout(lang);
-			expect(title.textContent?.trim()).toBe(copy.title);
-			expect(body.textContent?.trim()).toBe(copy.body);
+			expect(title.textContent?.trim()).toBe(bindShortWords(copy.title, lang));
+			expect(body.textContent?.trim()).toBe(bindShortWords(copy.body, lang));
 		});
 	}
 });

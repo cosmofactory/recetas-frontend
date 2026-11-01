@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import Chip from '#lib/components/ui/Chip.svelte';
 	import ChipRow from '#lib/components/ui/ChipRow.svelte';
 	import { filterLabel, filtersButtonLabel } from '#lib/popular/filter-labels.ts';
@@ -46,7 +47,7 @@
 			aria-expanded={filtersOpen}
 			onclick={onOpenFilters}
 		>
-			{filtersButtonLabel(active.length)}
+			{typeset(filtersButtonLabel(active.length))}
 		</button>
 		{#each QUICK_FILTER_IDS as id (id)}
 			<Chip label={filterLabel(id)} pressed={active.includes(id)} onToggle={() => onToggle(id)} />

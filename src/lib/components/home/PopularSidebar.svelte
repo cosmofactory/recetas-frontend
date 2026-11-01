@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import TextButton from '#lib/components/ui/TextButton.svelte';
 	import FilterGroups from '#lib/content/FilterGroups.svelte';
 	import { m } from '#lib/paraglide/messages.js';
@@ -26,7 +27,7 @@
 	aria-labelledby={headingId}
 >
 	<div class="header">
-		<h3 class="title" id={headingId}>{m.home_filters()}</h3>
+		<h3 class="title" id={headingId}>{typeset(m.home_filters())}</h3>
 		<TextButton
 			label={m.home_clearAll()}
 			size="small"

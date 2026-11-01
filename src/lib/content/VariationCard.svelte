@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import type { components } from '#lib/api/schema.d.ts';
 	import Photo from '#lib/components/Photo.svelte';
 	import { VARIATION_CARD_SIZES } from '#lib/media.ts';
@@ -25,10 +26,10 @@
 		radius="0"
 	/>
 	<div class="body">
-		<span class="region">{variation.regionName}</span>
-		<h2 class="name">{variation.name}</h2>
-		<span class="description">{variation.description}</span>
-		<span class="view-recipe">{m.variationsPage_viewRecipe()}</span>
+		<span class="region">{typeset(variation.regionName)}</span>
+		<h2 class="name">{typeset(variation.name)}</h2>
+		<span class="description">{typeset(variation.description)}</span>
+		<span class="view-recipe">{typeset(m.variationsPage_viewRecipe())}</span>
 	</div>
 </a>
 

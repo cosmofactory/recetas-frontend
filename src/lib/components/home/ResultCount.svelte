@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import { m } from '#lib/paraglide/messages.js';
 
 	// The Popular tab's "N dishes" eyebrow. It announces each new total
@@ -22,7 +23,7 @@
 	aria-live="polite"
 	tabindex="-1"
 >
-	{m.home_dish({ count })}
+	{typeset(m.home_dish({ count }))}
 </p>
 
 <style>

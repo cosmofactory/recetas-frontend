@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	// Controlled: a click asks the caller to flip it; the state lives in the URL.
 	type Props = {
 		label: string;
@@ -17,7 +18,7 @@
 	aria-pressed={pressed}
 	onclick={() => onToggle(!pressed)}
 >
-	{label}
+	{typeset(label)}
 </button>
 
 <style>

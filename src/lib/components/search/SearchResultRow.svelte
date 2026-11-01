@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import { ICONS } from '#lib/components/ui/icons.ts';
 	import type { SearchEntry } from '#lib/search/search-index.ts';
 
@@ -33,8 +34,8 @@
 		data-testid="search-result-thumb"
 	></span>
 	<span class="text">
-		<span class="title" data-testid="search-result-title">{entry.title}</span>
-		<span class="subtitle" data-testid="search-result-subtitle">{entry.subtitle}</span>
+		<span class="title" data-testid="search-result-title">{typeset(entry.title)}</span>
+		<span class="subtitle" data-testid="search-result-subtitle">{typeset(entry.subtitle)}</span>
 	</span>
 	<Chevron size={CHEVRON_PX} aria-hidden={true} />
 </div>

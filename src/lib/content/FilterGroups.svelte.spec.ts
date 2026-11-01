@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import { userEvent } from 'vitest/browser';
+import { bindShortWords } from '#lib/i18n/typography.ts';
 import { getLocale, overwriteGetLocale } from '#lib/paraglide/runtime.js';
 import type { FilterGroupsProps } from '../../testutil/popular';
 import {
@@ -327,7 +328,7 @@ describe('FilterGroups: mobile sheet styles (< 860px)', () => {
 		const root = await renderGroups({ lang: 'ru', width: SHEET_CONTENT_WIDTH_PX[360] });
 		for (const id of FILTER_IDS) {
 			const button = chip(root, 'ru', id);
-			expectFullyVisible(button, SHEET_COPY.ru.labels[id]);
+			expectFullyVisible(button, bindShortWords(SHEET_COPY.ru.labels[id], 'ru'));
 			expect(textLineCount(button), `got "${SHEET_COPY.ru.labels[id]}" wrapped`).toBe(1);
 		}
 		const box = root.getBoundingClientRect();
