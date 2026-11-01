@@ -44,6 +44,15 @@
 	--sheet-peek: min(310px, var(--sheet-height));
 	--sheet-offset-peek: calc(var(--sheet-height) - var(--sheet-peek));
 	--sheet-offset-hidden: calc(100% + 40px);
+	/*
+	 * FE-9 FB-5: the sheet's scroll body ends on screen. In peek the sheet's
+	 * lower --sheet-offset-peek is below the screen, so the body pads that
+	 * much more; the content's own 22px bottom padding is the end spacing.
+	 * env(safe-area-inset-bottom) stays 0 until app.html opts into
+	 * viewport-fit=cover.
+	 */
+	--sheet-end-inset: env(safe-area-inset-bottom, 0px);
+	--sheet-end-inset-peek: calc(var(--sheet-offset-peek) + var(--sheet-end-inset));
 	/* Region sheet: "Scrim ... 400ms"; Filters sheet: "Scrim --scrim-filter, 300ms". */
 	--dur-scrim: 400ms;
 	--dur-scrim-filter: 300ms;

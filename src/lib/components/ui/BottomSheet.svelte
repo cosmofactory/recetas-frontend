@@ -176,5 +176,16 @@
 		min-height: 0;
 		overflow-y: auto;
 		overscroll-behavior: contain;
+		padding-bottom: var(--sheet-end-inset);
+		transition: padding-bottom var(--dur-sheet) var(--ease);
+	}
+
+	/* Hidden keeps the peek padding, so hiding a scrolled peek doesn't snap its content. */
+	.sheet:not([data-state='expanded']) .body {
+		padding-bottom: var(--sheet-end-inset-peek);
+	}
+
+	.sheet.fade .body {
+		transition: none;
 	}
 </style>
