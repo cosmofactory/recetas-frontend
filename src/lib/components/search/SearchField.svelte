@@ -48,7 +48,7 @@
 
 <div class="pill">
 	<div
-		class="field"
+		class="field search-field"
 		class:desktop
 		class:open
 		class:clearable={Boolean(query)}
@@ -104,6 +104,7 @@
 		--field-padding-inline: 14px;
 		--field-gap: 10px;
 		--clear-size: 22px;
+		--no-zoom-font-size: 16px;
 		display: flex;
 		flex: 1;
 		align-items: center;
@@ -143,10 +144,11 @@
 	 * Accessibility (44px targets, FE-8): the input covers the pill, border
 	 * included, up to the "×" (which keeps its own target), so a press
 	 * anywhere else on the pill lands in the field; its padding keeps the
-	 * text after the magnifier. Its pill radius keeps the focus ring
-	 * pill-shaped. It never reaches past the field's border box, so the
-	 * field stays its whole background (axe can decide its contrast); its
-	 * transparent border rounds like the field's, so the text stays in line.
+	 * text after the magnifier. The focus ring is the pill's (layout.css
+	 * .search-field, FE-9 FB-7), since the "×" narrows the input. It never
+	 * reaches past the field's border box, so the field stays its whole
+	 * background (axe can decide its contrast); its transparent border
+	 * rounds like the field's, so the text stays in line.
 	 */
 	input {
 		position: absolute;
@@ -165,6 +167,17 @@
 	/* Prototype: the desktop input is "font:500 14px". */
 	.desktop input {
 		font-size: 14px;
+	}
+
+	/*
+	 * FE-9 FB-9, D-FE9-5: iOS Safari zooms into a focused text field under
+	 * 16px and stays zoomed, so the input is 16px on the phone layout and on
+	 * any touch screen; the desktop field keeps 14px with a mouse.
+	 */
+	@media not all and (min-width: 860px), (pointer: coarse) {
+		.field input {
+			font-size: var(--no-zoom-font-size);
+		}
 	}
 
 	.clearable input {

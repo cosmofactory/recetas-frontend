@@ -4,7 +4,8 @@ import { expect, type Locator, type Page } from '@playwright/test';
 // arrows, Escape, typing), and after every key the focus is somewhere the
 // user can see: on an element, not <body>, matching :focus-visible, with a
 // non-zero ring (layout.css: the shared outline, or for a map region the
-// ring on its label, the documented exception).
+// ring on its label, the documented exception; the search input's ring is
+// drawn on its pill, FE-9 FB-7).
 
 export type FocusState = {
 	what: string;
@@ -14,7 +15,9 @@ export type FocusState = {
 };
 
 // Read in the page: the widest solid outline on the focused element or
-// inside it (the map region draws its ring on its label).
+// inside it (the map region draws its ring on its label). The one ring
+// around it: the search input's, drawn on its pill (FE-9 FB-7); every other
+// control in the pill, the "×", must draw its own.
 function readFocus(): FocusState {
 	const el = document.activeElement;
 	if (!el || el === document.body || el === document.documentElement) {
@@ -24,7 +27,9 @@ function readFocus(): FocusState {
 		const s = getComputedStyle(node);
 		return s.outlineStyle === 'none' ? 0 : parseFloat(s.outlineWidth) || 0;
 	};
-	const ringPx = Math.max(ring(el), ...[...el.querySelectorAll('*')].map(ring));
+	const pill = el.matches('input') ? el.closest('[data-testid="search-field"]') : null;
+	const around = pill ? [pill] : [];
+	const ringPx = Math.max(ring(el), ...[...el.querySelectorAll('*'), ...around].map(ring));
 	const name = (el.getAttribute('aria-label') ?? el.textContent ?? '').trim().slice(0, 40);
 	const what = `<${el.tagName.toLowerCase()}> "${name}"`;
 	return { what, onBody: false, focusVisible: el.matches(':focus-visible'), ringPx };
