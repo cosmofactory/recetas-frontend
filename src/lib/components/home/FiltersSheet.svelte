@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import OverlaySheet from '#lib/components/ui/OverlaySheet.svelte';
 	import PrimaryButton from '#lib/components/ui/PrimaryButton.svelte';
 	import TextButton from '#lib/components/ui/TextButton.svelte';
@@ -24,7 +25,7 @@
 <div class="mobile-only">
 	<OverlaySheet {open} {onClose} label={m.home_filters()}>
 		<div class="header">
-			<h2 class="title">{m.home_filters()}</h2>
+			<h2 class="title">{typeset(m.home_filters())}</h2>
 			<TextButton label={m.home_clearAll()} size="small" onclick={onClear} />
 		</div>
 		<FilterGroups {active} {onToggle} />

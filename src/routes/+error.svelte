@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { bindShortWords } from '#lib/i18n/typography.ts';
 	import { page } from '$app/state';
 	import PageHead from '#lib/components/PageHead.svelte';
 	import { errorCopy } from '#lib/i18n/error-copy.ts';
@@ -18,9 +19,9 @@
 />
 
 <main class="page-container">
-	<h1>{copy.title}</h1>
-	<p>{copy.body}</p>
-	<a href={localizedHref('/', locale)}>{copy.backHome}</a>
+	<h1>{bindShortWords(copy.title, locale)}</h1>
+	<p>{bindShortWords(copy.body, locale)}</p>
+	<a href={localizedHref('/', locale)}>{bindShortWords(copy.backHome, locale)}</a>
 </main>
 
 <style>

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import { page, userEvent } from 'vitest/browser';
+import { bindShortWords } from '#lib/i18n/typography.ts';
 import { getLocale, overwriteGetLocale } from '#lib/paraglide/runtime.js';
 import { nothingFor, SEARCH_COPY } from '../../../testutil/search-copy';
 import {
@@ -602,8 +603,14 @@ describe('SearchOverlay no results', () => {
 		const { frame } = await renderSearch({ lang: 'ru' });
 		await focusedInput(frame);
 		await typeQuery(frame, 'zzz');
-		expect(textIn(frame, nothingFor('ru', 'zzz')), 'got no ru "nothing" line').toBeDefined();
-		expect(textIn(frame, SEARCH_COPY.ru.hint), 'got no ru hint').toBeDefined();
+		expect(
+			textIn(frame, bindShortWords(nothingFor('ru', 'zzz'), 'ru')),
+			'got no ru "nothing" line'
+		).toBeDefined();
+		expect(
+			textIn(frame, bindShortWords(SEARCH_COPY.ru.hint, 'ru')),
+			'got no ru hint'
+		).toBeDefined();
 	});
 
 	it('collapses the combobox and shows no options or suggestions', async () => {

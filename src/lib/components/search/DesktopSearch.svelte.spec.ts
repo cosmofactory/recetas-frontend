@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { userEvent } from 'vitest/browser';
+import { bindShortWords } from '#lib/i18n/typography.ts';
 import { getLocale, overwriteGetLocale } from '#lib/paraglide/runtime.js';
 import { pushEscapeLayer } from '#lib/ui/escape-layers.ts';
 import {
@@ -309,7 +310,7 @@ describe('DesktopSearch dropdown', () => {
 	it('speaks the page language', async () => {
 		const { root } = await renderDesktopSearch({ lang: 'ru' });
 		await typeInField(root, 'zzz');
-		expect(textInDropdown(root, nothingFor('ru', 'zzz'))).toBeDefined();
+		expect(textInDropdown(root, bindShortWords(nothingFor('ru', 'zzz'), 'ru'))).toBeDefined();
 	});
 });
 

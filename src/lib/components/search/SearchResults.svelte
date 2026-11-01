@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import { m } from '#lib/paraglide/messages.js';
 	import type { SearchGroupKey } from '#lib/search/search-index.ts';
 	import type { SearchGroup } from '#lib/search/search.ts';
@@ -36,7 +37,7 @@
 	{#each results as result, g (result.group)}
 		<div class="group" role="group" aria-labelledby="{id}-{result.group}">
 			<div class="heading" role="presentation" id="{id}-{result.group}">
-				{GROUP_LABELS[result.group]()}
+				{typeset(GROUP_LABELS[result.group]())}
 			</div>
 			{#each result.entries as entry, i (entry)}
 				<SearchResultRow

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import { ICONS } from './icons.ts';
 
 	// Desktop README -> Variations / Recipe page: "back pill". The label
@@ -14,7 +15,7 @@
 
 <a class="back-pill" data-testid="back-pill" {href} {onclick}>
 	<Back size={BACK_ICON_PX} aria-hidden={true} />
-	{label}
+	{typeset(label)}
 </a>
 
 <style>

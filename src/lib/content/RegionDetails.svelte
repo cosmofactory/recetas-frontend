@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import type { components } from '#lib/api/schema.d.ts';
 	import { m } from '#lib/paraglide/messages.js';
 	import RegionDishRow from './RegionDishRow.svelte';
@@ -22,14 +23,14 @@
 
 <div class="region-details" data-testid="region-details">
 	<div class="title-row">
-		<h2 class="name">{region.name}</h2>
-		<span class="count">{m.home_variation({ count: rows.length })}</span>
+		<h2 class="name">{typeset(region.name)}</h2>
+		<span class="count">{typeset(m.home_variation({ count: rows.length }))}</span>
 	</div>
-	<p class="description">{region.description}</p>
+	<p class="description">{typeset(region.description)}</p>
 	<!-- Labels, not filters: the prototype gives the chips no action. -->
 	<ul class="chips" role="list">
 		{#each region.regionalDishes as dish, i (i)}
-			<li class="chip">{dish}</li>
+			<li class="chip">{typeset(dish)}</li>
 		{/each}
 	</ul>
 	<ul class="rows" role="list">

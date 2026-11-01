@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { bindShortWords } from '#lib/i18n/typography.ts';
 	import { MediaQuery } from 'svelte/reactivity';
 	import type { components } from '#lib/api/schema.d.ts';
 	import { ICONS } from '#lib/components/ui/icons.ts';
@@ -26,7 +27,7 @@
 </script>
 
 <section class="ingredients" data-testid="recipe-ingredients-card">
-	<h2 class="heading">{m.recipe_ingredients()}</h2>
+	<h2 class="heading">{bindShortWords(m.recipe_ingredients(), lang)}</h2>
 	<ul class="rows" role="list">
 		{#each ingredients as ingredient, i (i)}
 			<li>
@@ -41,9 +42,12 @@
 					<span class="check" data-testid="recipe-check">
 						{#if got[i]}<Check size={checkSize} aria-hidden={true} />{/if}
 					</span>
-					<span class="name">{ingredient.name}</span>
+					<span class="name">{bindShortWords(ingredient.name, lang)}</span>
 					<span class="quantity" data-testid="recipe-quantity"
-						>{ingredientQuantity(lang, ingredient, baseServings, servings)}</span
+						>{bindShortWords(
+							ingredientQuantity(lang, ingredient, baseServings, servings),
+							lang
+						)}</span
 					>
 				</button>
 			</li>

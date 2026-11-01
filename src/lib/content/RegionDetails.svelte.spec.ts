@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import { userEvent } from 'vitest/browser';
+import { bindShortWords } from '#lib/i18n/typography.ts';
 import { getLocale, overwriteGetLocale } from '#lib/paraglide/runtime.js';
 import type { Lang } from '../../testutil/map';
 import {
@@ -197,12 +198,14 @@ describe('RegionDetails: name, description and regional dishes', () => {
 				headings.map((h) => h.tagName),
 				'want exactly one heading, an <h2>'
 			).toEqual(['H2']);
-			expect(headings[0].textContent?.trim()).toBe(regionIn(lang, 'gal').name);
+			expect(headings[0].textContent?.trim()).toBe(
+				bindShortWords(regionIn(lang, 'gal').name, lang)
+			);
 		});
 
 		it(`shows the ${lang} description`, async () => {
 			const root = await renderDetails({ lang });
-			textElement(root, regionIn(lang, 'gal').description);
+			textElement(root, bindShortWords(regionIn(lang, 'gal').description, lang));
 		});
 	}
 
@@ -294,8 +297,8 @@ describe('RegionDetails: the dish list', () => {
 			GALICIA_ROWS[lang].forEach((row, i) => {
 				const link = links[i];
 				expect(link, `got no row ${i + 1}`).toBeDefined();
-				textElement(link, row.name);
-				textElement(link, row.description);
+				textElement(link, bindShortWords(row.name, lang));
+				textElement(link, bindShortWords(row.description, lang));
 			});
 		});
 	}

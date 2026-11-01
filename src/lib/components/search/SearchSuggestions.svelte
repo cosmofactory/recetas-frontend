@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import { m } from '#lib/paraglide/messages.js';
 
 	// The empty query's "TRY" eyebrow and suggestion chips; a tap fills the
@@ -17,10 +18,12 @@
 </script>
 
 <div class="suggestions">
-	<p class="eyebrow">{m.search_try()}</p>
+	<p class="eyebrow">{typeset(m.search_try())}</p>
 	<div class="chips">
 		{#each suggestions as suggestion (suggestion)}
-			<button type="button" class="chip" onclick={() => onPick(suggestion)}>{suggestion}</button>
+			<button type="button" class="chip" onclick={() => onPick(suggestion)}
+				>{typeset(suggestion)}</button
+			>
 		{/each}
 	</div>
 </div>

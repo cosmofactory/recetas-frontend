@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import type { components } from '#lib/api/schema.d.ts';
 	import Photo from '#lib/components/Photo.svelte';
 	import { DISH_HERO_SIZES } from '#lib/media.ts';
@@ -25,10 +26,10 @@
 	</div>
 	<div class="text">
 		<div class="title-row">
-			<h1 class="name">{dish.name}</h1>
-			<span class="count">{m.home_variation({ count: dish.variations.length })}</span>
+			<h1 class="name">{typeset(dish.name)}</h1>
+			<span class="count">{typeset(m.home_variation({ count: dish.variations.length }))}</span>
 		</div>
-		<p class="description">{dish.description}</p>
+		<p class="description">{typeset(dish.description)}</p>
 	</div>
 </header>
 

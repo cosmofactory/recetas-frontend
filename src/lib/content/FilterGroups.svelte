@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import Chip from '#lib/components/ui/Chip.svelte';
 	import ChipRow from '#lib/components/ui/ChipRow.svelte';
 	import { filterGroupLabel, filterLabel } from '#lib/popular/filter-labels.ts';
@@ -24,7 +25,7 @@
 	{#each FILTER_GROUPS as group (group.key)}
 		{@const labelId = `${uid}-${group.key}`}
 		<div class="group" role="group" aria-labelledby={labelId}>
-			<span class="eyebrow" id={labelId}>{filterGroupLabel(group.key)}</span>
+			<span class="eyebrow" id={labelId}>{typeset(filterGroupLabel(group.key))}</span>
 			<ChipRow wrap {size}>
 				{#each group.ids as id (id)}
 					<Chip

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	// Mobile README: "Clear all" is 12px/600 (small), search "Cancel" 14px/600;
 	// medium is the same 12px below 860px and grows more than small on
 	// desktop. `inactive` (aria-disabled) dims it and ignores presses but
@@ -26,7 +27,7 @@
 		class:medium={size === 'medium'}
 		aria-disabled={inactive || undefined}
 		{href}
-		onclick={handleClick}>{label}</a
+		onclick={handleClick}>{typeset(label)}</a
 	>
 {:else}
 	<button
@@ -37,7 +38,7 @@
 		aria-disabled={inactive || undefined}
 		onclick={handleClick}
 	>
-		{label}
+		{typeset(label)}
 	</button>
 {/if}
 

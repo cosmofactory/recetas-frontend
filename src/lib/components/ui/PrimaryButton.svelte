@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	// A link when it navigates (href, from localizedHref), a button otherwise.
 	// Prototype: "See all variations" is regular, the Filters sheet's "Show
 	// results" compact.
@@ -13,10 +14,10 @@
 </script>
 
 {#if href}
-	<a class="primary" class:compact={size === 'compact'} {href} {onclick}>{label}</a>
+	<a class="primary" class:compact={size === 'compact'} {href} {onclick}>{typeset(label)}</a>
 {:else}
 	<button type="button" class="primary" class:compact={size === 'compact'} {onclick}>
-		{label}
+		{typeset(label)}
 	</button>
 {/if}
 

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import { getLocale, overwriteGetLocale } from '#lib/paraglide/runtime.js';
 import { localizedHref } from '#lib/i18n/localized-href.ts';
+import { bindShortWords } from '#lib/i18n/typography.ts';
 import {
 	dishIn,
 	dishWithVariations,
@@ -121,7 +122,7 @@ function rowLinks(root: Element): HTMLAnchorElement[] {
 }
 
 function seeAllLink(root: Element, lang: PopularLocale): HTMLAnchorElement {
-	const label = SHEET_COPY[lang].seeAll;
+	const label = bindShortWords(SHEET_COPY[lang].seeAll, lang);
 	const link = [...root.querySelectorAll<HTMLAnchorElement>('a[href]')].find(
 		(a) => a.textContent?.trim() === label
 	);
@@ -189,12 +190,14 @@ describe('DishDetails: name, count and description', () => {
 				headings.map((h) => h.tagName),
 				'want exactly one heading, an <h2>'
 			).toEqual(['H2']);
-			expect(headings[0].textContent?.trim()).toBe(dishIn(lang, 'tortilla').name);
+			expect(headings[0].textContent?.trim()).toBe(
+				bindShortWords(dishIn(lang, 'tortilla').name, lang)
+			);
 		});
 
 		it(`${lang}: shows the description`, async () => {
 			const root = await renderDetails({ lang });
-			textElement(root, dishIn(lang, 'tortilla').description);
+			textElement(root, bindShortWords(dishIn(lang, 'tortilla').description, lang));
 		});
 	}
 
@@ -251,9 +254,9 @@ describe('DishDetails: the variation list', () => {
 			dish.variations.forEach((variation, i) => {
 				const link = links[i];
 				expect(link, `got no row ${i + 1}`).toBeDefined();
-				textElement(link, variation.name);
-				textElement(link, variation.regionName);
-				textElement(link, variation.description);
+				textElement(link, bindShortWords(variation.name, lang));
+				textElement(link, bindShortWords(variation.regionName, lang));
+				textElement(link, bindShortWords(variation.description, lang));
 			});
 		});
 	}

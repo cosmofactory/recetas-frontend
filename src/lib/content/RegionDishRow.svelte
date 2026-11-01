@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import Photo from '#lib/components/Photo.svelte';
 	import { ICONS } from '#lib/components/ui/icons.ts';
 	import { desktopQuery } from '#lib/ui/breakpoints.ts';
@@ -21,8 +22,8 @@
 		<Photo photos={row.photos} role="thumb" sizes={THUMB_SIZES} alt="" baseUrl={mediaBaseUrl} />
 	</span>
 	<span class="text">
-		<span class="name">{row.name}</span>
-		<span class="description">{row.description}</span>
+		<span class="name">{typeset(row.name)}</span>
+		<span class="description">{typeset(row.description)}</span>
 	</span>
 	<span class="chevron desktop-only" aria-hidden="true">
 		<Chevron size={CHEVRON_PX} />

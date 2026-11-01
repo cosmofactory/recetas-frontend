@@ -2,6 +2,7 @@ import { expect, test, type Page } from '../testutil/e2e-test';
 import { getRaw, htmlLang, LOCALES, localePath, PAGES, type Locale } from '../testutil/e2e';
 import { PUBLIC_ORIGIN } from '../testutil/e2e-origin';
 import { skipAgainstDeployment } from '../testutil/e2e-target';
+import { bindShortWords } from '#lib/i18n/typography.ts';
 import { ABOUT_COPY } from '../testutil/about-copy';
 
 // FE-1 acceptance: every page lives under /:lang/, the URL alone decides the
@@ -34,6 +35,12 @@ function headHrefs(html: string): string[] {
 	return links.map((l) => /\bhref="([^"]*)"/.exec(l)?.[1] ?? '');
 }
 
+// The text of every <h1> in raw HTML (the server writes U+00A0 as the
+// character, FE-9 FB-1).
+function h1Texts(html: string): string[] {
+	return [...html.matchAll(/<h1[^>]*>\s*([^<]*?)\s*<\/h1>/g)].map((match) => match[1]);
+}
+
 // FE-4 PR 2: home and the region URL render the home shell; the region's
 // own heading arrives with its sheet (PR 3), so the region page is checked
 // for its localised name (on the map), not an <h1>.
@@ -49,8 +56,10 @@ test.describe('pages render server-side', () => {
 				expect(lang, `got <html lang="${lang}">, want ${locale}`).toBe(locale);
 				expect(html, `got no "${p.text[locale]}" in the HTML`).toContain(p.text[locale]);
 				if (!p.h1) return;
-				expect(html, `got no <h1> "${p.text[locale]}" in the HTML`).toMatch(
-					new RegExp(`<h1[^>]*>\\s*${p.text[locale]}\\s*</h1>`)
+				const want = bindShortWords(p.text[locale], locale);
+				const got = h1Texts(html);
+				expect(got, `got <h1>s ${JSON.stringify(got)}, want ${JSON.stringify(want)}`).toContain(
+					want
 				);
 			});
 		}

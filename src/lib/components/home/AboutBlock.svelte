@@ -1,11 +1,12 @@
 <script lang="ts">
+	import { typeset } from '#lib/i18n/typeset.ts';
 	import { m } from '#lib/paraglide/messages.js';
 </script>
 
 <!-- The home's one heading on both layouts (D-FE9-4): one block, restyled by CSS. -->
 <section class="about">
-	<h1 class="title">{m.home_aboutTitle()}</h1>
-	<p class="body">{m.home_aboutBody()}</p>
+	<h1 class="title">{typeset(m.home_aboutTitle())}</h1>
+	<p class="body">{typeset(m.home_aboutBody())}</p>
 </section>
 
 <style>
