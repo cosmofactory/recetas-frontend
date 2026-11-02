@@ -77,6 +77,8 @@
 		color: var(--ink);
 		text-decoration: none;
 		pointer-events: none;
+		/* Phones flash a link highlight on tap; the selection look (FE-9 FB-4) is the feedback. */
+		-webkit-tap-highlight-color: transparent;
 	}
 
 	.cell {

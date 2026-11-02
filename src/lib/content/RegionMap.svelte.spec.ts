@@ -745,6 +745,18 @@ describe('RegionMap mobile style', () => {
 		await expectSelectionLook(await renderMap({ selectedKey: 'gal' }), 'gal');
 	});
 
+	// Owner, 2026-11-02: the tap flashed the browser's blue link highlight;
+	// the selection look is the tap's feedback.
+	it('has no tap highlight on any region link', async () => {
+		const map = await renderMap();
+		const links = map.querySelectorAll('a.map-region');
+		expect(links.length).toBeGreaterThan(0);
+		for (const link of links) {
+			const highlight = getComputedStyle(link).getPropertyValue('-webkit-tap-highlight-color');
+			expect(highlight, link.getAttribute('href') ?? '').toBe('rgba(0, 0, 0, 0)');
+		}
+	});
+
 	it('dims nothing for the desktop default (defaultKey) below 860px', async () => {
 		await expectSelectionLook(await renderMap({ defaultKey: 'and' }), null);
 	});
