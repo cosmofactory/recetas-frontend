@@ -65,34 +65,30 @@ export const realMouse = {
 	release: (at: Point) => mouse('mouseReleased', at, false)
 };
 
+// Touch goes in without Emulation.setTouchEmulationEnabled: Chromium
+// delivers it as pointerType "touch" (and touch events) anyway, and turning
+// emulation on leaves `(hover: hover)` false in that page even after it is
+// turned off again. Vitest reuses a page for later spec files, so their
+// hover-styled checks then failed at random.
 function touch(type: TouchType, points: Point[]) {
 	return cdp().send('Input.dispatchTouchEvent', { type, touchPoints: points.map(toPage) });
 }
 
-// A one-finger drag; a moved touch fires no click. Pair with
-// afterEach(disableTouch).
+// A one-finger drag; a moved touch fires no click.
 export async function touchDrag(from: Point, to: Point) {
-	await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
 	await touch('touchStart', [from]);
 	for (const point of path(from, to)) await touch('touchMove', [point]);
 	await touch('touchEnd', []);
 }
 
 // The parts of a one-finger gesture, for checks while the finger is down
-// and for paced or flicked travel. Pair with afterEach(disableTouch).
+// and for paced or flicked travel.
 export const realTouch = {
-	start: async (at: Point) => {
-		await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
-		await touch('touchStart', [at]);
-	},
+	start: (at: Point) => touch('touchStart', [at]),
 	move: (from: Point, to: Point, pace: Pace = {}) =>
 		sendPaced(path(from, to, pace.stepPx), pace, (point) => touch('touchMove', [point])),
 	end: () => touch('touchEnd', [])
 };
-
-export function disableTouch() {
-	return cdp().send('Emulation.setTouchEmulationEnabled', { enabled: false });
-}
 
 export function centreOf(el: Element): Point {
 	const r = el.getBoundingClientRect();

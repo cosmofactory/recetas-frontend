@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import {
 	centreOf,
-	disableTouch,
 	realMouse,
 	realTouch,
 	type Pace,
@@ -193,10 +192,7 @@ function contentPoint(f: Fixture): Point {
 	return { x: handle.left + handle.width / 2, y: (handle.bottom + visibleBottom) / 2 + 40 };
 }
 
-afterEach(async () => {
-	await disableTouch();
-	await resetEmulatedMedia();
-});
+afterEach(resetEmulatedMedia);
 
 describe('BottomSheet handle drag: the sheet follows the pointer', () => {
 	useViewport(390, 844);

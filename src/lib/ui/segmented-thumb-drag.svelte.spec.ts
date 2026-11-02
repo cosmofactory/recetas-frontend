@@ -1,14 +1,7 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { userEvent } from 'vitest/browser';
 import { loadUiExport, stage } from '../../testutil/ui';
-import {
-	centreOf,
-	disableTouch,
-	mouseDrag,
-	realMouse,
-	touchDrag,
-	type Point
-} from '../../testutil/real-input';
+import { centreOf, mouseDrag, realMouse, touchDrag, type Point } from '../../testutil/real-input';
 
 // FE-9 FB-3 (D-FE9-2): ThumbDrag (src/lib/ui/segmented-thumb-drag.svelte.ts)
 // is the switch's drag logic. "The thumb can be dragged along the track; on
@@ -144,8 +137,6 @@ async function clickWithoutTrackPress(tab: HTMLElement) {
 	}
 }
 
-afterEach(() => disableTouch());
-
 describe('ThumbDrag: drag and release', () => {
 	it('a drag from the selected segment to the other calls choose once with its index', async () => {
 		const f = await setUp();
@@ -275,7 +266,6 @@ describe("ThumbDrag: the drag's own click", () => {
 	it('does not swallow a later trusted click (detail 1) after a drag that fired no click', async () => {
 		const f = await setUp();
 		await touchDrag(centreOf(f.tabs[0]), centreOf(f.tabs[1]));
-		await disableTouch();
 		await afterGesture();
 		await clickWithoutTrackPress(f.tabs[1]);
 		expect(f.clicksThrough, 'got a later click swallowed by an old drag').toEqual([1]);

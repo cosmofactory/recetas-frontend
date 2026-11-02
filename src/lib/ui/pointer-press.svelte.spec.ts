@@ -1,12 +1,6 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { loadUiExport, stage } from '../../testutil/ui';
-import {
-	centreOf,
-	disableTouch,
-	realMouse,
-	realTouch,
-	type Point
-} from '../../testutil/real-input';
+import { centreOf, realMouse, realTouch, type Point } from '../../testutil/real-input';
 
 // FE-9 FB-2 / FB-3: PointerPress (src/lib/ui/pointer-press.ts) cancels the
 // click of a press that slides off the pressed control without dragging
@@ -128,8 +122,6 @@ function expectOneClickKept(f: Fixture, what: string) {
 		false
 	]);
 }
-
-afterEach(() => disableTouch());
 
 describe('PointerPress: a tap that moves within the pressed control keeps its click', () => {
 	for (const { kind, html } of CONTROLS) {
