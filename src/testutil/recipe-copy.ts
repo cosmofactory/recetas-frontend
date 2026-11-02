@@ -10,7 +10,7 @@ export type RecipeLocale = (typeof RECIPE_LOCALES)[number];
 
 // Test ids the Recipe page exposes (FE-6 PR 3 contract).
 export const RECIPE_TEST_IDS = {
-	// "REGION · DISH" above the <h1>.
+	// The region alone above the <h1> (FE-9 D-FE9-6; was "REGION · DISH").
 	eyebrow: 'recipe-eyebrow',
 	// The info strip's formatted time value ("25 min", "3 h + soaking").
 	time: 'recipe-time',
@@ -104,6 +104,10 @@ export type RecipePageCopy = {
 	region: string;
 	dish: string;
 	name: string;
+	// FE-9 D-FE9-6: the recipe title (h1, sticky bar, document title), the
+	// variation.fullTitle message "{dish} · {variation}" unless the variation
+	// name already starts with the dish name.
+	title: string;
 	description: string;
 	time: string;
 	baseServings: number;
@@ -119,6 +123,7 @@ export const BETANZOS: Record<RecipeLocale, RecipePageCopy> = {
 		region: 'Galicia',
 		dish: 'Tortilla de patatas',
 		name: 'Betanzos-style runny',
+		title: 'Tortilla de patatas · Betanzos-style runny',
 		description: 'Barely-set centre, no onion, eaten with bread',
 		time: '25 min',
 		baseServings: 2
@@ -129,6 +134,7 @@ export const BETANZOS: Record<RecipeLocale, RecipePageCopy> = {
 		region: 'Galicia',
 		dish: 'Tortilla de patatas',
 		name: 'Estilo Betanzos, jugosa',
+		title: 'Tortilla de patatas · Estilo Betanzos, jugosa',
 		description: 'Centro apenas cuajado, sin cebolla, con pan',
 		time: '25 min',
 		baseServings: 2
@@ -139,6 +145,7 @@ export const BETANZOS: Record<RecipeLocale, RecipePageCopy> = {
 		region: 'Галисия',
 		dish: 'Тортилья',
 		name: 'По-бетансосски, жидкая внутри',
+		title: 'Тортилья · По-бетансосски, жидкая внутри',
 		description: 'Едва схваченная серединка, без лука, едят с хлебом',
 		time: '25 мин',
 		baseServings: 2
@@ -153,7 +160,12 @@ export const FABADA_TIME: Record<RecipeLocale, string> = {
 };
 
 // Another tortilla recipe, to check the reset: tortilla/ast serves 4.
-export const TORTILLA_AST = { regionKey: 'ast', name: 'With chorizo', baseServings: 4 } as const;
+export const TORTILLA_AST = {
+	regionKey: 'ast',
+	name: 'With chorizo',
+	title: 'Tortilla de patatas · With chorizo',
+	baseServings: 4
+} as const;
 
 // Tortilla has no Canarias variation: a known dish and region, no recipe.
 export const MISSING_PAIR = { dishKey: 'tortilla', regionKey: 'can' } as const;
@@ -235,3 +247,11 @@ export const PAELLA_VAL = {
 	regionKey: 'val',
 	name: 'Paella valenciana'
 } as const;
+
+// FE-9 D-FE9-6: its recipe title per locale. The bundle's paella dish is the
+// "Rice dishes" category, so the variation name doesn't start with it.
+export const PAELLA_VAL_TITLE: Record<RecipeLocale, string> = {
+	en: 'Rice dishes · Paella valenciana',
+	es: 'Arroces · Paella valenciana',
+	ru: 'Блюда из риса · Paella valenciana'
+};

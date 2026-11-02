@@ -20,6 +20,7 @@ import {
 	BETANZOS_STEPS,
 	MISSING_PAIR,
 	PAELLA_VAL,
+	PAELLA_VAL_TITLE,
 	RECIPE_LOCALES,
 	RECIPE_TEST_IDS,
 	RECIPE_THRESHOLD_PX,
@@ -129,10 +130,9 @@ test.describe('Recipe page without JavaScript', () => {
 		test(`${url}: eyebrow, name, description, time, servings at the base`, async ({ page }) => {
 			const res = await page.goto(url);
 			expect(res?.status()).toBe(200);
-			await expect(page.getByTestId(RECIPE_TEST_IDS.eyebrow)).toHaveText(
-				`${copy.region} · ${copy.dish}`
-			);
-			await expect(page.getByRole('heading', { level: 1 })).toHaveText(copy.name);
+			// FE-9 D-FE9-6: the eyebrow is the region only; the title names the dish.
+			await expect(page.getByTestId(RECIPE_TEST_IDS.eyebrow)).toHaveText(copy.region);
+			await expect(page.getByRole('heading', { level: 1 })).toHaveText(copy.title);
 			await expect(page.getByText(copy.description, { exact: true })).toBeVisible();
 			await expect(page.getByTestId(RECIPE_TEST_IDS.time)).toHaveText(copy.time);
 			await expectServings(page, copy.baseServings);
@@ -367,7 +367,7 @@ test.describe('Recipe page: another recipe starts fresh', () => {
 			await scrollToEnd(page);
 			await clientNavigate(page, recipePath('en', 'tortilla', TORTILLA_AST.regionKey));
 			await expectUrl(page, recipePath('en', 'tortilla', TORTILLA_AST.regionKey));
-			await expect(page.getByRole('heading', { level: 1 })).toHaveText(TORTILLA_AST.name);
+			await expect(page.getByRole('heading', { level: 1 })).toHaveText(TORTILLA_AST.title);
 			await expectSameDocument(page, 'to another recipe');
 			await expectServings(page, TORTILLA_AST.baseServings);
 			await expectNothingTicked(page);
@@ -425,15 +425,15 @@ test.describe('Recipe page: sticky top bar on window scroll', () => {
 			{ tag },
 			async ({ page }) => {
 				await gotoHydrated(page, url);
-				await expectBar(page, lang, PAELLA_VAL.name, false);
+				await expectBar(page, lang, PAELLA_VAL_TITLE[lang], false);
 				expect(await scrollWindowTo(page, RECIPE_THRESHOLD_PX)).toBe(RECIPE_THRESHOLD_PX);
-				await expectBar(page, lang, PAELLA_VAL.name, false);
+				await expectBar(page, lang, PAELLA_VAL_TITLE[lang], false);
 				expect(await scrollWindowTo(page, RECIPE_THRESHOLD_PX + 1)).toBe(RECIPE_THRESHOLD_PX + 1);
-				await expectBar(page, lang, PAELLA_VAL.name, true);
+				await expectBar(page, lang, PAELLA_VAL_TITLE[lang], true);
 				await scrollToEnd(page);
 				await expectBarStuckAtTop(page, lang);
 				await scrollWindowTo(page, 0);
-				await expectBar(page, lang, PAELLA_VAL.name, false);
+				await expectBar(page, lang, PAELLA_VAL_TITLE[lang], false);
 			}
 		);
 	}
@@ -581,7 +581,7 @@ test.describe('axe: WCAG 2.2 AA on the Recipe page', () => {
 		await gotoHydrated(page, PAELLA_EN);
 		await stepServingsTo(page, 'en', 4, SERVINGS_MAX);
 		await scrollToEnd(page);
-		await expectBar(page, 'en', PAELLA_VAL.name, true);
+		await expectBar(page, 'en', PAELLA_VAL_TITLE.en, true);
 		await expectNoViolations(page, `${PAELLA_EN} (scrolled, at ${SERVINGS_MAX})`);
 	});
 });

@@ -1,5 +1,6 @@
 import type { components } from '#lib/api/schema.d.ts';
 import type { Locale } from '#lib/i18n/locales.ts';
+import { variationTitle } from '#lib/content/variation-title.ts';
 import { filterLabel } from '#lib/popular/filter-labels.ts';
 import { ingredientQuantity } from '#lib/recipe/servings.ts';
 import { isoDuration } from './iso-duration.ts';
@@ -35,7 +36,8 @@ export function recipeJsonLd({
 	return {
 		'@context': SCHEMA_ORG_CONTEXT,
 		'@type': 'Recipe',
-		name: recipe.name,
+		// The same title as the page's h1 (D-FE9-6), so search results name the dish.
+		name: variationTitle({ dishName: recipe.dishName, variationName: recipe.name }, lang),
 		description: recipe.description,
 		image: heroImageUrls({ ...media, heroPrefix: recipe.photos.hero }),
 		recipeIngredient: ingredientLines(recipe, lang),

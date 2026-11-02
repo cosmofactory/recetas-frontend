@@ -5,9 +5,15 @@
 	import { desktopQuery } from '#lib/ui/breakpoints.ts';
 	import type { RegionVariationRow } from './region-variations.ts';
 
-	type Props = { row: RegionVariationRow; href: string; mediaBaseUrl: string | undefined };
+	// title: the row's name, "{dish} · {variation}" or the variation alone (D-FE9-6).
+	type Props = {
+		row: RegionVariationRow;
+		title: string;
+		href: string;
+		mediaBaseUrl: string | undefined;
+	};
 
-	let { row, href, mediaBaseUrl }: Props = $props();
+	let { row, title, href, mediaBaseUrl }: Props = $props();
 
 	// Mobile README: a 52px thumb; desktop README: 64px.
 	const THUMB_SIZES = `${desktopQuery} 64px, 52px`;
@@ -22,7 +28,7 @@
 		<Photo photos={row.photos} role="thumb" sizes={THUMB_SIZES} alt="" baseUrl={mediaBaseUrl} />
 	</span>
 	<span class="text">
-		<span class="name">{typeset(row.name)}</span>
+		<span class="name">{typeset(title)}</span>
 		<span class="description">{typeset(row.description)}</span>
 	</span>
 	<span class="chevron desktop-only" aria-hidden="true">

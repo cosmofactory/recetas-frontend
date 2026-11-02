@@ -4,6 +4,7 @@ import { buildView } from '#lib/server/mock/bundle-mapping.ts';
 import type { Photos } from '#lib/server/catalog-source.ts';
 import {
 	decodeAmp,
+	elementHtml,
 	elementsWith,
 	headingTexts,
 	metaContents,
@@ -40,19 +41,25 @@ import { PAGE_COPY, pageTitle } from '../../../../../testutil/variations-copy';
 
 // FE-6 PR 3, the mobile Recipe page (5a) rendered on the server
 // (svelte/server). Mobile README -> Screen 3: sticky top bar (back, title =
-// variation name), hero photo 220px, eyebrow "REGION · DISH", the variation
-// name and description, the info strip (Time; Serves with − / value / +),
+// the recipe title), hero photo 220px, eyebrow (the region only), the recipe
+// title and the variation description, the info strip (Time; Serves with − / value / +),
 // Ingredients (rows: check, name, quantity) and Method (numbered steps).
 // Stage FE-6 acceptance: "With JavaScript disabled, both pages render the
 // complete content (… ingredients at the base servings, steps)", so all of it
 // must be in the server HTML.
 //
 // Decisions pinned here (FE-6 PR 3):
-// - The variation name is the page's one <h1>; "Ingredients" and "Method"
+// - The recipe title is the page's one <h1>; "Ingredients" and "Method"
 //   are the <h2>s, in that order.
-// - The eyebrow text is "{regionName} · {dishName}" from the API; it is
-//   upper-cased by CSS only (checked in recipe.e2e.ts), so the HTML keeps the
-//   names as written.
+// - FE-9 FB-10 / D-FE9-6 (owner, 2026-11-02): the recipe title (h1, sticky
+//   bar title, document <title>) is "{dish} · {variation}" (the
+//   variation.fullTitle message), or the variation name alone when it already
+//   starts with the dish name (variation-title.spec.ts). The <title> is
+//   "Asadorov · {recipe title}" (assumption: the site-name prefix every page
+//   title has stays; FE-6 had "Asadorov · {dish} · {variation}").
+// - The eyebrow is the API's regionName alone (was "{regionName} ·
+//   {dishName}"); it is upper-cased by CSS only (checked in recipe.e2e.ts), so
+//   the HTML keeps the name as written.
 // - The time is formatRecipeTime's output (time.spec.ts), in
 //   data-testid="recipe-time".
 // - The stepper's − / + are <button>s named by the extra-strings.json labels
@@ -86,6 +93,8 @@ type RenderSpec = {
 	baseServings?: number;
 	withPhotos?: boolean;
 	description?: string;
+	// Overrides the API's dishName, for a variation that starts with it.
+	dishName?: string;
 };
 
 const photos = (prefix: string): Photos => ({
@@ -99,8 +108,9 @@ function fixtureRecipe(spec: RenderSpec): Recipe {
 	const baseServings = spec.baseServings ?? recipe.baseServings;
 	const prefix = `dishes/${recipe.dishKey}/${recipe.regionKey}`;
 	const description = spec.description ?? recipe.description;
+	const dishName = spec.dishName ?? recipe.dishName;
 	const photoSet = spec.withPhotos ? photos(prefix) : recipe.photos;
-	return { ...recipe, baseServings, description, photos: photoSet };
+	return { ...recipe, baseServings, description, dishName, photos: photoSet };
 }
 
 function pageData(spec: RenderSpec): PageData {
@@ -139,6 +149,23 @@ function onlyByTestId(html: string, id: string): string {
 
 const textOf = (html: string, id: string) => decodeAmp(visibleText(onlyByTestId(html, id)));
 
+// The sticky bar is the back link's parent; its title is the element the
+// bar hides from assistive tech until scrolled (aria-hidden="true").
+function barTitles(html: string, lang: RecipeLocale): string[] {
+	const backAt = html.indexOf(`aria-label="${PAGE_COPY[lang].back}"`);
+	expect(backAt, 'got no back link').toBeGreaterThan(-1);
+	const barStart = html.lastIndexOf('<div', backAt);
+	return elementsWith(elementHtml(html, barStart), 'aria-hidden="true"')
+		.filter((el) => !el.startsWith('<svg'))
+		.map((el) => decodeAmp(visibleText(el)));
+}
+
+const regionName = (lang: RecipeLocale, key: string): string => {
+	const region = buildView(bundle, lang).regions.find((r) => r.key === key);
+	expect(region, `got no region ${key}`).toBeDefined();
+	return region!.name;
+};
+
 const rootTag = (elementHtml: string): StartTag => startTags(elementHtml)[0];
 
 function buttonsNamed(html: string, name: string): StartTag[] {
@@ -171,16 +198,15 @@ const COLD_COMPILE_TIMEOUT_MS = 30_000;
 describe('Recipe page: header', { timeout: COLD_COMPILE_TIMEOUT_MS }, () => {
 	for (const lang of RECIPE_LOCALES) {
 		const copy = BETANZOS[lang];
-		const eyebrow = `${copy.region} · ${copy.dish}`;
 
-		it(`${lang}: the variation name is the one <h1>: "${copy.name}"`, async () => {
+		it(`${lang}: the recipe title is the one <h1>: "${copy.title}"`, async () => {
 			const { body } = await renderPage({ lang });
-			expect(headingTexts(body, 1)).toEqual([copy.name]);
+			expect(headingTexts(body, 1)).toEqual([copy.title]);
 		});
 
-		it(`${lang}: the eyebrow reads "${eyebrow}"`, async () => {
+		it(`${lang}: the eyebrow is the region only: "${copy.region}"`, async () => {
 			const { body } = await renderPage({ lang });
-			expect(textOf(body, RECIPE_TEST_IDS.eyebrow)).toBe(eyebrow);
+			expect(textOf(body, RECIPE_TEST_IDS.eyebrow)).toBe(copy.region);
 		});
 
 		it(`${lang}: shows the variation description`, async () => {
@@ -354,12 +380,11 @@ describe('Recipe page: sticky top bar', { timeout: COLD_COMPILE_TIMEOUT_MS }, ()
 			expect(decodeAmp(back[0].attrs.href ?? '')).toBe(want);
 		});
 
-		it(`${lang}: the bar title is the variation name, hidden until scrolled`, async () => {
+		it(`${lang}: the bar title is the recipe title "${BETANZOS[lang].title}", hidden until scrolled`, async () => {
 			const { body } = await renderPage({ lang });
-			const hidden = startTags(body).filter((t) => t.attrs['aria-hidden'] === 'true');
-			expect(hidden.length, 'want the faded title aria-hidden').toBeGreaterThan(0);
-			const names = body.split(BETANZOS[lang].name).length - 1;
-			expect(names, 'want the name in the bar and in the <h1>').toBeGreaterThanOrEqual(2);
+			const titles = barTitles(body, lang);
+			expect(titles.length, 'want one aria-hidden title in the bar').toBe(1);
+			expect(titles[0]).toBe(BETANZOS[lang].title);
 		});
 	}
 
@@ -375,7 +400,7 @@ describe('Recipe page: sticky top bar', { timeout: COLD_COMPILE_TIMEOUT_MS }, ()
 describe('Recipe page: head', { timeout: COLD_COMPILE_TIMEOUT_MS }, () => {
 	for (const lang of RECIPE_LOCALES) {
 		const copy = BETANZOS[lang];
-		const title = pageTitle(copy.dish, copy.name);
+		const title = pageTitle(copy.title);
 
 		it(`${lang}: <title>${title}</title> and the variation description`, async () => {
 			const { head } = await renderPage({ lang });
@@ -387,6 +412,39 @@ describe('Recipe page: head', { timeout: COLD_COMPILE_TIMEOUT_MS }, () => {
 		});
 	}
 });
+
+// FE-9 D-FE9-6: when the variation name already starts with the dish name,
+// the title is the variation name alone, everywhere it shows. The mock
+// bundle has no such pair (its dish names are categories, e.g. "Rice
+// dishes"), so the paella's dishName is set to "Paella" here.
+describe(
+	'Recipe page: a variation that starts with its dish name',
+	{ timeout: COLD_COMPILE_TIMEOUT_MS },
+	() => {
+		const spec = { lang: 'es', dishKey: 'paella', regionKey: 'val', dishName: 'Paella' } as const;
+		const want = 'Paella valenciana';
+
+		it(`the <h1> is "${want}" alone`, async () => {
+			const { body } = await renderPage(spec);
+			expect(headingTexts(body, 1)).toEqual([want]);
+		});
+
+		it(`the bar title is "${want}" alone`, async () => {
+			const { body } = await renderPage(spec);
+			expect(barTitles(body, 'es')).toEqual([want]);
+		});
+
+		it(`<title>${pageTitle(want)}</title>`, async () => {
+			const { head } = await renderPage(spec);
+			expect(head).toContain(`<title>${pageTitle(want)}</title>`);
+		});
+
+		it('the eyebrow is still the region only', async () => {
+			const { body } = await renderPage(spec);
+			expect(textOf(body, RECIPE_TEST_IDS.eyebrow)).toBe(regionName('es', 'val'));
+		});
+	}
+);
 
 describe('Recipe page: all variations equal', { timeout: COLD_COMPILE_TIMEOUT_MS }, () => {
 	it('marks nothing as best, primary or featured', async () => {
@@ -459,7 +517,8 @@ describe('Recipe page JSON-LD (FE-8)', { timeout: COLD_COMPILE_TIMEOUT_MS }, () 
 			expect([node.url, node.inLanguage, node.name]).toEqual([
 				canonicalOf(lang),
 				lang,
-				BETANZOS[lang].name
+				// D-FE9-6: the page's title; the breadcrumb below keeps the bare name.
+				BETANZOS[lang].title
 			]);
 		});
 

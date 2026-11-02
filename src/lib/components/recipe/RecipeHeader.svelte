@@ -3,17 +3,18 @@
 	import type { Snippet } from 'svelte';
 	import type { components } from '#lib/api/schema.d.ts';
 	import Photo from '#lib/components/Photo.svelte';
-	import { DOT_SEPARATOR } from '#lib/i18n/format.ts';
 	import { DISH_HERO_SIZES } from '#lib/media.ts';
 
-	// strip: the Time / Serves strip, under the description in both layouts.
+	// title: the <h1>, naming the dish (FE-9 D-FE9-6); strip: the Time /
+	// Serves strip, under the description in both layouts.
 	type Props = {
 		recipe: components['schemas']['Recipe'];
+		title: string;
 		mediaBaseUrl: string | undefined;
 		strip: Snippet;
 	};
 
-	let { recipe, mediaBaseUrl, strip }: Props = $props();
+	let { recipe, title, mediaBaseUrl, strip }: Props = $props();
 </script>
 
 <!-- The hero is above the fold, so it loads first; the <h1> names the page. -->
@@ -31,10 +32,8 @@
 		/>
 	</div>
 	<div class="text">
-		<span class="eyebrow" data-testid="recipe-eyebrow"
-			>{typeset(recipe.regionName)}{DOT_SEPARATOR}{typeset(recipe.dishName)}</span
-		>
-		<h1 class="name">{typeset(recipe.name)}</h1>
+		<span class="eyebrow" data-testid="recipe-eyebrow">{typeset(recipe.regionName)}</span>
+		<h1 class="name">{typeset(title)}</h1>
 		<p class="description">{typeset(recipe.description)}</p>
 		{@render strip()}
 	</div>
@@ -42,11 +41,11 @@
 
 <style>
 	/*
-	 * Mobile README -> Screen 3: "Hero photo (height 220px, radius 16px).
-	 * Eyebrow (10.5px/700, .11em, accent, padding-top 8px). Variation name
-	 * (Instrument Serif 34px) and description (13px ink-2)"; the prototype
-	 * gives the padding 4px 20px 0, gap 8px, the name's lh 1.02 and the
-	 * description's lh 1.5. Accent text is --accent-text (X10).
+	 * Mobile README -> Screen 3: hero photo (height 220px, radius 16px); the
+	 * eyebrow, region only (10.5px/700, .11em, accent, padding-top 8px); the
+	 * recipe title (D-FE9-6, Instrument Serif 34px) and description (13px
+	 * ink-2). The prototype gives the padding 4px 20px 0, gap 8px, the title's
+	 * lh 1.02 and the description's lh 1.5. Accent text is --accent-text (X10).
 	 */
 	.recipe-header {
 		--recipe-hero-height: 220px;
@@ -86,9 +85,10 @@
 	}
 
 	/*
-	 * Desktop README -> Recipe page: "Hero grid 1fr/1.1fr: eyebrow "Region ·
-	 * Dish", title 56px serif, description 17px, Time / Serves strip | 380px
-	 * photo"; the prototype: tracks minmax(0,1fr) minmax(0,1.1fr), align-items
+	 * Desktop README -> Recipe page: hero grid 1fr/1.1fr; the eyebrow is the
+	 * region only, then the 56px serif recipe title (D-FE9-6), the 17px
+	 * description and the Time / Serves strip, beside the 380px photo. The
+	 * prototype: tracks minmax(0,1fr) minmax(0,1.1fr), align-items
 	 * center, the text column's gap 14px, the eyebrow 11px, the title's lh 1,
 	 * the description's lh 1.55 and the photo radius 22px.
 	 */

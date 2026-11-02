@@ -80,6 +80,14 @@ import {
 // - The photo is the variation's `thumb`, decorative (alt ""): the row's
 //   name is its text.
 // - The chevron is desktop only (an aria-hidden icon), absent on mobile.
+//
+// FE-9 FB-10 / D-FE9-6 (owner, 2026-11-02; mobile README Region sheet row,
+// desktop README region panel rows): the row title is "{dish} · {variation}"
+// (the variation.fullTitle message), or the variation name alone when it
+// already starts with the dish name (variation-title.spec.ts). It is one
+// element (one serif title that wraps), typeset like the other copy, so the
+// expected text is bindShortWords of the whole title. The description line is
+// unchanged.
 
 const FOCUSABLE = 'a[href], button, input, select, textarea, [tabindex]';
 const INTERACTIVE_ROLES = '[role="button"], [role="checkbox"], [role="switch"], [aria-pressed]';
@@ -132,6 +140,28 @@ function rowLinks(root: Element): HTMLAnchorElement[] {
 	return [...root.querySelectorAll<HTMLAnchorElement>('a[href]')];
 }
 
+function rowLinkTo(root: Element, href: string): HTMLAnchorElement {
+	const link = rowLinks(root).find((a) => a.getAttribute('href') === href);
+	expect(link, `got no row linking to ${href}`).toBeDefined();
+	return link!;
+}
+
+// The fixture dishes with one dish's (translated) name replaced.
+function renamedDish(dishes: Dish[], dishKey: string, name: string): Dish[] {
+	return dishes.map((dish) => (dish.key === dishKey ? { ...dish, name } : dish));
+}
+
+type VariationRename = { dishKey: string; regionKey: string; name: string };
+
+// The fixture dishes with one variation's name replaced.
+function renamedVariation(dishes: Dish[], rename: VariationRename): Dish[] {
+	const renamed = (v: Dish['variations'][number]) =>
+		v.regionKey === rename.regionKey ? { ...v, name: rename.name } : v;
+	return dishes.map((dish) =>
+		dish.key === rename.dishKey ? { ...dish, variations: dish.variations.map(renamed) } : dish
+	);
+}
+
 function photoIn(link: Element): HTMLElement {
 	const photo = link.querySelector<HTMLElement>(PHOTO);
 	expect(photo, `got no photo in the row ${link.getAttribute('href')}`).not.toBeNull();
@@ -149,45 +179,53 @@ function expectPx(got: number, want: number, what: string) {
 const isShown = (el: Element) => (el as HTMLElement).getClientRects().length > 0;
 
 // Galicia in the vendored bundle: its dishes in dish order.
-const GALICIA_ROWS: Record<'en' | 'ru', { dishKey: string; name: string; description: string }[]> =
-	{
-		en: [
-			{
-				dishKey: 'tortilla',
-				name: 'Betanzos-style runny',
-				description: 'Barely-set centre, no onion, eaten with bread'
-			},
-			{
-				dishKey: 'cocido',
-				name: 'Cocido gallego',
-				description: 'Grelos, pork shoulder and cachelos'
-			},
-			{
-				dishKey: 'croquetas',
-				name: 'De marisco',
-				description: 'Built on leftover shellfish stock'
-			},
-			{
-				dishKey: 'torrijas',
-				name: 'Filloas',
-				description: 'Thin crêpes, sometimes made with broth'
-			}
-		],
-		ru: [
-			{
-				dishKey: 'tortilla',
-				name: 'По-бетансосски, жидкая внутри',
-				description: 'Едва схваченная серединка, без лука, едят с хлебом'
-			},
-			{
-				dishKey: 'cocido',
-				name: 'Cocido gallego',
-				description: 'Грелос, свиная лопатка и отварной картофель'
-			},
-			{ dishKey: 'croquetas', name: 'De marisco', description: 'На бульоне от морепродуктов' },
-			{ dishKey: 'torrijas', name: 'Filloas', description: 'Тонкие блинчики, иногда на бульоне' }
-		]
-	};
+type GaliciaRow = { dishKey: string; title: string; description: string };
+const GALICIA_ROWS: Record<'en' | 'ru', GaliciaRow[]> = {
+	en: [
+		{
+			dishKey: 'tortilla',
+			title: 'Tortilla de patatas · Betanzos-style runny',
+			description: 'Barely-set centre, no onion, eaten with bread'
+		},
+		{
+			dishKey: 'cocido',
+			title: 'Cocido & stews · Cocido gallego',
+			description: 'Grelos, pork shoulder and cachelos'
+		},
+		{
+			dishKey: 'croquetas',
+			title: 'Croquetas · De marisco',
+			description: 'Built on leftover shellfish stock'
+		},
+		{
+			dishKey: 'torrijas',
+			title: 'Fried sweets · Filloas',
+			description: 'Thin crêpes, sometimes made with broth'
+		}
+	],
+	ru: [
+		{
+			dishKey: 'tortilla',
+			title: 'Тортилья · По-бетансосски, жидкая внутри',
+			description: 'Едва схваченная серединка, без лука, едят с хлебом'
+		},
+		{
+			dishKey: 'cocido',
+			title: 'Косидо и рагу · Cocido gallego',
+			description: 'Грелос, свиная лопатка и отварной картофель'
+		},
+		{
+			dishKey: 'croquetas',
+			title: 'Крокеты · De marisco',
+			description: 'На бульоне от морепродуктов'
+		},
+		{
+			dishKey: 'torrijas',
+			title: 'Жареные сладости · Filloas',
+			description: 'Тонкие блинчики, иногда на бульоне'
+		}
+	]
+};
 
 describe('RegionDetails: name, description and regional dishes', () => {
 	for (const lang of ['en', 'ru'] as const) {
@@ -291,17 +329,43 @@ describe('RegionDetails: the dish list', () => {
 			expect(hrefs).toEqual(want.map((row) => `/${lang}/dishes/${row.dishKey}/gal`));
 		});
 
-		it(`${lang}: each row shows the variation name and its description`, async () => {
+		it(`${lang}: each row shows "{dish} · {variation}" and the variation description`, async () => {
 			const root = await renderDetails({ lang });
 			const links = rowLinks(root);
 			GALICIA_ROWS[lang].forEach((row, i) => {
 				const link = links[i];
 				expect(link, `got no row ${i + 1}`).toBeDefined();
-				textElement(link, bindShortWords(row.name, lang));
+				textElement(link, bindShortWords(row.title, lang));
 				textElement(link, bindShortWords(row.description, lang));
 			});
 		});
 	}
+
+	it('es: a bare variation name gets its dish: "Croquetas · De sepia" (FB-10)', async () => {
+		const root = await renderDetails({ lang: 'es', regionKey: 'val' });
+		const link = rowLinkTo(root, '/es/dishes/croquetas/val');
+		textElement(link, bindShortWords('Croquetas · De sepia', 'es'));
+	});
+
+	it('es: a variation that starts with its dish name stands alone: "Paella valenciana"', async () => {
+		const dishes = renamedDish(dishesIn('es'), 'paella', 'Paella');
+		const root = await renderDetails({ lang: 'es', regionKey: 'val', dishes });
+		const link = rowLinkTo(root, '/es/dishes/paella/val');
+		const title = textElement(link, bindShortWords('Paella valenciana', 'es'));
+		expect(link.textContent, 'got the dish name repeated in the row').not.toContain('Paella ·');
+		expect(title.textContent).not.toContain('·');
+	});
+
+	it('es: the same rule is accent- and case-insensitive: "fideuà de Gandia" under "FIDEUA"', async () => {
+		const dishes = renamedVariation(renamedDish(dishesIn('es'), 'paella', 'FIDEUA'), {
+			dishKey: 'paella',
+			regionKey: 'val',
+			name: 'fideuà de Gandia'
+		});
+		const root = await renderDetails({ lang: 'es', regionKey: 'val', dishes });
+		const link = rowLinkTo(root, '/es/dishes/paella/val');
+		textElement(link, bindShortWords('fideuà de Gandia', 'es'));
+	});
 
 	it('the whole row is one link: photo, name and description inside it', async () => {
 		const root = await renderDetails();
@@ -435,7 +499,7 @@ describe('RegionDetails: mobile sheet styles (< 860px)', () => {
 	it('row text: name 19px serif lh 1.15, description 11.5px ink-2 lh 1.35, gap 3px', async () => {
 		const root = await renderDetails();
 		const [row] = rowLinks(root);
-		const name = textElement(row, GALICIA_ROWS.en[0].name);
+		const name = textElement(row, GALICIA_ROWS.en[0].title);
 		const description = textElement(row, GALICIA_ROWS.en[0].description);
 		expect(style(name, 'font-size')).toBe('19px');
 		expect(style(name, 'font-family')).toBe(computed('font-family', 'var(--font-display)'));
@@ -538,7 +602,7 @@ describe('RegionDetails: desktop panel styles (≥ 860px)', () => {
 	it('row text: name 22px serif lh 1.15, description 13.5px ink-2 lh 1.4, gap 4px', async () => {
 		const root = await renderDetails({ width: 460 });
 		const [row] = rowLinks(root);
-		const name = textElement(row, GALICIA_ROWS.en[0].name);
+		const name = textElement(row, GALICIA_ROWS.en[0].title);
 		const description = textElement(row, GALICIA_ROWS.en[0].description);
 		expect(style(name, 'font-size')).toBe('22px');
 		expectPx(px(name, 'line-height'), 22 * 1.15, 'name line-height');

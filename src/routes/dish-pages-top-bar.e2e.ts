@@ -292,7 +292,7 @@ test.describe('Desktop top bar: manual activation from the keyboard', () => {
 			tab(page, HOME_COPY.ru.popular)
 		);
 		await expectSelectedTab(page, 'ru', 'popular');
-		await expect(page.getByRole('heading', { level: 1 })).toHaveText(BETANZOS.ru.name);
+		await expect(page.getByRole('heading', { level: 1 })).toHaveText(BETANZOS.ru.title);
 		await page.keyboard.press('Enter');
 		await expectUrl(page, '/ru/');
 	});
@@ -310,7 +310,7 @@ test.describe('Desktop top bar: switching language keeps the page', () => {
 		});
 		await expectUrl(page, next);
 		await expect(page.locator('html')).toHaveAttribute('lang', 'es');
-		await expect(page.getByRole('heading', { level: 1 })).toHaveText(BETANZOS.es.name);
+		await expect(page.getByRole('heading', { level: 1 })).toHaveText(BETANZOS.es.title);
 		await expect(languageButton(page, 'es')).toContainText('ES');
 		await expectSelectedTab(page, 'es', 'popular');
 		await expect(backPill(page)).toHaveText(TORTILLA_PAGE.es.name);

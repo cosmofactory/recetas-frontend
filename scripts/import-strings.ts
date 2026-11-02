@@ -48,8 +48,13 @@ function put(ctx: Context, key: string, value: unknown) {
 	ctx.out[key] = value;
 }
 
+// Paraglide reads "{name}" in a plain message as an input; any other brace is a typo.
+const PLACEHOLDER = /\{[A-Za-z][A-Za-z0-9]*\}/g;
+
 function text(value: string, where: string): string {
-	if (/[{}]/.test(value)) throw new Error(`strings: ${where} contains a brace: ${value}`);
+	if (/[{}]/.test(value.replace(PLACEHOLDER, ''))) {
+		throw new Error(`strings: ${where} contains a stray brace: ${value}`);
+	}
 	return value;
 }
 

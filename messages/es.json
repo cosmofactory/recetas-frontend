@@ -67,6 +67,7 @@
 	"recipe_serves": "Raciones",
 	"recipe_ingredients": "Ingredientes",
 	"recipe_method": "Elaboración",
+	"variation_fullTitle": "{dish} · {variation}",
 	"units_g": "g",
 	"units_ml": "ml",
 	"units_kg": "kg",
