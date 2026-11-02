@@ -6,6 +6,7 @@
 	import { recipeBackPill } from '#lib/components/dish/back-pill.ts';
 	import { recipeTitle } from '#lib/components/dish/dish-head.ts';
 	import RecipeBody from '#lib/components/recipe/RecipeBody.svelte';
+	import { variationTitle } from '#lib/content/variation-title.ts';
 	import BackPill from '#lib/components/ui/BackPill.svelte';
 	import StickyTopBar from '#lib/components/ui/StickyTopBar.svelte';
 	import { headLinks } from '#lib/i18n/head-links.ts';
@@ -27,6 +28,9 @@
 
 	const lang = $derived(localeFromPath(page.url.pathname));
 	const recipe = $derived(data.recipe);
+	const title = $derived(
+		variationTitle({ dishName: recipe.dishName, variationName: recipe.name }, lang)
+	);
 	// SvelteKit reuses this component on a Recipe → Recipe navigation, so the
 	// servings and ticks are keyed on the recipe to start fresh.
 	const recipeId = $derived(`${recipe.dishKey}/${recipe.regionKey}`);
@@ -49,12 +53,7 @@
 	);
 </script>
 
-<PageHead
-	title={recipeTitle(recipe.dishName, recipe.name)}
-	description={recipe.description}
-	{image}
-	type="article"
-/>
+<PageHead title={recipeTitle(title)} description={recipe.description} {image} type="article" />
 <JsonLd data={jsonLd} />
 
 <DishPagesTopBar {lang} tab={originTab(origin)} url={page.url} catalog={data} />
@@ -63,7 +62,7 @@
 		<StickyTopBar
 			backHref={variationsHref(recipe.dishKey, lang)}
 			backLabel={m.a11y_back()}
-			title={recipe.name}
+			{title}
 			threshold={BAR_THRESHOLD_PX}
 			onBack={back}
 		/>
@@ -72,7 +71,7 @@
 		<BackPill label={pill.label} href={pill.href} onclick={back} />
 	</div>
 	{#key recipeId}
-		<RecipeBody {recipe} {lang} mediaBaseUrl={data.mediaBaseUrl} />
+		<RecipeBody {recipe} {title} {lang} mediaBaseUrl={data.mediaBaseUrl} />
 	{/key}
 </main>
 

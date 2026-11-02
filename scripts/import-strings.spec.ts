@@ -167,6 +167,35 @@ describe('convertStrings on a sample', () => {
 		});
 	}
 
+	// FE-9 FB-10 (D-FE9-6): a message with ICU placeholders. Paraglide's
+	// inlang message format reads "{name}" in a plain string as an input, so
+	// the importer copies it as it is; any other brace is still a typo.
+	const PLACEHOLDERS: Record<Locale, string> = {
+		en: '{dish} · {variation}',
+		es: '{dish} · {variation}',
+		ru: '{dish} · {variation}'
+	};
+	const withPlaceholders = () => ({
+		...sampleDesign(),
+		variation: Object.fromEntries(LOCALES.map((l) => [l, { fullTitle: PLACEHOLDERS[l] }]))
+	});
+	for (const locale of LOCALES) {
+		it(`copies the ${locale} placeholder string variation_fullTitle verbatim`, async () => {
+			const got = (await loadConvert())(withPlaceholders())[locale].variation_fullTitle;
+			const want = PLACEHOLDERS[locale];
+			expect(got, `got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`).toBe(want);
+		});
+	}
+
+	for (const stray of ['{dish · x', 'dish} · x', '{} · x', '{1dish} · x', '{{dish}} · x']) {
+		it(`rejects a brace that is not a {name} placeholder: ${JSON.stringify(stray)}`, async () => {
+			const design = withPlaceholders();
+			design.variation.en = { fullTitle: stray };
+			const convert = await loadConvert();
+			expect(() => convert(design), `got no error for ${JSON.stringify(stray)}`).toThrow();
+		});
+	}
+
 	it('rejects two segments that flatten to the same key', async () => {
 		const design = sampleDesign();
 		for (const locale of LOCALES) {

@@ -46,7 +46,7 @@ import { backLink, scrollWindowTo } from '../testutil/variations-e2e';
 //
 // Sources:
 // - Desktop README -> Layout & screens -> Recipe page: "Hero grid 1fr/1.1fr:
-//   eyebrow "Region · Dish", title 56px serif, description 17px, Time /
+//   eyebrow "Region" (the region only, D-FE9-6), title 56px serif, description 17px, Time /
 //   Serves strip (stepper buttons 34px) | 380px photo. Body grid
 //   minmax(300px,380px) 1fr: ingredients card is sticky (top 24px) while the
 //   method scrolls; steps use 42px number circles and 18px text (lh 1.6, max
@@ -122,7 +122,8 @@ test.describe('Recipe (desktop): hero grid', () => {
 			await openRecipe(page);
 			const copy = BETANZOS.en;
 			const eyebrow = page.getByTestId(RECIPE_TEST_IDS.eyebrow);
-			await expect(eyebrow).toHaveText(`${copy.region} · ${copy.dish}`);
+			// FE-9 D-FE9-6: "eyebrow "Region" (the region only)".
+			await expect(eyebrow).toHaveText(copy.region);
 			const style = await computedStyle(title(page), ['font-size', 'line-height', 'font-family']);
 			expect(style['font-size']).toBe(`${TITLE_PX}px`);
 			expectPx(parseFloat(style['line-height']), TITLE_PX * TITLE_LINE_HEIGHT, 'title line-height');

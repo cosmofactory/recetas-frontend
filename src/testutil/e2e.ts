@@ -45,10 +45,11 @@ export const PAGES: PageFixture[] = [
 	{
 		name: 'recipe',
 		path: '/dishes/tortilla/gal',
+		// The recipe title (D-FE9-6): "{dish} · {variation}".
 		text: {
-			en: 'Betanzos-style runny',
-			es: 'Estilo Betanzos, jugosa',
-			ru: 'По-бетансосски, жидкая внутри'
+			en: 'Tortilla de patatas · Betanzos-style runny',
+			es: 'Tortilla de patatas · Estilo Betanzos, jugosa',
+			ru: 'Тортилья · По-бетансосски, жидкая внутри'
 		},
 		h1: true
 	}

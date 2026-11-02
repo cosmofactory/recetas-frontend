@@ -69,6 +69,7 @@
 	"recipe_serves": "Порции",
 	"recipe_ingredients": "Ингредиенты",
 	"recipe_method": "Приготовление",
+	"variation_fullTitle": "{dish} · {variation}",
 	"units_g": "г",
 	"units_ml": "мл",
 	"units_kg": "кг",

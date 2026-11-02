@@ -3,7 +3,9 @@
 	import type { components } from '#lib/api/schema.d.ts';
 	import { m } from '#lib/paraglide/messages.js';
 	import RegionDishRow from './RegionDishRow.svelte';
-	import { regionVariations } from './region-variations.ts';
+	import { regionVariations, type RegionVariationRow } from './region-variations.ts';
+	import { variationTitle } from './variation-title.ts';
+	import { getLocale } from '#lib/paraglide/runtime.js';
 
 	type Schemas = components['schemas'];
 
@@ -19,6 +21,14 @@
 	let { region, dishes, recipeHref, mediaBaseUrl }: Props = $props();
 
 	const rows = $derived(regionVariations(region.key, dishes));
+	const dishNames = $derived(new Map(dishes.map((dish) => [dish.key, dish.name])));
+
+	// FE-9 D-FE9-6: out of its dish page, a row's title names the dish.
+	const rowTitle = (row: RegionVariationRow): string =>
+		variationTitle(
+			{ dishName: dishNames.get(row.dishKey) ?? '', variationName: row.name },
+			getLocale()
+		);
 </script>
 
 <div class="region-details" data-testid="region-details">
@@ -36,7 +46,14 @@
 	</ul>
 	<ul class="rows" role="list">
 		{#each rows as row (row.dishKey)}
-			<li><RegionDishRow {row} href={recipeHref(row.dishKey, region.key)} {mediaBaseUrl} /></li>
+			<li>
+				<RegionDishRow
+					{row}
+					title={rowTitle(row)}
+					href={recipeHref(row.dishKey, region.key)}
+					{mediaBaseUrl}
+				/>
+			</li>
 		{/each}
 	</ul>
 </div>

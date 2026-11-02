@@ -3,15 +3,16 @@ import type { components } from '#lib/api/schema.d.ts';
 import { withRequestLocale } from '#lib/server/request-locale.ts';
 import { loadExport } from '../../testutil/load-export';
 import { expectedIngredients, recipeIn, type Recipe } from '../../testutil/recipe';
-import { RECIPE_LOCALES, type RecipeLocale } from '../../testutil/recipe-copy';
+import { BETANZOS, RECIPE_LOCALES, type RecipeLocale } from '../../testutil/recipe-copy';
 
 // FE-8 PR 2 (stage FE-8 -> SEO: "JSON-LD schema.org/Recipe on recipe pages,
 // in the page's locale"; Acceptance: the Rich Results Test passes for a
 // recipe page in each locale). `recipeJsonLd(input)` in
 // #lib/seo/recipe-json-ld.ts builds the object; the page serialises it
 // (json-ld.spec.ts). Decisions pinned here:
-// - name / description: the variation's (Recipe.name / description), in the
-//   page's locale.
+// - name: the recipe title shown on the page (D-FE9-6: "{dish} · {variation}",
+//   or the variation name alone when it starts with the dish name);
+//   description: the variation's; both in the page's locale.
 // - image: an array of absolute JPEG URLs of the hero, one per hero width,
 //   from #lib/media.ts's URL format (`<prefix>-<w>w.jpg`); JPEG for the same
 //   reason as og:image. Google requires an image for a Recipe rich result,
@@ -88,7 +89,7 @@ const sortedImages = (node: Record<string, unknown>) => [node.image].flat().map(
 const BETANZOS_EN = {
 	'@context': 'https://schema.org',
 	'@type': 'Recipe',
-	name: 'Betanzos-style runny',
+	name: 'Tortilla de patatas · Betanzos-style runny',
 	description: 'Barely-set centre, no onion, eaten with bread',
 	image: [`${MEDIA}/${HERO}-1600w.jpg`, `${MEDIA}/${HERO}-800w.jpg`],
 	recipeIngredient: ['4 Eggs', '400 g Waxy potatoes', '250 ml Olive oil, for confit', '1 tsp Salt'],
@@ -127,7 +128,7 @@ describe('recipeJsonLd: per locale', () => {
 			const got = await build({ lang });
 			expect(got['@context']).toBe('https://schema.org');
 			expect(got['@type']).toBe('Recipe');
-			expect([got.name, got.description]).toEqual([recipe.name, recipe.description]);
+			expect([got.name, got.description]).toEqual([BETANZOS[lang].title, recipe.description]);
 			expect(got.inLanguage).toBe(lang);
 			expect(got.url).toBe(`${ORIGIN}/${lang}/dishes/tortilla/gal`);
 		});

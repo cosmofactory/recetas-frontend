@@ -71,7 +71,10 @@ export const EXPECTED_MESSAGE_KEYS: readonly string[] = [
 	'desktop_hint',
 	...indexed('desktop_g', 3),
 	...indexed('desktop_tries', 5),
-	'desktop_viewRecipe'
+	'desktop_viewRecipe',
+	// FE-9 FB-10 (D-FE9-6): "{dish} · {variation}", a variation's title outside
+	// its dish page (region rows, the Recipe page). ICU placeholders, no plural.
+	'variation_fullTitle'
 ];
 
 // The inlang message-format shape of a plural message. Each form includes the

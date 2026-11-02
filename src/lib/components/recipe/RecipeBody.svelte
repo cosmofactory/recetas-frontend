@@ -9,11 +9,13 @@
 
 	type Props = {
 		recipe: components['schemas']['Recipe'];
+		// The page's <h1>, the variationTitle (FE-9 D-FE9-6).
+		title: string;
 		lang: string;
 		mediaBaseUrl: string | undefined;
 	};
 
-	let { recipe, lang, mediaBaseUrl }: Props = $props();
+	let { recipe, title, lang, mediaBaseUrl }: Props = $props();
 
 	// In memory only (X6). The page keys this component on the recipe, so
 	// another recipe starts again at its base servings with nothing ticked.
@@ -22,7 +24,7 @@
 	const time = $derived(formatRecipeTime(lang, recipe.timeMinutes, recipe.timeNote));
 </script>
 
-<RecipeHeader {recipe} {mediaBaseUrl}>
+<RecipeHeader {recipe} {title} {mediaBaseUrl}>
 	{#snippet strip()}
 		<RecipeInfoStrip {time} bind:servings />
 	{/snippet}

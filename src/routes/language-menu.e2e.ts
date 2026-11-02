@@ -329,7 +329,7 @@ test.describe('language menu: switching keeps the page and its URL state', () =>
 		await pickByKeyboard(page, 'en', 'es');
 		await expectUrl(page, '/es/dishes/tortilla/gal');
 		await expectLanguage(page, 'es');
-		await expect(page.getByRole('heading', { level: 1 })).toHaveText(BETANZOS.es.name);
+		await expect(page.getByRole('heading', { level: 1 })).toHaveText(BETANZOS.es.title);
 	});
 });
 

@@ -248,7 +248,9 @@ test.describe('Variations page: cards open the recipe', () => {
 			await gotoHydrated(page, `/${lang}/dishes/tortilla`);
 			await variationCards(page).nth(1).click();
 			await expectUrl(page, recipePath(lang, 'tortilla', second.regionKey));
-			await expect(page.getByRole('heading', { level: 1 })).toHaveText(second.name);
+			// D-FE9-6: the recipe's h1 names the dish too.
+			const title = `${TORTILLA_PAGE[lang].name} · ${second.name}`;
+			await expect(page.getByRole('heading', { level: 1 })).toHaveText(title);
 		});
 	}
 });
