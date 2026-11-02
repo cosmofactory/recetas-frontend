@@ -6,7 +6,8 @@ import {
 	realMouse,
 	realTouch,
 	type Pace,
-	type Point
+	type Point,
+	type Timing
 } from '../../../testutil/real-input';
 import {
 	CONTENT_TEST_ID,
@@ -79,13 +80,17 @@ const ABOVE_SHEET_Y = 100;
 // Slow: 4px every 40ms (0.1 px/ms, far under the flick speed, and only
 // slower on a loaded machine).
 const SLOW: Pace = { stepPx: 4, pauseMs: 40 };
-// A flick: one 70px event (under the 80px threshold, so only its speed can
-// snap it). The speed is measured from the press, so it stays ≥ 0.7 px/ms
-// however slow CDP gets, up to the 100ms velocity window. Up from the handle
-// in peek, that one event lands above the sheet, on the scrim: the sheet must
-// keep the pointer from the press on (review finding, lost mouse release).
+// A flick: 70px (under the 80px threshold, so only its speed can snap it)
+// in one move a frame after the press, released a frame later: 4.4 px/ms in
+// event time (Timing), however slowly the runner delivers it. Up from the
+// handle in peek, that one move lands above the sheet, on the scrim: the
+// sheet must keep the pointer from the press on (review finding, lost mouse
+// release).
 const FLICK_PX = 70;
-const FLICK: Pace = { stepPx: FLICK_PX };
+const FRAME_MS = 16;
+const FLICK: Timing = { stepPx: FLICK_PX, msPerStep: FRAME_MS };
+// The same 70px, slowly: 10px every 50ms (0.2 px/ms, under the flick speed).
+const SLOW_SAME_DISTANCE: Timing = { stepPx: 10, msPerStep: 50 };
 // One mouse event from the handle in peek to the scrim above the sheet.
 const JUMP_OUT_PX = 40;
 // Content swipes: long enough for the browser to scroll, at finger speed.
@@ -159,6 +164,18 @@ async function mouseDragHandle(f: Fixture, dy: number, pace: Pace = {}) {
 	await realMouse.press(from);
 	await realMouse.move(from, shifted(from, dy), pace);
 	await realMouse.release(shifted(from, dy));
+	await afterGesture();
+}
+
+async function timedMouseDragHandle(f: Fixture, dy: number, timing: Timing) {
+	const from = centreOf(f.handle);
+	await realMouse.timedDrag(from, shifted(from, dy), timing);
+	await afterGesture();
+}
+
+async function timedTouchDragHandle(f: Fixture, dy: number, timing: Timing) {
+	const from = centreOf(f.handle);
+	await realTouch.timedDrag(from, shifted(from, dy), timing);
 	await afterGesture();
 }
 
@@ -309,27 +326,6 @@ describe('BottomSheet handle drag: release snaps', () => {
 			dy: SHORT_DRAG_PX,
 			pace: SLOW,
 			want: []
-		},
-		{
-			name: 'a fast 70px flick up from peek → expanded',
-			from: 'peek',
-			dy: -FLICK_PX,
-			pace: FLICK,
-			want: ['expanded']
-		},
-		{
-			name: 'a fast 70px flick down from peek → hidden',
-			from: 'peek',
-			dy: FLICK_PX,
-			pace: FLICK,
-			want: ['hidden']
-		},
-		{
-			name: 'a fast 70px flick down from expanded → peek',
-			from: 'expanded',
-			dy: FLICK_PX,
-			pace: FLICK,
-			want: ['peek']
 		}
 	];
 
@@ -345,6 +341,74 @@ describe('BottomSheet handle drag: release snaps', () => {
 		it(`touch: ${name}`, async () => {
 			const f = await renderSheet(from);
 			await touchDrag(centreOf(f.handle), dy, pace);
+			expectRequests(f, want, name);
+		});
+	}
+
+	// Flicks are timed in event time (Timing), so their speed is the same on
+	// any runner; each has a counterpart over the same 70px, slowly, that
+	// must not snap (so the flick's speed is what snaps it).
+	const timedCases: {
+		name: string;
+		from: SheetState;
+		dy: number;
+		timing: Timing;
+		want: SheetState[];
+	}[] = [
+		{
+			name: 'a fast 70px flick up from peek → expanded',
+			from: 'peek',
+			dy: -FLICK_PX,
+			timing: FLICK,
+			want: ['expanded']
+		},
+		{
+			name: 'a fast 70px flick down from peek → hidden',
+			from: 'peek',
+			dy: FLICK_PX,
+			timing: FLICK,
+			want: ['hidden']
+		},
+		{
+			name: 'a fast 70px flick down from expanded → peek',
+			from: 'expanded',
+			dy: FLICK_PX,
+			timing: FLICK,
+			want: ['peek']
+		},
+		{
+			name: 'a slow 70px drag up from peek snaps back',
+			from: 'peek',
+			dy: -FLICK_PX,
+			timing: SLOW_SAME_DISTANCE,
+			want: []
+		},
+		{
+			name: 'a slow 70px drag down from peek snaps back',
+			from: 'peek',
+			dy: FLICK_PX,
+			timing: SLOW_SAME_DISTANCE,
+			want: []
+		},
+		{
+			name: 'a slow 70px drag down from expanded snaps back',
+			from: 'expanded',
+			dy: FLICK_PX,
+			timing: SLOW_SAME_DISTANCE,
+			want: []
+		}
+	];
+
+	for (const { name, from, dy, timing, want } of timedCases) {
+		it(`mouse: ${name}`, async () => {
+			const f = await renderSheet(from);
+			await timedMouseDragHandle(f, dy, timing);
+			expectRequests(f, want, name);
+		});
+
+		it(`touch: ${name}`, async () => {
+			const f = await renderSheet(from);
+			await timedTouchDragHandle(f, dy, timing);
 			expectRequests(f, want, name);
 		});
 	}
