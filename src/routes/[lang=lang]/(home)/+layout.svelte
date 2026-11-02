@@ -80,6 +80,7 @@
 
 <div class="home">
 	<MobileHeader
+		homeHref={localizedHref('/', lang)}
 		tabs={{ ...tabs, options: tabOptions(lang, true) }}
 		language={mobileLanguage.button(lang)}
 		search={searchButton}
