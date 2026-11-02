@@ -122,6 +122,13 @@ describe('MobileHeader logo link (D-FE9-7)', () => {
 		});
 	}
 
+	// Owner, 2026-11-02: no blue tap flash on the logo, as on the map; the page change is the feedback.
+	it('has no tap highlight', async () => {
+		const link = await shownLogoLink({ homeHref: '/en/' });
+		const highlight = getComputedStyle(link).getPropertyValue('-webkit-tap-highlight-color');
+		expect(highlight).toBe('rgba(0, 0, 0, 0)');
+	});
+
 	it('is not a heading and sits inside no heading', async () => {
 		const link = await shownLogoLink();
 		expect(link.closest('h1, h2, h3, h4, h5, h6, [role="heading"]'), 'got a heading').toBeNull();

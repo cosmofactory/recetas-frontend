@@ -427,6 +427,12 @@ describe('DesktopTopBar logo', () => {
 		expect(style(el, 'color')).toBe(computed('color', 'var(--ink)'));
 		expect(style(el, 'text-decoration-line')).toBe('none');
 	});
+
+	// Owner, 2026-11-02: no blue tap flash on the logo, as on the map; the page change is the feedback.
+	it('has no tap highlight', async () => {
+		await shownBar();
+		expect(style(logo(), '-webkit-tap-highlight-color')).toBe('rgba(0, 0, 0, 0)');
+	});
 });
 
 // Stage acceptance (1280×800 and 1440×900) is a QA screenshot comparison;

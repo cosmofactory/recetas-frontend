@@ -68,7 +68,8 @@
 		position: relative;
 		color: var(--ink);
 		font: 400 28px var(--font-display);
-		text-decoration: none;
+		text-decoration: none; /* No tap flash (owner, 2026-11-02): opening the start page is the feedback. */
+		-webkit-tap-highlight-color: transparent;
 	}
 
 	/* The 44px target (FE-8) without moving the logo, as on desktop. */
