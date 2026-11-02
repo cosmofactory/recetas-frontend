@@ -4,7 +4,9 @@ import { cdp } from 'vitest/browser';
 // (Chromium). Coordinates are the test document's CSS pixels; Vitest shows
 // that document in a scaled iframe, so they are mapped to the top page.
 
-export type Point = { x: number; y: number };
+import { pathPoints, sendPaced, type Pace, type Point } from './gesture-path';
+
+export type { Pace, Point };
 
 // Travel per move event, in the test document's pixels.
 const STEP_PX = 5;
@@ -16,12 +18,8 @@ function toPage(point: Point): Point {
 	return { x: frame.left + point.x * scale, y: frame.top + point.y * scale };
 }
 
-function path(from: Point, to: Point): Point[] {
-	const count = Math.max(1, Math.ceil(Math.abs(to.x - from.x) / STEP_PX));
-	return Array.from({ length: count }, (_, i) => ({
-		x: from.x + ((to.x - from.x) * (i + 1)) / count,
-		y: from.y + ((to.y - from.y) * (i + 1)) / count
-	}));
+function path(from: Point, to: Point, stepPx = STEP_PX): Point[] {
+	return pathPoints(from, to, stepPx);
 }
 
 type MouseType = 'mouseMoved' | 'mousePressed' | 'mouseReleased';
@@ -59,9 +57,11 @@ export const realMouse = {
 		await mouse('mouseMoved', at, false);
 		await mouse('mousePressed', at, true);
 	},
-	move: async (from: Point, to: Point) => {
-		for (const point of path(from, to)) await mouse('mouseMoved', point, true);
-	},
+	move: (from: Point, to: Point, pace: Pace = {}) =>
+		sendPaced(path(from, to, pace.stepPx), pace, (point) => mouse('mouseMoved', point, true)),
+	// Moves with no button held (a hover).
+	hover: (from: Point, to: Point) =>
+		sendPaced(path(from, to), {}, (point) => mouse('mouseMoved', point, false)),
 	release: (at: Point) => mouse('mouseReleased', at, false)
 };
 
@@ -77,6 +77,18 @@ export async function touchDrag(from: Point, to: Point) {
 	for (const point of path(from, to)) await touch('touchMove', [point]);
 	await touch('touchEnd', []);
 }
+
+// The parts of a one-finger gesture, for checks while the finger is down
+// and for paced or flicked travel. Pair with afterEach(disableTouch).
+export const realTouch = {
+	start: async (at: Point) => {
+		await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+		await touch('touchStart', [at]);
+	},
+	move: (from: Point, to: Point, pace: Pace = {}) =>
+		sendPaced(path(from, to, pace.stepPx), pace, (point) => touch('touchMove', [point])),
+	end: () => touch('touchEnd', [])
+};
 
 export function disableTouch() {
 	return cdp().send('Emulation.setTouchEmulationEnabled', { enabled: false });

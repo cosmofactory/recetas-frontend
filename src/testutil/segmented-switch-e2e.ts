@@ -1,11 +1,12 @@
 import { expect, type CDPSession, type Locator, type Page } from '@playwright/test';
+import { pathPoints, sendPaced, type Pace, type Point } from './gesture-path';
 import { boxOf, onlyVisible, type Box } from './home-e2e';
 
 // Shared helpers for the sliding Regional | Popular switch (FE-9 FB-3,
 // D-FE9-2): one thumb, data-testid="segment-thumb", per switch; the page has
 // two switches (mobile header, desktop top bar), only one visible.
 
-export type Point = { x: number; y: number };
+export type { Pace, Point };
 
 // Pointer travel per move event: small enough that the gesture reads as a
 // drag, not a jump, on every engine.
@@ -48,12 +49,8 @@ export async function expectSameBox(got: Locator, want: Locator, what: string, t
 	}
 }
 
-function steps(from: Point, to: Point): Point[] {
-	const count = Math.max(1, Math.ceil(Math.abs(to.x - from.x) / STEP_PX));
-	return Array.from({ length: count }, (_, i) => ({
-		x: from.x + ((to.x - from.x) * (i + 1)) / count,
-		y: from.y + ((to.y - from.y) * (i + 1)) / count
-	}));
+function steps(from: Point, to: Point, stepPx = STEP_PX): Point[] {
+	return pathPoints(from, to, stepPx);
 }
 
 // A real touch gesture (Chromium only: CDP Input.dispatchTouchEvent), so the
@@ -73,10 +70,10 @@ export class TouchDrag {
 		return new TouchDrag(cdp, at);
 	}
 
-	async moveTo(to: Point) {
-		for (const point of steps(this.at, to)) {
-			await this.cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [point] });
-		}
+	async moveTo(to: Point, pace: Pace = {}) {
+		await sendPaced(steps(this.at, to, pace.stepPx), pace, (point) =>
+			this.cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [point] })
+		);
 		this.at = to;
 	}
 
@@ -88,9 +85,9 @@ export class TouchDrag {
 
 // A mouse drag (pointerType "mouse"), which every engine Playwright drives
 // supports, WebKit on the iPhone profile included.
-export async function mouseDrag(page: Page, from: Point, to: Point) {
+export async function mouseDrag(page: Page, from: Point, to: Point, pace: Pace = {}) {
 	await page.mouse.move(from.x, from.y);
 	await page.mouse.down();
-	for (const point of steps(from, to)) await page.mouse.move(point.x, point.y);
+	await sendPaced(steps(from, to, pace.stepPx), pace, (point) => page.mouse.move(point.x, point.y));
 	await page.mouse.up();
 }
