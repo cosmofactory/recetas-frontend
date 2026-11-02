@@ -1,8 +1,9 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+	import { onMount, type Snippet } from 'svelte';
 	import { placeWhileFading } from '#lib/ui/fade-out.svelte.ts';
 	import { motionFor, prefersReducedMotion } from '#lib/ui/motion.svelte.ts';
 	import { sheetKeyboard } from '#lib/ui/sheet-keyboard.svelte.ts';
+	import { SheetDrag } from '#lib/ui/sheet-pointer-drag.svelte.ts';
 	import {
 		isSheetModal,
 		sheetScrimOpacity,
@@ -11,13 +12,16 @@
 	} from '#lib/ui/sheet.ts';
 	import { scrollToTopOn } from '#lib/ui/scroll-reset.svelte.ts';
 	import Scrim from './Scrim.svelte';
+	import SheetHandle from './SheetHandle.svelte';
 
 	// The mobile container (F6) for the region and dish sheets, controlled: it
 	// shows `state` and asks for a new one through onStateChange. `label` is
 	// its accessible name, `handleLabel` the handle's (it has no visible text).
 	// A new `contentKey` (other content, e.g. another region) scrolls the
 	// body back to the top. `opener` is the control that opened it, when the
-	// screen knows; focus returns there once hidden.
+	// screen knows; focus returns there once hidden. The handle, content
+	// marked data-sheet-drag and, in peek, the whole sheet drag it (D-FE9-1);
+	// a drag's release asks through onStateChange too.
 	type Props = {
 		state: SheetState;
 		onStateChange: (next: SheetState) => void;
@@ -47,7 +51,27 @@
 	);
 	const modal = $derived(isSheetModal(current));
 	const fade = $derived(motionFor(prefersReducedMotion.current) === 'fade');
-	const place = placeWhileFading({ target: () => current, hidden: 'hidden', fade: () => fade });
+	const place = placeWhileFading<SheetState>({
+		target: () => current,
+		hidden: 'hidden',
+		fade: () => fade
+	});
+	const drag = new SheetDrag({
+		state: () => current,
+		place: () => place.current,
+		contentKey: () => contentKey,
+		request: (next) => onStateChange(next)
+	});
+	$effect(() => drag.settleHeld());
+	const dragTransform = $derived(
+		drag.offset === undefined ? undefined : `translateY(${drag.offset}px)`
+	);
+	// Until hydrated nothing drags, so the content keeps the browser's own
+	// touch scrolling and text selection.
+	let dragReady = $state(false);
+	onMount(() => {
+		dragReady = true;
+	});
 
 	sheetKeyboard({
 		sheet: () => sheet,
@@ -66,6 +90,10 @@
 		class="sheet"
 		class:fade
 		class:faded={current === 'hidden'}
+		class:peek={current === 'peek'}
+		class:dragging={drag.dragging}
+		class:drag-ready={dragReady}
+		style:transform={dragTransform}
 		data-state={place.current}
 		role="dialog"
 		aria-modal={modal ? 'true' : undefined}
@@ -73,16 +101,18 @@
 		tabindex="-1"
 		inert={current === 'hidden'}
 		ontransitionend={place.onTransitionEnd}
+		onpointerdown={drag.start}
+		onpointermove={drag.move}
+		onpointerup={drag.end}
+		onpointercancel={drag.cancel}
+		onclickcapture={drag.clickAfterDrag}
+		ondragstart={drag.preventNativeDrag}
 	>
-		<button
-			type="button"
-			class="handle"
-			aria-label={handleLabel}
-			aria-expanded={current === 'expanded'}
+		<SheetHandle
+			label={handleLabel}
+			expanded={current === 'expanded'}
 			onclick={() => onStateChange(toggledSheetState(current))}
-		>
-			<span class="bar"></span>
-		</button>
+		/>
 		<div class="body" bind:this={body}>
 			{@render children()}
 		</div>
@@ -144,30 +174,22 @@
 		opacity: 0;
 	}
 
-	/* "Handle area (padding 10px 0 6px, clickable): 40×4px bar, radius 2px, --border-chip." */
-	.handle {
-		position: relative;
-		display: flex;
-		flex: none;
-		justify-content: center;
-		width: 100%;
-		padding: 10px 0 6px;
-		border: 0;
-		background: transparent;
-		cursor: pointer;
+	/* D-FE9-1: while dragged the sheet follows the pointer, with no transition. */
+	.sheet.dragging {
+		transition: none;
 	}
 
-	.handle::before {
-		content: '';
-		position: absolute;
-		inset: var(--hit-inset);
-	}
-
-	.bar {
-		width: 40px;
-		height: 4px;
-		border-radius: 2px;
-		background: var(--border-chip);
+	/*
+	 * Once hydrated, drag zones (the handle is one) get the pointer's travel
+	 * instead of scrolling (pinch zoom stays) or selecting text; in peek the
+	 * content is one too, so it never scrolls there (FB-5: a swipe up expands
+	 * first).
+	 */
+	.sheet.drag-ready :global([data-sheet-drag]),
+	.sheet.drag-ready.peek .body {
+		touch-action: pinch-zoom;
+		-webkit-user-select: none;
+		user-select: none;
 	}
 
 	/* The sheet keeps its height; taller content scrolls here, below the handle. */

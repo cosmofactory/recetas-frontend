@@ -1,14 +1,7 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { userEvent } from 'vitest/browser';
 import { loadUiExport, stage } from '../../testutil/ui';
-import {
-	centreOf,
-	disableTouch,
-	mouseDrag,
-	realMouse,
-	touchDrag,
-	type Point
-} from '../../testutil/real-input';
+import { centreOf, mouseDrag, realMouse, touchDrag, type Point } from '../../testutil/real-input';
 
 // FE-9 FB-3 (D-FE9-2): ThumbDrag (src/lib/ui/segmented-thumb-drag.svelte.ts)
 // is the switch's drag logic. "The thumb can be dragged along the track; on
@@ -52,6 +45,8 @@ const MODULE = 'segmented-thumb-drag.svelte.ts';
 const JITTER_PX = 2;
 const FOLLOW_PX = 40;
 const OFFSET_TOLERANCE_PX = 1.5;
+// How far below the track a pointer lands when it leaves it.
+const OUTSIDE_PX = 30;
 
 type Fixture = {
 	drag: ThumbDragLike;
@@ -142,8 +137,6 @@ async function clickWithoutTrackPress(tab: HTMLElement) {
 	}
 }
 
-afterEach(() => disableTouch());
-
 describe('ThumbDrag: drag and release', () => {
 	it('a drag from the selected segment to the other calls choose once with its index', async () => {
 		const f = await setUp();
@@ -208,6 +201,42 @@ describe('ThumbDrag: drag and release', () => {
 	});
 });
 
+// Review finding (FB-2, the same pattern as the sheet): the track took the
+// pointer only after the slop, so a mouse whose first move left the track
+// lost both the move and the release, and the stale press then moved the
+// thumb on a plain hover.
+describe('ThumbDrag: a mouse press whose first move leaves the track', () => {
+	// Below the track, under the other segment: one event from the press.
+	const outsideBelow = (f: Fixture): Point => ({
+		x: centreOf(f.tabs[1]).x,
+		y: f.track.getBoundingClientRect().bottom + OUTSIDE_PX
+	});
+
+	async function pressAndJumpOut(f: Fixture): Promise<Point> {
+		const start = centreOf(f.tabs[0]);
+		const out = outsideBelow(f);
+		await realMouse.press(start);
+		await realMouse.move(start, out, { stepPx: Math.abs(out.x - start.x) + OUTSIDE_PX });
+		await realMouse.release(out);
+		await afterGesture();
+		return out;
+	}
+
+	it('still selects the segment it was dragged to, once', async () => {
+		const f = await setUp();
+		await pressAndJumpOut(f);
+		expect(f.choose.mock.calls, 'want choose(1) exactly once').toEqual([[1]]);
+	});
+
+	it('afterwards, hovering over the track with no button never moves the thumb', async () => {
+		const f = await setUp();
+		const out = await pressAndJumpOut(f);
+		await realMouse.hover(out, centreOf(f.tabs[1]));
+		await afterGesture();
+		expect(f.drag.offset, 'got the thumb following a hover').toBeUndefined();
+	});
+});
+
 describe("ThumbDrag: the drag's own click", () => {
 	it('swallows the trusted click (detail 1) a mouse drag ends with', async () => {
 		const f = await setUp();
@@ -237,7 +266,6 @@ describe("ThumbDrag: the drag's own click", () => {
 	it('does not swallow a later trusted click (detail 1) after a drag that fired no click', async () => {
 		const f = await setUp();
 		await touchDrag(centreOf(f.tabs[0]), centreOf(f.tabs[1]));
-		await disableTouch();
 		await afterGesture();
 		await clickWithoutTrackPress(f.tabs[1]);
 		expect(f.clicksThrough, 'got a later click swallowed by an old drag').toEqual([1]);
@@ -284,4 +312,64 @@ describe('ThumbDrag: the held segment', () => {
 			expect(f.choose.mock.calls, 'want the one drag-select only').toEqual([[1]]);
 		});
 	}
+});
+
+// FB-2 re-review (minor, slide-off cancel; main's FB-3 behaviour): a press on
+// a tab that slides off it along the other axis (straight down, so under the
+// horizontal slop: never a drag) and is released away is no activation.
+describe('ThumbDrag: a press released off the pressed tab', () => {
+	const SLIDE_OFF_PX = 150;
+
+	it('a mouse press on the selected tab released 150px below it activates nothing', async () => {
+		const f = await setUp();
+		const start = centreOf(f.tabs[0]);
+		const away = { x: start.x, y: start.y + SLIDE_OFF_PX };
+		expect(f.track.contains(document.elementFromPoint(away.x, away.y)), 'want away off it').toBe(
+			false
+		);
+		await realMouse.press(start);
+		await realMouse.move(start, away);
+		await realMouse.release(away);
+		await afterGesture();
+		expect(f.clicksThrough, 'got a click on a tab after sliding off it').toEqual([]);
+		expect(f.choose, 'got choose after sliding off').not.toHaveBeenCalled();
+	});
+});
+
+// FB-2 re-review (minor): a move with the primary button up means the
+// release was lost (synthetic events: a real press is captured, so its
+// release can't be lost). The stale press must end there, so a later press
+// the thumb doesn't take (the unselected tab) can't drag it with the old
+// press's start. Fails if the `buttons` check goes.
+describe('ThumbDrag: a press whose release was lost', () => {
+	const PRIMARY_BUTTONS = 1;
+
+	function mousePointer(type: string, target: Element, at: Point, buttons: number) {
+		const init = { bubbles: true, cancelable: true, composed: true, isPrimary: true };
+		const button = type === 'pointermove' ? -1 : 0;
+		const where = { clientX: at.x, clientY: at.y };
+		const id = { pointerId: 1, pointerType: 'mouse', button, buttons };
+		target.dispatchEvent(new PointerEvent(type, { ...init, ...where, ...id }));
+	}
+
+	it('a stale press ends on a buttonless move; a later untaken press drags nothing', async () => {
+		const f = await setUp();
+		const start = centreOf(f.tabs[0]);
+		mousePointer('pointerdown', f.tabs[0], start, PRIMARY_BUTTONS);
+		mousePointer('pointermove', f.tabs[0], start, 0);
+		const other = centreOf(f.tabs[1]);
+		mousePointer('pointerdown', f.tabs[1], other, PRIMARY_BUTTONS);
+		mousePointer('pointermove', f.tabs[1], shifted(other, -FOLLOW_PX), PRIMARY_BUTTONS);
+		expect(f.drag.offset, 'got the thumb dragged by a stale press').toBeUndefined();
+		mousePointer('pointerup', f.tabs[1], shifted(other, -FOLLOW_PX), 0);
+	});
+
+	it('control: the same synthetic press does drag the thumb', async () => {
+		const f = await setUp();
+		const start = centreOf(f.tabs[0]);
+		mousePointer('pointerdown', f.tabs[0], start, PRIMARY_BUTTONS);
+		mousePointer('pointermove', f.tabs[0], shifted(start, FOLLOW_PX), PRIMARY_BUTTONS);
+		expect(f.drag.offset, 'want the synthetic press to drag').toBeDefined();
+		mousePointer('pointerup', f.tabs[0], shifted(start, FOLLOW_PX), 0);
+	});
 });

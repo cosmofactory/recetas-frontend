@@ -19,7 +19,8 @@
 </script>
 
 <div class="dish-details" data-testid="dish-details">
-	<div class="title-row">
+	<!-- The header drags a sheet (D-FE9-1); no effect outside a BottomSheet. -->
+	<div class="title-row" data-sheet-drag>
 		<h2 class="name">{typeset(dish.name)}</h2>
 		<span class="count">{typeset(m.home_variation({ count: dish.variations.length }))}</span>
 	</div>
