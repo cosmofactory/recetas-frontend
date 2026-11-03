@@ -1,17 +1,15 @@
 <script lang="ts">
 	import type { ShapedRegion } from '#lib/map/region-map.ts';
+	import type { RegionClick } from './region-click.ts';
 
-	// isDefault: the desktop default region, drawn selected from 860px by
-	// CSS alone (a server-rendered page doesn't know its width).
 	type Props = {
 		region: ShapedRegion;
 		href: string;
 		selected: boolean;
-		isDefault?: boolean;
-		onclick?: (event: MouseEvent & { currentTarget: HTMLAnchorElement }) => void;
+		onclick?: (event: RegionClick) => void;
 	};
 
-	let { region, href, selected, isDefault = false, onclick }: Props = $props();
+	let { region, href, selected, onclick }: Props = $props();
 
 	const isPlainSpace = (event: KeyboardEvent) =>
 		event.key === ' ' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey;
@@ -29,7 +27,6 @@
 	class="map-region"
 	{href}
 	aria-current={selected ? 'true' : undefined}
-	data-default={isDefault ? '' : undefined}
 	class:untinted={region.tileColor === null}
 	style:--tile-color={region.tileColor ?? undefined}
 	onkeydown={activateOnSpace}
@@ -154,7 +151,7 @@
 				color var(--dur-map-hover);
 		}
 
-		.map-region:is([aria-current='true'], [data-default]) .map-label {
+		.map-region[aria-current='true'] .map-label {
 			background-color: var(--ink);
 			color: var(--on-accent);
 			box-shadow: var(--shadow-map-label);
@@ -165,11 +162,11 @@
 				filter: var(--map-hover-filter-desktop);
 			}
 
-			.map-region:is([aria-current='true'], [data-default]):hover .cell {
+			.map-region[aria-current='true']:hover .cell {
 				filter: none;
 			}
 
-			.map-region:not([aria-current='true'], [data-default]):hover .map-label {
+			.map-region:not([aria-current='true']):hover .map-label {
 				background-color: var(--bg-surface);
 				box-shadow: var(--shadow-map-label);
 			}

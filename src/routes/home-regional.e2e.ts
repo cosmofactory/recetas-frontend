@@ -1,3 +1,4 @@
+import { emptyRegionPanel } from '../testutil/region-e2e';
 import { expect, test, type Page } from '../testutil/e2e-test';
 import { ABOUT_COPY } from '../testutil/about-copy';
 import { LOCALES } from '../testutil/e2e';
@@ -218,7 +219,13 @@ test.describe('meta row: eyebrow and hint per layout', () => {
 				await expect(onlyVisible(page.getByText(copy.regionsCount, { exact: true }))).toHaveCount(
 					1
 				);
-				await expect(onlyVisible(page.getByText(shown, { exact: true }))).toHaveCount(1);
+				// On desktop /:lang/ the hint is also the empty panel's title (D-FE9-8).
+				const inPanel = isDesktopPage(page) ? 1 : 0;
+				await expect(onlyVisible(page.getByText(shown, { exact: true }))).toHaveCount(1 + inPanel);
+				await expect(
+					onlyVisible(emptyRegionPanel(page).getByText(shown, { exact: true })),
+					'want the hint as the empty panel title on desktop'
+				).toHaveCount(inPanel);
 				await expect(onlyVisible(page.getByText(hidden, { exact: true }))).toHaveCount(0);
 			}
 		);

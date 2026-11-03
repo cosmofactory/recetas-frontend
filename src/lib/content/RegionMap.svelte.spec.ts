@@ -63,8 +63,8 @@ import {
 //   label `transition:background .15s,color .15s`.
 // - Stage FE-9 -> FB-4 (D-FE9-3): dimming is opacity on the cells only, with
 //   the existing 200ms transition, instant under prefers-reduced-motion; no
-//   selection: every region at full colour. The desktop default (defaultKey,
-//   no JavaScript) looks selected from 860px only, so it dims too.
+//   selection: every region at full colour. Since D-FE9-8 (FE-9 FB-13) the
+//   desktop has no default region, so the map draws only selectedKey.
 // - Accessibility (both READMEs): "Map regions need accessible names
 //   ("Galicia") and must be keyboard-focusable. Provide the region list as a
 //   fallback for screen readers." Stage FE-4: "one <button> or link per
@@ -118,7 +118,6 @@ import {
 type RegionMapProps = {
 	regions: MapRegion[];
 	selectedKey?: string;
-	defaultKey?: string;
 	hrefFor: (key: string) => string;
 };
 
@@ -127,7 +126,6 @@ type RenderOptions = {
 	width?: number;
 	regions?: MapRegion[];
 	selectedKey?: string;
-	defaultKey?: string;
 };
 
 const MAP_TEST_ID = 'region-map';
@@ -164,8 +162,7 @@ async function renderMap(options: RenderOptions = {}, target = mapStage(options.
 	const props: RegionMapProps = {
 		regions: options.regions ?? regionsIn(lang),
 		hrefFor: regionHref(lang),
-		...(options.selectedKey ? { selectedKey: options.selectedKey } : {}),
-		...(options.defaultKey ? { defaultKey: options.defaultKey } : {})
+		...(options.selectedKey ? { selectedKey: options.selectedKey } : {})
 	};
 	await render(RegionMap, { target, props });
 	const map = page.getByTestId(MAP_TEST_ID);
@@ -672,10 +669,6 @@ describe('RegionMap in forced-colours mode at ≥ 860px', () => {
 	it('dims no region around the selection', async () => {
 		expectNothingDimmed(await renderMap({ width: 900, selectedKey: 'gal' }));
 	});
-
-	it('dims no region around the desktop default (defaultKey)', async () => {
-		expectNothingDimmed(await renderMap({ width: 900, defaultKey: 'and' }));
-	});
 });
 
 // --- mobile style (< 860px) -----------------------------------------------------
@@ -755,10 +748,6 @@ describe('RegionMap mobile style', () => {
 			const highlight = getComputedStyle(link).getPropertyValue('-webkit-tap-highlight-color');
 			expect(highlight, link.getAttribute('href') ?? '').toBe('rgba(0, 0, 0, 0)');
 		}
-	});
-
-	it('dims nothing for the desktop default (defaultKey) below 860px', async () => {
-		await expectSelectionLook(await renderMap({ defaultKey: 'and' }), null);
 	});
 
 	it('transitions the cell background, filter and opacity over 200ms (--dur-colour)', async () => {
@@ -895,10 +884,6 @@ describe('RegionMap desktop style', () => {
 
 	it('keeps the selected region’s tileColor and dims every other region’s cells', async () => {
 		await expectSelectionLook(await renderMap({ width: 900, selectedKey: 'gal' }), 'gal');
-	});
-
-	it('draws the desktop default (defaultKey) as selected: its colour kept, the rest dimmed', async () => {
-		await expectSelectionLook(await renderMap({ width: 900, defaultKey: 'and' }), 'and');
 	});
 
 	it('draws the selected label ink with --on-accent text and the shadow', async () => {

@@ -14,7 +14,9 @@ import {
 import {
 	activateRegion,
 	ANDALUCIA_EN,
-	ANDALUCIA_RU_NAME,
+	clickRegionCell,
+	emptyRegionPanel,
+	expectEmptyPanel,
 	expectSheetExpanded,
 	expectSheetHidden,
 	expectSheetPeek,
@@ -41,6 +43,7 @@ import {
 	type MapRegionCopy
 } from '../testutil/map-regions-e2e';
 import { expectMapSelection } from '../testutil/map-dim-e2e';
+import { expectDropdownClosed, typeInDesktopSearch } from '../testutil/desktop-search-e2e';
 
 // FE-4 PR 3, region details on the home screen (stage FE-4 -> Delivery 3,
 // Region sheet, Desktop Regional, Selection state, Acceptance).
@@ -59,9 +62,13 @@ import { expectMapSelection } from '../testutil/map-dim-e2e';
 //
 // Desktop (≥ 860px; desktop README -> Regional L56): "Right: region panel,
 // always visible (no sheet) ... Clicking a row opens that variation's
-// recipe. Andalucía is selected on first load." Stage FE-4: "Andalucía is
-// selected by default only when the URL has no region (/:lang/). The
-// default isn't written into the URL".
+// recipe." FE-9 FB-13, spec change D-FE9-8 (owner, 2026-11-03; desktop
+// README -> Regional, State `region: none on first load`): "No region is
+// selected on first load ... the whole map is at full colour and the panel
+// shows its empty state, the "Click a region to explore" hint as a serif
+// title followed by the 14 regions as chips linking to /:lang/regions/:key
+// (map order). Clicking a region selects it (others dim, D-FE9-3); clicking
+// the selected region again, or Esc, clears it back to /:lang/."
 //
 // Decisions pinned here (FE-4 PR 3 report):
 // - Escape is the keyboard twin of the scrim: it navigates to /:lang/ as a
@@ -73,8 +80,11 @@ import { expectMapSelection } from '../testutil/map-dim-e2e';
 //   passing through hidden.
 // - Focus: activating a map region keeps focus on its link (the navigation
 //   doesn't reset focus), so closing returns focus to that link.
-// - On desktop the map shows the default Andalucía as selected
-//   (aria-current="true") once hydrated; on mobile /:lang/ selects nothing.
+// - /:lang/ selects nothing on either layout (D-FE9-8). Clearing on
+//   desktop (click again or Escape) is the mobile scrim's navigation: a new
+//   history entry to /:lang/ (Back reselects the region), focus kept on the
+//   region link. The map links keep their /:lang/regions/:key hrefs.
+// - The empty state's chips carry each region's full name (not mapLabel).
 
 const PEEK = 'peek';
 
@@ -333,17 +343,15 @@ test.describe('mobile region sheet without JavaScript', () => {
 test.describe('desktop region panel', () => {
 	test.beforeEach(({ page }) => skipUnlessDesktop(page));
 
-	test('/en/ shows Andalucía, selected on the map, and the URL stays /en/', async ({ page }) => {
+	test('/en/ selects no region: the empty panel, nothing current, the URL stays /en/', async ({
+		page
+	}) => {
 		await gotoHydrated(page, '/en/');
-		const panel = regionPanel(page, ANDALUCIA_EN.name);
-		await expect(panel).toBeVisible();
-		await expect(panel.getByRole('heading', { level: 2, name: ANDALUCIA_EN.name })).toBeVisible();
-		await expect(panel.getByText(ANDALUCIA_EN.count, { exact: true })).toBeVisible();
-		await expect(panel.getByText(ANDALUCIA_EN.description, { exact: true })).toBeVisible();
-		for (const link of rowLinks(panel, 'en', ANDALUCIA_EN)) await expect(link).toBeVisible();
-		await expect(selectedRegions(page)).toHaveCount(1);
-		await expect(regionLink(page, 'and')).toHaveAttribute('aria-current', 'true');
-		expect(pathAndQuery(page), 'got the default written into the URL').toBe('/en/');
+		await expectEmptyPanel(page, 'en');
+		await expect(regionPanel(page, ANDALUCIA_EN.name), 'got a default region').toHaveCount(0);
+		await expect(selectedRegions(page)).toHaveCount(0);
+		await expectMapSelection(page, null);
+		expect(pathAndQuery(page)).toBe('/en/');
 	});
 
 	test('/en/regions/gal shows Galicia, selected on the map', async ({ page }) => {
@@ -357,11 +365,24 @@ test.describe('desktop region panel', () => {
 		await expect(regionPanel(page, ANDALUCIA_EN.name)).toHaveCount(0);
 		await expect(selectedRegions(page)).toHaveCount(1);
 		await expect(regionLink(page, 'gal')).toHaveAttribute('aria-current', 'true');
+		await expect(emptyRegionPanel(page), 'got the empty state on a region URL').toHaveCount(0);
 	});
 
-	test('/ru/ shows the default region in Russian', async ({ page }) => {
-		await gotoHydrated(page, '/ru/');
-		await expect(regionPanel(page, ANDALUCIA_RU_NAME)).toBeVisible();
+	for (const lang of LOCALES) {
+		test(`/${lang}/: the empty panel lists the 14 regions in map order`, async ({ page }) => {
+			await gotoHydrated(page, `/${lang}/`);
+			await expectEmptyPanel(page, lang);
+		});
+	}
+
+	test('a chip in the empty panel opens its region, selected', async ({ page }) => {
+		await gotoHydrated(page, '/en/');
+		await expect(emptyRegionPanel(page), 'want the empty region panel').toBeVisible();
+		await emptyRegionPanel(page).locator('a[href="/en/regions/gal"]').click();
+		await page.waitForURL((url) => url.pathname === '/en/regions/gal');
+		await expect(regionPanel(page, GALICIA_EN.name)).toBeVisible();
+		await expect(regionLink(page, 'gal')).toHaveAttribute('aria-current', 'true');
+		await expectMapSelection(page, 'gal');
 	});
 
 	test('clicking a region shows it in the panel without a reload', async ({ page }) => {
@@ -375,15 +396,16 @@ test.describe('desktop region panel', () => {
 	});
 
 	test(
-		'Back from a region returns the panel to Andalucía',
+		'Back from a region returns to the empty panel, nothing selected',
 		{ tag: '@cross-browser' },
 		async ({ page }) => {
 			await gotoHydrated(page, '/en/');
 			await tapRegion(page, 'gal');
 			await page.goBack();
 			await page.waitForURL((url) => url.pathname === '/en/');
-			await expect(regionPanel(page, ANDALUCIA_EN.name)).toBeVisible();
-			await expect(regionLink(page, 'and')).toHaveAttribute('aria-current', 'true');
+			await expect(emptyRegionPanel(page)).toBeVisible();
+			await expect(selectedRegions(page)).toHaveCount(0);
+			await expectMapSelection(page, null);
 		}
 	);
 
@@ -415,9 +437,10 @@ test.describe('desktop region panel without JavaScript', () => {
 	test.use({ javaScriptEnabled: false });
 	test.beforeEach(({ page }) => skipUnlessDesktop(page));
 
-	test('/en/ server-renders Andalucía in the panel', async ({ page }) => {
+	test('/en/ server-renders the empty panel, no region', async ({ page }) => {
 		await page.goto('/en/');
-		await expect(regionPanel(page, ANDALUCIA_EN.name)).toBeVisible();
+		await expectEmptyPanel(page, 'en');
+		await expect(regionPanel(page, ANDALUCIA_EN.name)).toHaveCount(0);
 	});
 
 	test('/ru/regions/gal server-renders Галисия in the panel', async ({ page }) => {
@@ -445,8 +468,8 @@ test.describe('region page headings', () => {
 });
 
 // Stage FE-4 -> Selection state: "Crossing 860px keeps the selection: a
-// mobile sheet in peek ↔ the desktop panel"; the desktop default is not a
-// selection, so it never opens the mobile sheet. Resizing is the same in
+// mobile sheet in peek ↔ the desktop panel"; /en/ has no selection on
+// either layout (D-FE9-8). Resizing is the same in
 // every project, so it runs in one.
 test.describe('resizing across 860px', () => {
 	const PROJECT = 'chromium-desktop-1280';
@@ -490,20 +513,19 @@ test.describe('resizing across 860px', () => {
 		expect(pathAndQuery(page)).toBe('/en/regions/gal');
 	});
 
-	test('/en/: the desktop default never opens the mobile sheet', async ({ page }, testInfo) => {
+	test('/en/: desktop ↔ mobile, no region selected on either', async ({ page }, testInfo) => {
 		onlyInResizeProject(testInfo);
 		await page.setViewportSize(DESKTOP);
 		await gotoHydrated(page, '/en/');
-		await expect(regionPanel(page, ANDALUCIA_EN.name)).toBeVisible();
-		await expect(regionLink(page, 'and')).toHaveAttribute('aria-current', 'true');
+		await expect(emptyRegionPanel(page)).toBeVisible();
+		await expect(selectedRegions(page)).toHaveCount(0);
 		await page.setViewportSize(MOBILE);
-		await expect(regionSheet(page)).toHaveAttribute('data-state', 'hidden');
 		await expectSheetHidden(page);
-		await expect(selectedRegions(page), 'got the desktop default selected on mobile').toHaveCount(
-			0
-		);
+		await expect(selectedRegions(page)).toHaveCount(0);
 		await page.setViewportSize(DESKTOP);
-		await expect(regionLink(page, 'and')).toHaveAttribute('aria-current', 'true');
+		await expect(emptyRegionPanel(page)).toBeVisible();
+		await expect(selectedRegions(page)).toHaveCount(0);
+		await expectMapSelection(page, null);
 		expect(pathAndQuery(page)).toBe('/en/');
 	});
 
@@ -549,7 +571,7 @@ test.describe('region details start scrolled to the top', () => {
 		async ({ page }) => {
 			skipUnlessDesktop(page);
 			await page.setViewportSize({ width: 1280, height: 800 });
-			await gotoHydrated(page, '/en/');
+			await gotoHydrated(page, '/en/regions/and');
 			const scrolled = await scrollToBottom(regionPanel(page, ANDALUCIA_EN.name));
 			expect(scrolled, 'want the Andalucía panel to scroll at 1280×800').toBeGreaterThan(0);
 			await tapRegion(page, 'gal');
@@ -584,39 +606,35 @@ test.describe('region details start scrolled to the top', () => {
 	);
 });
 
-// FE-4 PR 3 review, Andalucía without JavaScript. The server can't know the
-// width, so it renders the mobile selection (none) and aria-current stays
-// client-only (decision: an SSR aria-current would be wrong below 860px,
-// where /:lang/ selects nothing). The desktop default must still LOOK
-// selected from the HTML and CSS alone, and only at ≥ 860px. Since FE-9
-// FB-4 (D-FE9-3) "selected" looks like: the region keeps its tileColor and
-// every other region's cells are dimmed to --region-dimmed-opacity; on
-// desktop its label is ink with --on-accent text.
-test.describe('the desktop default selection without JavaScript', () => {
+// The no-JavaScript render. The server can't know the width, and since
+// FE-9 FB-13 (D-FE9-8) neither layout has a selection on /:lang/, so the
+// server HTML draws no region selected or dimmed at any width (the old
+// CSS-only desktop default is gone), and aria-current is never set there.
+test.describe('/en/ without JavaScript: no region selected', () => {
 	test.use({ javaScriptEnabled: false });
 
-	test(
-		'≥ 860px /en/: Andalucía keeps its colour, every other region is dimmed',
-		{ tag: '@layout' },
-		async ({ page }) => {
-			skipUnlessDesktop(page);
-			await page.goto('/en/');
-			await expectMapSelection(page, 'and');
-		}
-	);
-
-	test('≥ 860px /en/: Andalucía’s label is ink with --on-accent text', async ({ page }) => {
+	test('≥ 860px /en/: every region at full colour', { tag: '@layout' }, async ({ page }) => {
 		skipUnlessDesktop(page);
 		await page.goto('/en/');
-		const label = regionLink(page, 'and').locator('[data-map-label]');
-		await expect(label).toHaveCSS(
-			'background-color',
-			await tokenValue(page, 'background-color', 'var(--ink)')
-		);
-		await expect(label).toHaveCSS('color', await tokenValue(page, 'color', 'var(--on-accent)'));
+		await expectMapSelection(page, null);
 	});
 
-	test('≥ 860px /en/: aria-current stays client-only', async ({ page }) => {
+	test('≥ 860px /en/: no region label is drawn selected (ink)', async ({ page }) => {
+		skipUnlessDesktop(page);
+		await page.goto('/en/');
+		const ink = await tokenValue(page, 'background-color', 'var(--ink)');
+		const labels = visibleMap(page).locator('[data-map-label]');
+		const backgrounds = await labels.evaluateAll((els) =>
+			els.map((el) => getComputedStyle(el).backgroundColor)
+		);
+		expect(backgrounds.length).toBe(REGION_COUNT);
+		expect(
+			backgrounds.filter((bg) => bg === ink),
+			'got a label drawn selected'
+		).toEqual([]);
+	});
+
+	test('≥ 860px /en/: no aria-current', async ({ page }) => {
 		skipUnlessDesktop(page);
 		await page.goto('/en/');
 		await expect(selectedRegions(page)).toHaveCount(0);
@@ -677,11 +695,12 @@ async function expectRegionShown(page: Page, lang: Locale, region: MapRegionCopy
 	await expectSheetPeek(page, region.name);
 }
 
-// Back on the bare home: mobile hides the sheet, desktop shows the default.
+// Back on the bare home: mobile hides the sheet, desktop shows the empty panel.
 async function expectHomeAgain(page: Page, lang: Locale) {
 	await page.waitForURL((url) => url.pathname === `/${lang}/`);
+	await expect(selectedRegions(page)).toHaveCount(0);
 	if (isDesktopPage(page)) {
-		await expect(regionPanel(page, ANDALUCIA_EN.name)).toBeVisible();
+		await expect(emptyRegionPanel(page)).toBeVisible();
 		return;
 	}
 	await expectSheetHidden(page);
@@ -739,4 +758,122 @@ test.describe('every region', () => {
 			}
 		}
 	);
+});
+
+// FE-9 FB-13 (D-FE9-8): on desktop, "clicking the selected region again, or
+// Esc, clears it back to /:lang/" (Regional tab, no region). Decisions: the
+// clear is a new history entry like the mobile scrim (Back reselects), and
+// focus stays on the region link (reset: false, FE-4).
+async function expectCleared(page: Page, lang = 'en') {
+	await expect
+		.poll(() => pathAndQuery(page), { message: 'want the region cleared to the bare home' })
+		.toBe(`/${lang}/`);
+	await expect(selectedRegions(page)).toHaveCount(0);
+	await expect(emptyRegionPanel(page)).toBeVisible();
+	await expectMapSelection(page, null);
+}
+
+test.describe('desktop: clearing the selected region', () => {
+	test.beforeEach(({ page }) => skipUnlessDesktop(page));
+
+	test('click Galicia, then click it again: back to /en/, nothing selected', async ({ page }) => {
+		await gotoHydrated(page, '/en/');
+		await markDocument(page);
+		await tapRegion(page, 'gal');
+		await expectMapSelection(page, 'gal');
+		await clickRegionCell(page, 'gal');
+		await expectCleared(page);
+		await expectSameDocument(page, 'clearing a region');
+	});
+
+	test(
+		'a cold load of /ru/regions/gal, then a click on Galicia: back to /ru/',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await gotoHydrated(page, '/ru/regions/gal');
+			await expect(regionLink(page, 'gal', 'ru')).toHaveAttribute('aria-current', 'true');
+			await clickRegionCell(page, 'gal', 'ru');
+			await expectCleared(page, 'ru');
+		}
+	);
+
+	test('clearing by click is a new entry: Back reselects the region', async ({ page }) => {
+		await gotoHydrated(page, '/en/');
+		await tapRegion(page, 'gal');
+		const entries = await historyLength(page);
+		await clickRegionCell(page, 'gal');
+		await expectCleared(page);
+		expect(await historyLength(page), 'want a new history entry').toBe(entries + 1);
+		await page.goBack();
+		await page.waitForURL((url) => url.pathname === '/en/regions/gal');
+		await expect(regionPanel(page, GALICIA_EN.name)).toBeVisible();
+		await expectMapSelection(page, 'gal');
+	});
+
+	test('clicking another region while one is selected switches, never clears', async ({ page }) => {
+		await gotoHydrated(page, '/en/regions/gal');
+		await tapRegion(page, 'cat');
+		await expect(regionLink(page, 'cat')).toHaveAttribute('aria-current', 'true');
+		await expectMapSelection(page, 'cat');
+	});
+
+	test(
+		'Escape after clicking Galicia: back to /en/, focus stays on Galicia',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await gotoHydrated(page, '/en/');
+			await activateRegion(page, 'gal');
+			await expect(regionLink(page, 'gal')).toBeFocused();
+			await page.keyboard.press('Escape');
+			await expectCleared(page);
+			await expect(regionLink(page, 'gal')).toBeFocused();
+		}
+	);
+
+	// WCAG 2.4.3: the clear replaces the panel's content, so focus there
+	// would fall to <body>; it moves to the cleared region's map link.
+	test(
+		'Escape with a panel row focused: back to /en/, focus on the Galicia link',
+		{ tag: '@cross-browser' },
+		async ({ page }) => {
+			await gotoHydrated(page, '/en/regions/gal');
+			const [firstRow] = rowLinks(regionPanel(page, GALICIA_EN.name), 'en', GALICIA_EN);
+			await firstRow.focus();
+			await expect(firstRow).toBeFocused();
+			await page.keyboard.press('Escape');
+			await expectCleared(page);
+			await expect(regionLink(page, 'gal')).toBeFocused();
+		}
+	);
+
+	test('Escape on a cold load of /en/regions/gal clears it', async ({ page }) => {
+		await gotoHydrated(page, '/en/regions/gal');
+		await page.keyboard.press('Escape');
+		await expectCleared(page);
+	});
+
+	// Escape layers (CLAUDE.md -> Containers): only the topmost layer closes.
+	test('Escape with the search dropdown open closes only the dropdown', async ({ page }) => {
+		await gotoHydrated(page, '/en/regions/gal');
+		await typeInDesktopSearch(page, 'en', 'tortilla');
+		await page.keyboard.press('Escape');
+		await expectDropdownClosed(page, 'en');
+		expect(pathAndQuery(page), 'got the region cleared with the dropdown').toBe('/en/regions/gal');
+		await expect(regionLink(page, 'gal')).toHaveAttribute('aria-current', 'true');
+	});
+
+	test('Escape on /en/ with no region does not navigate', async ({ page }) => {
+		await gotoHydrated(page, '/en/');
+		const entries = await historyLength(page);
+		await page.keyboard.press('Escape');
+		await expect(emptyRegionPanel(page)).toBeVisible();
+		expect(pathAndQuery(page)).toBe('/en/');
+		expect(await historyLength(page), 'got a navigation').toBe(entries);
+	});
+
+	test('Escape on the Popular tab does not navigate', async ({ page }) => {
+		await gotoHydrated(page, '/en/?tab=popular');
+		await page.keyboard.press('Escape');
+		expect(pathAndQuery(page)).toBe('/en/?tab=popular');
+	});
 });

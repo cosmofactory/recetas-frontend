@@ -1,8 +1,8 @@
-import { test } from '../testutil/e2e-test';
+import { expect, test, type Page } from '../testutil/e2e-test';
 import { skipUnlessLayout } from '../testutil/a11y-states-e2e';
-import { gotoHydrated } from '../testutil/home-e2e';
+import { gotoHydrated, pathAndQuery } from '../testutil/home-e2e';
 import { expectMapSelection } from '../testutil/map-dim-e2e';
-import { activateRegion, tapRegion } from '../testutil/region-e2e';
+import { activateRegion, clickRegionCell, tapRegion } from '../testutil/region-e2e';
 
 // FE-9 FB-4, spec change D-FE9-3 (owner, 2026-11-01): the selected map
 // region no longer turns near-black.
@@ -15,11 +15,18 @@ import { activateRegion, tapRegion } from '../testutil/region-e2e';
 // 200ms". Stage FE-9 -> FB-4: "No selection: every region at full colour.
 // Mobile and desktop (shared map)."
 //
-// Selection per layout (FE-4): mobile selects nothing on /:lang/ and the
-// region of /:lang/regions/:key (tap, keyboard or deep link); desktop selects
-// Andalucía on /:lang/ and the URL's region otherwise. The no-JavaScript
-// desktop default is in home-region.e2e.ts. Transition timing and reduced
+// Selection (FE-4; FE-9 FB-13, D-FE9-8): both layouts select nothing on
+// /:lang/ and the region of /:lang/regions/:key (tap, keyboard or deep link);
+// on desktop clicking the selected region again, or Escape, clears it to
+// /:lang/. The no-JavaScript render is in home-region.e2e.ts. Transition timing and reduced
 // motion are pinned in RegionMap.svelte.spec.ts.
+
+// A failed clear reads as an assertion, not a navigation timeout.
+async function expectBareHome(page: Page) {
+	await expect
+		.poll(() => pathAndQuery(page), { message: 'want the region cleared to /en/' })
+		.toBe('/en/');
+}
 
 test.describe('map dimming on mobile', () => {
 	test.beforeEach(({ page }) => skipUnlessLayout(page, ['mobile']));
@@ -63,11 +70,11 @@ test.describe('map dimming on desktop', () => {
 	test.beforeEach(({ page }) => skipUnlessLayout(page, ['desktop']));
 
 	test(
-		'/en/: the default Andalucía keeps its colour, every other region is dimmed',
+		'/en/ on first load: every region at full colour and opacity (D-FE9-8)',
 		{ tag: '@layout' },
 		async ({ page }) => {
 			await gotoHydrated(page, '/en/');
-			await expectMapSelection(page, 'and');
+			await expectMapSelection(page, null);
 		}
 	);
 
@@ -82,5 +89,29 @@ test.describe('map dimming on desktop', () => {
 	test('deep link /en/regions/gal: Galicia selected, the rest dimmed', async ({ page }) => {
 		await gotoHydrated(page, '/en/regions/gal');
 		await expectMapSelection(page, 'gal');
+	});
+
+	test('click Galicia again: nothing dimmed', async ({ page }) => {
+		await gotoHydrated(page, '/en/');
+		await tapRegion(page, 'gal');
+		await expectMapSelection(page, 'gal');
+		await clickRegionCell(page, 'gal');
+		await expectBareHome(page);
+		await expectMapSelection(page, null);
+	});
+
+	test('Escape on Galicia: nothing dimmed', async ({ page }) => {
+		await gotoHydrated(page, '/en/regions/gal');
+		await page.keyboard.press('Escape');
+		await expectBareHome(page);
+		await expectMapSelection(page, null);
+	});
+
+	test('Back from a region to /en/: no region dimmed', async ({ page }) => {
+		await gotoHydrated(page, '/en/');
+		await tapRegion(page, 'gal');
+		await page.goBack();
+		await page.waitForURL((url) => url.pathname === '/en/');
+		await expectMapSelection(page, null);
 	});
 });

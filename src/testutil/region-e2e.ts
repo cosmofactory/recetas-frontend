@@ -1,5 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
-import { tokenValue, visibleMap } from './home-e2e';
+import type { Locale } from './e2e';
+import { HOME_COPY, tokenValue, visibleMap } from './home-e2e';
+import { mapRegions } from './map-regions-e2e';
 
 // Shared fixtures for the FE-4 PR 3 region sheet / panel Playwright specs
 // (home-region*.e2e.ts, home-head.e2e.ts). Content is the vendored mock
@@ -101,8 +103,6 @@ export const ANDALUCIA_EN: RegionCopy = {
 		}
 	]
 };
-
-export const ANDALUCIA_RU_NAME = 'Андалусия';
 
 // extra-strings.json a11y.sheetHandle: the handle's name (it has no text).
 export const HANDLE_LABEL_EN = 'Expand or collapse';
@@ -235,4 +235,43 @@ export async function historyLength(page: Page): Promise<number> {
 // The map links currently marked selected (aria-current="true").
 export function selectedRegions(page: Page): Locator {
 	return visibleMap(page).locator('a[aria-current="true"]');
+}
+
+// FE-9 FB-13 (D-FE9-8): the desktop panel's empty state on /:lang/, the
+// "Click a region to explore" serif title and the 14 regions as chip links.
+// Test hook: data-testid="region-panel-empty".
+export const EMPTY_PANEL_TEST_ID = 'region-panel-empty';
+
+export function emptyRegionPanel(page: Page): Locator {
+	return page.getByTestId(EMPTY_PANEL_TEST_ID);
+}
+
+type ChipLink = { href: string; text: string };
+
+async function chipLinksIn(container: Locator): Promise<ChipLink[]> {
+	return container.locator('a[href]').evaluateAll((links) =>
+		links.map((link) => ({
+			href: link.getAttribute('href') ?? '',
+			text: (link.textContent ?? '').replace(/\s+/g, ' ').trim()
+		}))
+	);
+}
+
+// Visible, titled by the hint in the display (serif) font, and linking
+// every region in map order by its full name.
+export async function expectEmptyPanel(page: Page, lang: Locale) {
+	const empty = emptyRegionPanel(page);
+	await expect(empty, 'want the empty region panel').toBeVisible();
+	const title = empty.getByText(HOME_COPY[lang].clickRegion, { exact: true });
+	await expect(title).toBeVisible();
+	const serif = await tokenValue(page, 'font-family', 'var(--font-display)');
+	await expect(title, 'want the hint as a serif title').toHaveCSS('font-family', serif);
+	const want = mapRegions(lang).map((r) => ({ href: `/${lang}/regions/${r.key}`, text: r.name }));
+	expect(await chipLinksIn(empty)).toEqual(want);
+}
+
+// Clicks a cell of a region already selected (the URL stays its region
+// until the click clears it; tapRegion would wait for that URL).
+export async function clickRegionCell(page: Page, key: string, lang = 'en') {
+	await regionLink(page, key, lang).locator('[data-map-cell]').first().click();
 }

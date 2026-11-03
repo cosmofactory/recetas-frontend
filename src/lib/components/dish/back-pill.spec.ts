@@ -47,7 +47,14 @@ const CATALOG: OriginCatalog = {
 	]
 };
 
-const CASES: { what: string; origin: BackOrigin | null; want: BackPillLink }[] = [
+type Case = {
+	what: string;
+	origin: BackOrigin | null;
+	want: BackPillLink;
+	catalog?: OriginCatalog;
+};
+
+const CASES: Case[] = [
 	// Guards: what FE-6 already does, and must keep doing.
 	{
 		what: 'a direct load names the dish and links its Variations page',
@@ -80,18 +87,26 @@ const CASES: { what: string; origin: BackOrigin | null; want: BackPillLink }[] =
 		origin: { href: '/en/regions/and', from: 'home', tab: 'regional' },
 		want: { label: 'Andalucía', href: '/en/regions/and' }
 	},
+	// FE-9 FB-13 (D-FE9-8): the desktop home opens with no region, so the
+	// bare Regional home names no region; like Popular, it reads its tab.
 	{
-		what: 'the bare Regional home names its default panel region (FE-6)',
+		what: 'the bare Regional home reads Regional, not a default region (D-FE9-8)',
 		origin: { href: '/en/', from: 'home', tab: 'regional' },
-		want: { label: 'Andalucía', href: '/en/' }
+		want: { label: 'Regional', href: '/en/' }
+	},
+	{
+		what: 'the bare Regional home reads Regional with no regions in the catalog',
+		origin: { href: '/en/', from: 'home', tab: 'regional' },
+		want: { label: 'Regional', href: '/en/' },
+		catalog: { dishes: CATALOG.dishes, regions: [] }
 	}
 ];
 
 describe('recipeBackPill names the page its href goes to', () => {
-	for (const { what, origin, want } of CASES) {
+	for (const { what, origin, want, catalog = CATALOG } of CASES) {
 		it(what, async () => {
 			const recipeBackPill = await loadRecipeBackPill();
-			const got = recipeBackPill(origin, BETANZOS, 'en', CATALOG);
+			const got = recipeBackPill(origin, BETANZOS, 'en', catalog);
 			expect(got, `got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`).toEqual(want);
 		});
 	}
