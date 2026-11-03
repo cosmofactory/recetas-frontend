@@ -62,6 +62,7 @@ export const tortilla: Dish = {
 		{
 			regionKey: 'gal',
 			regionName: 'Galicia',
+			regionRank: 1,
 			recipeKey: 'tortilla-gal',
 			name: 'Betanzos-style runny',
 			nameEs: 'Estilo Betanzos, jugosa',

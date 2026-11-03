@@ -6,14 +6,16 @@ type Dish = components['schemas']['Dish'];
 // with its dish key (the recipe URL is /:lang/dishes/:dishKey/:regionKey).
 export type RegionVariationRow = Dish['variations'][number] & { dishKey: string };
 
-const byDishOrder = (a: Dish, b: Dish) => a.order - b.order;
+const byRegionRank = (a: RegionVariationRow, b: RegionVariationRow) => a.regionRank - b.regionRank;
 
 // Mobile README -> Region sheet: "this region's variation of each popular
-// dish (from dishes[].variations where regionKey matches)", in dish order
-// (RegionDetail's documented order). The given list is left as it is.
+// dish (from dishes[].variations where regionKey matches)", ordered by
+// regionRank: the backend's importance order for the region (stack.md X15).
+// The given list is left as it is.
 export function regionVariations(regionKey: string, dishes: readonly Dish[]): RegionVariationRow[] {
-	return [...dishes].sort(byDishOrder).flatMap((dish) => {
+	const rows = dishes.flatMap((dish) => {
 		const variation = dish.variations.find((v) => v.regionKey === regionKey);
 		return variation ? [{ dishKey: dish.key, ...variation }] : [];
 	});
+	return rows.sort(byRegionRank);
 }
