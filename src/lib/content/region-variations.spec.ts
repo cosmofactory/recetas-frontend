@@ -96,7 +96,7 @@ describe('regionVariations: one row per dish cooked in the region', () => {
 });
 
 describe('regionVariations: order and edge cases', () => {
-	it('orders rows by Dish.order, not by list position', async () => {
+	it('orders rows by regionRank, not by list position', async () => {
 		const regionVariations = await load();
 		const shuffled = [...dishesIn('en')].reverse();
 		const got = regionVariations('gal', shuffled).map((row) => row.dishKey);
@@ -108,13 +108,16 @@ describe('regionVariations: order and edge cases', () => {
 		]);
 	});
 
-	it('follows a changed editorial order', async () => {
+	it('follows the importance order, not Dish.order (stack.md X15)', async () => {
 		const regionVariations = await load();
-		const dishes = dishesIn('en').map((dish) =>
-			dish.key === 'torrijas' ? { ...dish, order: 0 } : dish
-		);
-		const got = regionVariations('gal', dishes).map((row) => row.dishKey);
-		expect(got[0], `got ${JSON.stringify(got)}, want torrijas first (order 0)`).toBe('torrijas');
+		const ranked = (dish: Dish): Dish => ({
+			...dish,
+			variations: dish.variations.map((v) =>
+				v.regionKey === 'gal' && dish.key === 'torrijas' ? { ...v, regionRank: 0 } : v
+			)
+		});
+		const got = regionVariations('gal', dishesIn('en').map(ranked)).map((row) => row.dishKey);
+		expect(got[0], `got ${JSON.stringify(got)}, want torrijas first (rank 0)`).toBe('torrijas');
 	});
 
 	it('returns no rows for a region no dish is cooked in', async () => {

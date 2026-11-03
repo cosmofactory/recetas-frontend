@@ -188,6 +188,7 @@ describe('mock listDishes and getDish', () => {
 		expect(valencia).toStrictEqual<Dish['variations'][number]>({
 			regionKey: 'val',
 			regionName: 'Валенсия',
+			regionRank: 2,
 			recipeKey: 'paella-val',
 			name: 'Paella valenciana',
 			nameEs: 'Paella valenciana',

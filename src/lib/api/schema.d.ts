@@ -180,7 +180,7 @@ export interface components {
             regionalDishes: string[];
         };
         RegionDetail: components["schemas"]["Region"] & {
-            /** @description The variations cooked in this region, in dish order (`Dish.order`). */
+            /** @description The variations cooked in this region, in `regionRank` order (variation score, then `Dish.order`; stack.md X15). */
             variations: components["schemas"]["RegionVariation"][];
         };
         RegionVariation: {
@@ -196,7 +196,7 @@ export interface components {
         };
         Dish: {
             key: components["schemas"]["Slug"];
-            /** @description Editorial order; Popular and region lists use it. There is no sort control. */
+            /** @description Display order: importance score, then editorial order (stack.md X15). There is no sort control. */
             order: number;
             name: string;
             nameEs: string;
@@ -211,6 +211,8 @@ export interface components {
         VariationSummary: {
             regionKey: components["schemas"]["Slug"];
             regionName: string;
+            /** @description Position in its region's list: importance score, then dish display order (stack.md X15). Region lists sort by it. */
+            regionRank: number;
             recipeKey: components["schemas"]["Slug"];
             name: string;
             nameEs: string;
