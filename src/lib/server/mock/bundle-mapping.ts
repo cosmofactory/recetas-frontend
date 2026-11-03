@@ -9,11 +9,13 @@ import type {
 } from './bundle.ts';
 import { parseCourse, parseSeason, parseUnit } from './enums.ts';
 import { withValidTileColor } from '../region-colour.ts';
+import { byDisplayOrder, regionRanks } from './importance.ts';
 
 // Maps the import bundle into the API's response bodies for one locale, the
-// way the backend does after `make seed`: order is bundle order (1-based),
-// variations follow region order, Spanish text rides along as *Es, and a
-// missing photo is a set of null roles.
+// way the backend does after `make seed`: dishes in display order (importance
+// score, then bundle order; `order` is the 1-based position), a dish's
+// variations in region order with their regionRank, Spanish text rides along
+// as *Es, and a missing photo is a set of null roles.
 
 const SPANISH: Lang = 'es';
 
@@ -32,6 +34,9 @@ type Context = {
 	regions: Map<string, BundleRegion>;
 	regionOrder: Map<string, number>;
 	recipes: Map<string, BundleRecipe>;
+	// Bundle dishes in display order, and each variation's rank in its region.
+	dishes: BundleDish[];
+	regionRanks: Map<string, number>;
 };
 
 export function recipePath(dishKey: string, regionKey: string): string {
@@ -41,18 +46,21 @@ export function recipePath(dishKey: string, regionKey: string): string {
 export function buildView(bundle: ContentBundle, lang: Lang): CatalogView {
 	const ctx = context(bundle, lang);
 	const regions = bundle.regions.map((r, i) => toRegion(r, i, lang));
-	const dishes = bundle.dishes.map((d, i) => toDish(d, i, ctx));
+	const dishes = ctx.dishes.map((d, i) => toDish(d, i, ctx));
 	return {
 		regions,
 		dishes,
 		dishesByKey: new Map(dishes.map((d) => [d.key, d])),
 		regionDetails: new Map(regions.map((r) => [r.key, toRegionDetail(r, ctx)])),
-		recipes: new Map(bundle.dishes.flatMap((d) => dishRecipes(d, ctx)))
+		recipes: new Map(ctx.dishes.flatMap((d) => dishRecipes(d, ctx)))
 	};
 }
 
 function context(bundle: ContentBundle, lang: Lang): Context {
+	const dishes = byDisplayOrder(bundle.dishes);
 	return {
+		dishes,
+		regionRanks: regionRanks(dishes),
 		bundle,
 		lang,
 		regions: new Map(bundle.regions.map((r) => [r.key, r])),
@@ -89,7 +97,8 @@ function byRegionOrder(variations: BundleVariation[], ctx: Context): BundleVaria
 	return variations.toSorted((a, b) => order(a) - order(b));
 }
 
-function toVariationSummary(v: BundleVariation, ctx: Context): Dish['variations'][number] {
+// The fields a variation shares with its Recipe; the summary adds its rank.
+function variationFields(v: BundleVariation, ctx: Context) {
 	const region = lookup(ctx.regions, v.regionKey, 'region');
 	return {
 		regionKey: v.regionKey,
@@ -99,6 +108,13 @@ function toVariationSummary(v: BundleVariation, ctx: Context): Dish['variations'
 		nameEs: v.name[SPANISH],
 		description: v.description[ctx.lang],
 		photos: toPhotos(v.photos)
+	};
+}
+
+function toVariationSummary(v: BundleVariation, ctx: Context): Dish['variations'][number] {
+	return {
+		...variationFields(v, ctx),
+		regionRank: lookup(ctx.regionRanks, v.recipeKey, 'variation')
 	};
 }
 
@@ -131,13 +147,16 @@ function toRegionVariation(dish: BundleDish, v: BundleVariation, ctx: Context) {
 	};
 }
 
-// The variations cooked in a region, in dish order.
+// The variations cooked in a region, in regionRank order.
 function toRegionDetail(region: Region, ctx: Context): RegionDetail {
-	const variations = ctx.bundle.dishes.flatMap((dish) =>
-		dish.variations
-			.filter((v) => v.regionKey === region.key)
-			.map((v) => toRegionVariation(dish, v, ctx))
-	);
+	const rank = (recipeKey: string) => lookup(ctx.regionRanks, recipeKey, 'variation');
+	const variations = ctx.dishes
+		.flatMap((dish) =>
+			dish.variations
+				.filter((v) => v.regionKey === region.key)
+				.map((v) => toRegionVariation(dish, v, ctx))
+		)
+		.toSorted((a, b) => rank(a.recipeKey) - rank(b.recipeKey));
 	return { ...region, variations };
 }
 
@@ -151,7 +170,7 @@ function toRecipe(dish: BundleDish, v: BundleVariation, ctx: Context): Recipe {
 	return {
 		dishKey: dish.key,
 		dishName: dish.name[lang],
-		...toVariationSummary(v, ctx),
+		...variationFields(v, ctx),
 		timeMinutes: recipe.timeMinutes,
 		timeNote: recipe.timeNote?.[lang] ?? null,
 		baseServings: recipe.baseServings,

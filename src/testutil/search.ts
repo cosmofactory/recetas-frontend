@@ -94,6 +94,7 @@ function fixtureVariation(fields: VariationFixture): Dish['variations'][number] 
 	return {
 		regionName: fields.regionKey,
 		recipeKey: `${fields.regionKey}-recipe`,
+		regionRank: 1,
 		nameEs: fields.name,
 		description: '',
 		photos: NO_PHOTOS,

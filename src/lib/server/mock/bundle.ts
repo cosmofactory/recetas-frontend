@@ -30,6 +30,8 @@ export type BundleVariation = {
 	name: Localized;
 	description: Localized;
 	photos: BundlePhotos;
+	// Hidden importance score (stack.md X15); missing means 0.
+	score?: number;
 };
 
 export type BundleDish = {
