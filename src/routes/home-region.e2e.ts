@@ -16,6 +16,7 @@ import {
 	ANDALUCIA_EN,
 	clickRegionCell,
 	emptyRegionPanel,
+	expectCleared,
 	expectEmptyPanel,
 	expectSheetExpanded,
 	expectSheetHidden,
@@ -764,15 +765,6 @@ test.describe('every region', () => {
 // Esc, clears it back to /:lang/" (Regional tab, no region). Decisions: the
 // clear is a new history entry like the mobile scrim (Back reselects), and
 // focus stays on the region link (reset: false, FE-4).
-async function expectCleared(page: Page, lang = 'en') {
-	await expect
-		.poll(() => pathAndQuery(page), { message: 'want the region cleared to the bare home' })
-		.toBe(`/${lang}/`);
-	await expect(selectedRegions(page)).toHaveCount(0);
-	await expect(emptyRegionPanel(page)).toBeVisible();
-	await expectMapSelection(page, null);
-}
-
 test.describe('desktop: clearing the selected region', () => {
 	test.beforeEach(({ page }) => skipUnlessDesktop(page));
 

@@ -76,6 +76,7 @@
 	const tabs = $derived({ value: tab, label: m.a11y_homeTabs(), onChange: replaceTab });
 	const mobileLanguage = new LanguageMenuState('mobile');
 	const desktopLanguage = new LanguageMenuState('desktop');
+	let desktopTopBar: HTMLElement | undefined = $state();
 </script>
 
 <div class="home">
@@ -93,6 +94,7 @@
 		homeHref={localizedHref('/', lang)}
 		tabs={{ ...tabs, options: tabOptions(lang, false) }}
 		language={desktopLanguage.button(lang)}
+		bind:element={desktopTopBar}
 	>
 		{#snippet search()}
 			<DesktopSearch {...desktopSearch.props} bind:input={desktopSearch.field} />
@@ -110,6 +112,7 @@
 				{lang}
 				mediaBaseUrl={data.mediaBaseUrl}
 				onCloseRegion={closeRegion}
+				topBar={desktopTopBar}
 			/>
 		</HomeTabPanel>
 		<HomeTabPanel tab={POPULAR} selected={tab === POPULAR}>
