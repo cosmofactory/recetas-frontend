@@ -14,7 +14,7 @@ import { expectSameDocument, gotoHydrated, markDocument } from '../testutil/home
 import { dishCard, skipOnMobile } from '../testutil/popular-e2e';
 import { BETANZOS, RECIPE_LOCALES, variationsPath } from '../testutil/recipe-copy';
 import { clientNavigate } from '../testutil/recipe-e2e';
-import { ANDALUCIA_EN, historyLength, regionPanel } from '../testutil/region-e2e';
+import { historyLength, regionPanel } from '../testutil/region-e2e';
 import { recipePath, TORTILLA_PAGE, type VariationsLocale } from '../testutil/variations-copy';
 import {
 	backLink,
@@ -228,6 +228,20 @@ test.describe('Recipe back pill (desktop)', () => {
 			}
 		);
 
+		// FE-9 FB-13 (D-FE9-8): the bare Regional home shows no region, so the
+		// pill reads its tab, as from Popular.
+		test(
+			`${lang}: from the Regional home it reads "${pillHomeLabel(lang, 'regional')}"; the click returns there`,
+			{ tag: lang === 'en' ? ['@cross-browser'] : [] },
+			async ({ page }) => {
+				await gotoHydrated(page, `/${lang}/`);
+				await clientNavigate(page, betanzos);
+				await expectUrl(page, betanzos);
+				await expectPillWithHref(page, pillHomeLabel(lang, 'regional'), `/${lang}/`);
+				await expectPillGoesBack(page, `/${lang}/`);
+			}
+		);
+
 		test(
 			`${lang}: from the Galicia panel it reads "${copy.region}"; the click returns there`,
 			{ tag: lang === 'en' ? ['@cross-browser'] : [] },
@@ -241,19 +255,6 @@ test.describe('Recipe back pill (desktop)', () => {
 			}
 		);
 	}
-
-	test(
-		'from the Regional home (Andalucía panel) it reads "Andalucía" and returns to /en/',
-		{ tag: '@cross-browser' },
-		async ({ page }) => {
-			const recipe = recipePath('en', 'tortilla', ANDALUCIA_EN.key);
-			await gotoHydrated(page, '/en/');
-			await regionPanel(page, ANDALUCIA_EN.name).locator(`a[href="${recipe}"]`).click();
-			await expectUrl(page, recipe);
-			await expectPillWithHref(page, ANDALUCIA_EN.name, '/en/');
-			await expectPillGoesBack(page, '/en/');
-		}
-	);
 
 	test(
 		'Popular → Variations → Recipe: the dish pill, then the Popular pill, back to Popular',

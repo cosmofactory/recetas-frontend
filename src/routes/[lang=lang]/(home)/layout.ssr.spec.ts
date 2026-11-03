@@ -6,6 +6,7 @@ import { loadExport } from '../../../testutil/load-export';
 import {
 	decodeAmp,
 	elementHtml,
+	elementsWith,
 	headingTexts,
 	startTags,
 	visibleText,
@@ -317,14 +318,20 @@ describe('(home) layout: tabs are links', { timeout: COLD_COMPILE_TIMEOUT_MS }, 
 // server-renders the map with the sheet open in peek"; "Deep link
 // /ru/regions/gal server-renders with the sheet in peek and Russian text
 // (check with JavaScript disabled: the content is present in the HTML)".
-// Desktop: the region panel is always visible and "Andalucía is selected by
-// default only when the URL has no region".
+// Desktop: the region panel is always visible. FE-9 FB-13 (D-FE9-8, owner
+// 2026-11-03; desktop README -> Regional): "No region is selected on first
+// load ... the panel shows its empty state, the "Click a region to explore"
+// hint as a serif title followed by the 14 regions as chips linking to
+// /:lang/regions/:key (map order)". The server can't know the width, so this
+// is also the no-JavaScript desktop render: no default region anywhere.
 //
 // Decisions pinned here: the mobile sheet is the BottomSheet (role="dialog",
 // data-state, named by the region) and the desktop panel the StickyPanel (a
 // <section> named by the region); both are in the HTML (CSS hides one), so
 // a no-JS page of either width has its content. On /:lang/ the sheet is
-// hidden (inert) and the panel shows Andalucía. The region name is an <h2>
+// hidden (inert) and the panel column shows the empty state
+// (data-testid="region-panel-empty", the test hook this spec assumes; its
+// chips carry the region's full name). The region name is an <h2>
 // (the page's one <h1> is the about title, FE-9 FB-8).
 
 function sheetTag(html: string): StartTag {
@@ -411,27 +418,87 @@ describe(
 	}
 );
 
+const EMPTY_PANEL = 'data-testid="region-panel-empty"';
+
+// The one empty-state block in the HTML.
+function emptyPanelHtml(html: string): string {
+	const found = elementsWith(html, EMPTY_PANEL);
+	expect(found.length, `got ${found.length} empty panels, want 1`).toBe(1);
+	return found[0];
+}
+
+type ChipLink = { href: string; text: string };
+
+function chipLinks(html: string): ChipLink[] {
+	const links = html.matchAll(/<a\b[^>]*\bhref="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g);
+	return [...links].map((m) => ({ href: decodeAmp(m[1]), text: visibleText(m[2]) }));
+}
+
+// Every region in map (catalog) order, by its full name, to its region URL.
+function wantedChips(lang: Lang): ChipLink[] {
+	return buildView(bundle, lang).regions.map((region) => ({
+		href: `/${lang}/regions/${region.key}`,
+		text: region.name
+	}));
+}
+
+// Map links (to a region URL) carrying a selection marker.
+function markedMapLinks(html: string): string[] {
+	return startTags(html)
+		.filter((t) => t.name === 'a' && /\/regions\//.test(t.attrs.href ?? ''))
+		.filter((t) => 'aria-current' in t.attrs || 'data-default' in t.attrs)
+		.map((t) => t.attrs.href);
+}
+
 describe(
 	'(home) layout: desktop region panel in the server HTML',
 	{ timeout: COLD_COMPILE_TIMEOUT_MS },
 	() => {
-		it('/en/: the panel shows Andalucía, the default', async () => {
-			const html = await renderHome({ lang: 'en', path: '/en/' });
-			expect(panelNames(html), 'want one panel, named Andalucía').toEqual(['Andalucía']);
-			expect(visibleText(html), 'got no Andalucía description').toContain(ANDALUCIA_EN_DESCRIPTION);
-		});
+		for (const lang of ['en', 'es', 'ru'] as const) {
+			it(`/${lang}/: the panel names no region (no default, D-FE9-8)`, async () => {
+				const html = await renderHome({ lang, path: `/${lang}/` });
+				const regionNames = new Set(buildView(bundle, lang).regions.map((r) => r.name));
+				const named = panelNames(html).filter((name) => regionNames.has(name));
+				expect(named, `got a panel named ${JSON.stringify(named)}, want none`).toEqual([]);
+			});
 
-		it('/en/regions/gal: the panel shows Galicia, not Andalucía', async () => {
-			const html = await renderHome({ lang: 'en', path: '/en/regions/gal' });
-			expect(panelNames(html)).toEqual(['Galicia']);
-			expect(visibleText(html), 'got the default region on a region URL').not.toContain(
+			it(`/${lang}/: the empty state shows the "${COPY[lang].clickRegion}" title`, async () => {
+				const empty = emptyPanelHtml(await renderHome({ lang, path: `/${lang}/` }));
+				expect(visibleText(empty)).toContain(COPY[lang].clickRegion);
+			});
+
+			it(`/${lang}/: the empty state links the 14 regions in map order`, async () => {
+				const empty = emptyPanelHtml(await renderHome({ lang, path: `/${lang}/` }));
+				expect(chipLinks(empty)).toEqual(wantedChips(lang));
+			});
+		}
+
+		it('/en/: no region heading and no default region description in the HTML', async () => {
+			const html = await renderHome({ lang: 'en', path: '/en/' });
+			expect(headingTexts(html, 2), 'got Andalucía as a heading').not.toContain('Andalucía');
+			expect(visibleText(html), 'got the old default region').not.toContain(
 				ANDALUCIA_EN_DESCRIPTION
 			);
 		});
 
-		it('/ru/: the default panel is in Russian', async () => {
-			const html = await renderHome({ lang: 'ru', path: '/ru/' });
-			expect(panelNames(html)).toEqual(['Андалусия']);
+		it('/en/: no map region is marked selected or default (no-JS desktop)', async () => {
+			const html = await renderHome({ lang: 'en', path: '/en/' });
+			expect(markedMapLinks(html), 'got a marked map region').toEqual([]);
+			expect(html, 'got a map default marker').not.toContain('data-has-default');
+		});
+
+		it('/en/regions/gal: the panel shows Galicia and no empty state', async () => {
+			const html = await renderHome({ lang: 'en', path: '/en/regions/gal' });
+			expect(panelNames(html)).toEqual(['Galicia']);
+			expect(elementsWith(html, EMPTY_PANEL), 'got the empty state on a region URL').toEqual([]);
+			expect(visibleText(html), 'got another region on a region URL').not.toContain(
+				ANDALUCIA_EN_DESCRIPTION
+			);
+		});
+
+		it('/ru/regions/gal: the Russian panel is named Галисия', async () => {
+			const html = await renderHome({ lang: 'ru', path: '/ru/regions/gal' });
+			expect(panelNames(html)).toEqual([GALICIA_RU.name]);
 		});
 
 		// FE-5 PR 2: a closed Filters sheet (OverlaySheet, no data-state) may be

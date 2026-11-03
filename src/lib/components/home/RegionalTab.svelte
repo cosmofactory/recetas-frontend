@@ -2,19 +2,23 @@
 	import type { components } from '#lib/api/schema.d.ts';
 	import { MediaQuery } from 'svelte/reactivity';
 	import StickyPanel from '#lib/components/ui/StickyPanel.svelte';
+	import RegionChooser from '#lib/content/RegionChooser.svelte';
 	import RegionDetails from '#lib/content/RegionDetails.svelte';
 	import RegionMap from '#lib/content/RegionMap.svelte';
+	import type { RegionClick } from '#lib/content/region-click.ts';
 	import { recipeHref as recipeHrefIn, regionHref } from '#lib/i18n/localized-href.ts';
 	import type { MapRegionData } from '#lib/map/region-map.ts';
+	import { m } from '#lib/paraglide/messages.js';
 	import { desktopQuery } from '#lib/ui/breakpoints.ts';
 	import { sheetOpener } from '#lib/ui/sheet-opener.ts';
 	import AboutBlock from './AboutBlock.svelte';
 	import MetaRow from './MetaRow.svelte';
 	import RegionSheet from './RegionSheet.svelte';
-	import { DEFAULT_DESKTOP_REGION_KEY, findRegion, shownRegionKey } from './region-selection.ts';
+	import { desktopRegionClear } from './desktop-region-clear.svelte.ts';
+	import { findRegion } from './region-selection.ts';
 
 	// selectedKey: the URL's region. onCloseRegion leaves it (the sheet's
-	// scrim and Escape).
+	// scrim and Escape; on desktop a click on it again and Escape).
 	type Props = {
 		regions: MapRegionData[];
 		dishes: components['schemas']['Dish'][];
@@ -26,17 +30,26 @@
 
 	let { regions, dishes, selectedKey, lang, mediaBaseUrl, onCloseRegion }: Props = $props();
 
-	// The server can't know the width: it renders the mobile selection, and
-	// the desktop default appears on the map once hydrated.
+	// The server can't know the width; both layouts select only the URL's region.
 	const desktop = new MediaQuery(desktopQuery, false);
 	const selected = $derived(findRegion(regions, selectedKey));
-	const panelRegion = $derived(findRegion(regions, shownRegionKey(selectedKey, true)));
-	const mapKey = $derived(shownRegionKey(selectedKey, desktop.current));
-	// Drawn selected by CSS alone from 860px, so the no-JS desktop map shows it.
-	const defaultKey = $derived(selectedKey === undefined ? DEFAULT_DESKTOP_REGION_KEY : undefined);
 
 	// The map link that opened the sheet gets focus back when it closes.
 	const regionOpener = sheetOpener();
+	let mapBox: HTMLElement | undefined = $state();
+	let panelColumn: HTMLElement | undefined = $state();
+	const clearSelected = desktopRegionClear({
+		selectedKey: () => (desktop.current ? selected?.key : undefined),
+		onClear: () => onCloseRegion(),
+		panel: () => panelColumn,
+		regionLink: (key) =>
+			mapBox?.querySelector<HTMLElement>(`a[href="${hrefFor(key)}"]`) ?? undefined
+	});
+
+	function activateRegion(key: string, event: RegionClick) {
+		if (clearSelected(key, event)) return;
+		regionOpener.remember(key, event.currentTarget);
+	}
 
 	const hrefFor = (regionKey: string) => regionHref(regionKey, lang);
 	const recipeHref = (dishKey: string, regionKey: string) => recipeHrefIn(dishKey, regionKey, lang);
@@ -52,25 +65,21 @@
 		<div class="map-scroller">
 			<div class="map-frame">
 				<!-- reset false: focus stays on the region link, so closing returns it there. -->
-				<div class="map-box" data-sveltekit-reset="false">
-					<RegionMap
-						{regions}
-						selectedKey={mapKey}
-						{defaultKey}
-						{hrefFor}
-						onActivate={regionOpener.remember}
-					/>
+				<div class="map-box" data-sveltekit-reset="false" bind:this={mapBox}>
+					<RegionMap {regions} selectedKey={selected?.key} {hrefFor} onActivate={activateRegion} />
 				</div>
 			</div>
 			<AboutBlock />
 		</div>
 	</div>
-	<div class="panel-column desktop-only">
-		{#if panelRegion}
-			<StickyPanel label={panelRegion.name} contentKey={panelRegion.key}>
-				<RegionDetails region={panelRegion} {dishes} {recipeHref} {mediaBaseUrl} />
-			</StickyPanel>
-		{/if}
+	<div class="panel-column desktop-only" bind:this={panelColumn}>
+		<StickyPanel label={selected?.name ?? m.desktop_clickRegion()} contentKey={selected?.key}>
+			{#if selected}
+				<RegionDetails region={selected} {dishes} {recipeHref} {mediaBaseUrl} />
+			{:else}
+				<RegionChooser {regions} {hrefFor} />
+			{/if}
+		</StickyPanel>
 	</div>
 </div>
 <RegionSheet

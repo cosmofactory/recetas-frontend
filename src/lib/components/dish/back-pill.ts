@@ -1,7 +1,6 @@
 import { tabLabel } from '#lib/components/home/home-header.ts';
-import { DEFAULT_DESKTOP_REGION_KEY } from '#lib/components/home/region-selection.ts';
 import { variationsHref } from '#lib/i18n/localized-href.ts';
-import { POPULAR, REGIONAL, tabHref } from '#lib/ui/home-tab.ts';
+import { POPULAR, tabHref } from '#lib/ui/home-tab.ts';
 import type { BackOrigin } from '#lib/ui/back-origin.ts';
 
 export type BackPillLink = { label: string; href: string };
@@ -26,8 +25,8 @@ export function variationsBackPill(origin: BackOrigin | null, lang: string): Bac
 // Desktop prototype recipeBack: on a direct load the dish name, to its
 // Variations page. Else the label names the page the href goes to (stage
 // FE-7 -> Small decisions: a search pick can open another dish's recipe):
-// a Variations page by its dish, a region by its region, the home by its tab;
-// the bare Regional home by the region its desktop panel shows (FE-6).
+// a Variations page by its dish, a region by its region, the home by its tab
+// (the bare Regional home shows no region, D-FE9-8).
 export function recipeBackPill(
 	origin: BackOrigin | null,
 	recipe: RecipeNames,
@@ -40,9 +39,8 @@ export function recipeBackPill(
 
 function originPageName(origin: BackOrigin, catalog: OriginCatalog): string | undefined {
 	const match = ORIGIN_PAGE.exec(origin.href);
-	if (match) return named(match[1] === 'dishes' ? catalog.dishes : catalog.regions, match[2]);
-	if (origin.tab === REGIONAL) return named(catalog.regions, DEFAULT_DESKTOP_REGION_KEY);
-	return undefined;
+	if (!match) return undefined;
+	return named(match[1] === 'dishes' ? catalog.dishes : catalog.regions, match[2]);
 }
 
 function named(list: readonly Named[], key: string): string | undefined {

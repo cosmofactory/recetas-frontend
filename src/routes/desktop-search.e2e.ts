@@ -392,6 +392,19 @@ test.describe('desktop search: selecting', () => {
 		await expectUrl(page, HOME_WITH_FILTERS);
 	});
 
+	// FE-9 FB-13 (D-FE9-8): the bare Regional home names no region.
+	test('from the Regional home, the recipe pill reads Regional and returns to /en/', async ({
+		page
+	}) => {
+		await gotoHydrated(page, '/en/');
+		await typeInDesktopSearch(page, 'en', 'betanzos');
+		await pick(page, 'en', VARIATIONS, BETANZOS.en.name);
+		await expectUrl(page, '/en/dishes/tortilla/gal');
+		await expectPillWithHref(page, HOME_COPY.en.regional, '/en/');
+		await page.goBack();
+		await expectUrl(page, '/en/');
+	});
+
 	test('from a region, the recipe pill reads the region and returns to it', async ({ page }) => {
 		await gotoHydrated(page, '/en/regions/gal');
 		await typeInDesktopSearch(page, 'en', 'betanzos');
