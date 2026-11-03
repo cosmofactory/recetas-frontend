@@ -42,3 +42,9 @@ export function pushEscapeLayer(kind: EscapeLayerKind, onEscape: () => void): ()
 		if (layers.length === 0) document.removeEventListener('keydown', onKeydown);
 	};
 }
+
+// Whether a layer above `kind` is shown (an open search or menu over the
+// desktop region's `sheet` layer).
+export function isLayerShownAbove(kind: EscapeLayerKind): boolean {
+	return layers.some((layer) => layer.order > LAYER_ORDER[kind]);
+}

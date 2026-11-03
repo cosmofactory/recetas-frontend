@@ -18,7 +18,8 @@
 	import { findRegion } from './region-selection.ts';
 
 	// selectedKey: the URL's region. onCloseRegion leaves it (the sheet's
-	// scrim and Escape; on desktop a click on it again and Escape).
+	// scrim and Escape; on desktop a click on it again, Escape, or a click on
+	// empty space outside the panel and the desktop top bar (`topBar`)).
 	type Props = {
 		regions: MapRegionData[];
 		dishes: components['schemas']['Dish'][];
@@ -26,9 +27,10 @@
 		lang: string;
 		mediaBaseUrl: string | undefined;
 		onCloseRegion: () => void;
+		topBar?: HTMLElement;
 	};
 
-	let { regions, dishes, selectedKey, lang, mediaBaseUrl, onCloseRegion }: Props = $props();
+	let { regions, dishes, selectedKey, lang, mediaBaseUrl, onCloseRegion, topBar }: Props = $props();
 
 	// The server can't know the width; both layouts select only the URL's region.
 	const desktop = new MediaQuery(desktopQuery, false);
@@ -42,6 +44,7 @@
 		selectedKey: () => (desktop.current ? selected?.key : undefined),
 		onClear: () => onCloseRegion(),
 		panel: () => panelColumn,
+		topBar: () => topBar,
 		regionLink: (key) =>
 			mapBox?.querySelector<HTMLElement>(`a[href="${hrefFor(key)}"]`) ?? undefined
 	});

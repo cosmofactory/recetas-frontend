@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import type { Locale } from './e2e';
-import { HOME_COPY, tokenValue, visibleMap } from './home-e2e';
+import { HOME_COPY, pathAndQuery, tokenValue, visibleMap } from './home-e2e';
+import { expectMapSelection } from './map-dim-e2e';
 import { mapRegions } from './map-regions-e2e';
 
 // Shared fixtures for the FE-4 PR 3 region sheet / panel Playwright specs
@@ -274,4 +275,15 @@ export async function expectEmptyPanel(page: Page, lang: Locale) {
 // until the click clears it; tapRegion would wait for that URL).
 export async function clickRegionCell(page: Page, key: string, lang = 'en') {
 	await regionLink(page, key, lang).locator('[data-map-cell]').first().click();
+}
+
+// Desktop: the selection is gone, the URL is the bare home and the panel
+// shows its empty state.
+export async function expectCleared(page: Page, lang = 'en') {
+	await expect
+		.poll(() => pathAndQuery(page), { message: 'want the region cleared to the bare home' })
+		.toBe(`/${lang}/`);
+	await expect(selectedRegions(page)).toHaveCount(0);
+	await expect(emptyRegionPanel(page)).toBeVisible();
+	await expectMapSelection(page, null);
 }

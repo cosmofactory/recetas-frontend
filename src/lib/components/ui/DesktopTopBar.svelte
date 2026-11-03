@@ -8,19 +8,21 @@
 	type Language = Omit<ComponentProps<typeof LanguageButton>, 'size'>;
 	// search: the inline search field (FE-7); languageMenu: the menu,
 	// anchored under the language button, inside the <details> that opens it
-	// without JavaScript (language.summary).
+	// without JavaScript (language.summary). element: the bar itself, bound
+	// by the home so a click on it never clears the region (D-FE9-9).
 	type Props = {
 		homeHref: string;
 		tabs: Tabs;
 		language: Language;
 		search?: Snippet;
 		languageMenu?: Snippet;
+		element?: HTMLElement;
 	};
 
-	let { homeHref, tabs, language, search, languageMenu }: Props = $props();
+	let { homeHref, tabs, language, search, languageMenu, element = $bindable() }: Props = $props();
 </script>
 
-<header class="top-bar desktop-only">
+<header class="top-bar desktop-only" bind:this={element}>
 	<div class="row page-container">
 		<a class="logo" href={homeHref}>Asadorov</a>
 		<div class="switch">
