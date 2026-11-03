@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, globSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { repoFile } from '../../testutil/load-export';
 
@@ -168,5 +168,17 @@ describe('layout.css wiring', () => {
 			read('src/lib/styles/layout.css'),
 			'want layout.css to cap .page-container with the token'
 		).toMatch(/\.page-container\s*\{[^}]*max-width:\s*var\(--content-max-width\)/);
+	});
+});
+
+describe('tap highlight has one owner', () => {
+	// One rule, in global.css (no duplication of knowledge): a component that
+	// re-declares it would drift the next time the rule changes.
+	it('no component declares -webkit-tap-highlight-color', () => {
+		const components = globSync('src/**/*.svelte', { cwd: repoFile('') });
+		const offenders = components.filter((file) =>
+			read(file).includes('-webkit-tap-highlight-color:')
+		);
+		expect(offenders, 'got components re-declaring the tap highlight').toEqual([]);
 	});
 });
