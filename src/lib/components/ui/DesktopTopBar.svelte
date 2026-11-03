@@ -70,8 +70,7 @@
 		flex: none;
 		color: var(--ink);
 		font: 400 31px var(--font-display);
-		text-decoration: none; /* No tap flash (owner, 2026-11-02): opening the start page is the feedback. */
-		-webkit-tap-highlight-color: transparent;
+		text-decoration: none;
 	}
 
 	.logo::before {

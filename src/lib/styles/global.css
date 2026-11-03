@@ -4,6 +4,16 @@
 	box-sizing: border-box;
 }
 
+/*
+ * No tap flash on any control (owner, 2026-11-02/03: "we want mobile app
+ * experience"). Inherited, so this one rule covers every link, button and
+ * field; each control's own state change (sheet, menu, chip, page) is the
+ * feedback. Keyboard focus keeps its :focus-visible ring (layout.css).
+ */
+html {
+	-webkit-tap-highlight-color: transparent;
+}
+
 body {
 	margin: 0;
 	background: var(--bg-page);
