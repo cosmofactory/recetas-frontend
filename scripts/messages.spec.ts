@@ -5,6 +5,7 @@ import {
 	EXPECTED_MESSAGE_KEYS,
 	EXTRA_MESSAGE_KEYS,
 	PLURAL_MESSAGE_KEYS,
+	RECIPE_TIPS_HEADING,
 	RETIRED_MESSAGE_KEYS
 } from './testdata/message-keys';
 
@@ -63,6 +64,12 @@ describe('committed messages', () => {
 			expect(retired, `got retired keys ${JSON.stringify(retired)}, want a11y_* instead`).toEqual(
 				[]
 			);
+		});
+
+		it(`${locale}.json has the recipe tips heading "${RECIPE_TIPS_HEADING[locale]}" (FE-10)`, () => {
+			const got = readMessages(locale).recipe_tips;
+			const want = RECIPE_TIPS_HEADING[locale];
+			expect(got, `got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`).toBe(want);
 		});
 
 		it(`${locale}.json has no empty message`, () => {

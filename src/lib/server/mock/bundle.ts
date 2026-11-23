@@ -52,6 +52,8 @@ export type BundleRecipe = {
 	baseServings: number;
 	ingredients: { quantity: number; unit: string | null; name: Localized }[];
 	steps: Localized[];
+	// BE-8: optional in the bundle (max 3); missing means none.
+	tips?: Localized[];
 };
 
 export type ContentBundle = {

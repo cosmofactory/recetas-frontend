@@ -140,5 +140,6 @@
 		}
 	],
 	"recipe_hours": "h",
-	"recipe_minutes": "min"
+	"recipe_minutes": "min",
+	"recipe_tips": "Trucos"
 }

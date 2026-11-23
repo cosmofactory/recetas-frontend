@@ -179,6 +179,7 @@ function toRecipe(dish: BundleDish, v: BundleVariation, ctx: Context): Recipe {
 			unit: parseUnit(i.unit),
 			name: i.name[lang]
 		})),
-		steps: recipe.steps.map((step) => step[lang])
+		steps: recipe.steps.map((step) => step[lang]),
+		tips: (recipe.tips ?? []).map((tip) => tip[lang])
 	};
 }

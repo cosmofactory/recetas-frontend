@@ -70,8 +70,8 @@
 
 	.heading {
 		margin: 0;
-		padding-bottom: 6px;
-		font: 400 24px var(--font-display);
+		padding-bottom: var(--recipe-heading-padding-bottom);
+		font: var(--recipe-heading-font);
 	}
 
 	.rows {

@@ -6,6 +6,7 @@
 	import MethodSteps from './MethodSteps.svelte';
 	import RecipeHeader from './RecipeHeader.svelte';
 	import RecipeInfoStrip from './RecipeInfoStrip.svelte';
+	import RecipeTips from './RecipeTips.svelte';
 
 	type Props = {
 		recipe: components['schemas']['Recipe'];
@@ -36,7 +37,11 @@
 		{servings}
 		{lang}
 	/>
-	<MethodSteps steps={recipe.steps} />
+	<!-- One grid cell, so the tips stay in the method column on desktop. -->
+	<div>
+		<MethodSteps steps={recipe.steps} />
+		<RecipeTips tips={recipe.tips} />
+	</div>
 </div>
 
 <style>

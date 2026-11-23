@@ -272,6 +272,24 @@
 	--recipe-body-gap-desktop: clamp(32px, 4.4vw, 64px);
 
 	/*
+	 * Recipe sections (Ingredients, Method, Tips), Mobile README -> Screen 3
+	 * and the prototype: the 24px serif heading with padding-bottom 6px
+	 * (Method and Tips 34px from 860px); Method rows "padding 12px 0", text
+	 * 14.5px lh 1.5; desktop rows "padding:24px 0", text 18px lh 1.6, max
+	 * 640px. Method and Tips share the rows (FE-10).
+	 */
+	--recipe-heading-font: 400 24px var(--font-display);
+	--recipe-heading-padding-bottom: 6px;
+	--recipe-heading-size-desktop: 34px;
+	--recipe-row-padding: 12px 0;
+	--recipe-row-padding-desktop: 24px 0;
+	--recipe-text-size: 14.5px;
+	--recipe-text-line-height: 1.5;
+	--recipe-text-size-desktop: 18px;
+	--recipe-text-line-height-desktop: 1.6;
+	--recipe-text-max-width-desktop: 640px;
+
+	/*
 	 * The design gives no focus colour; ink is its existing high-contrast UI
 	 * colour (on every page and surface background).
 	 */
