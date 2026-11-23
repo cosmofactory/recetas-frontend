@@ -11,10 +11,10 @@ export const SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9';
 export const XHTML_NS = 'http://www.w3.org/1999/xhtml';
 export const SITEMAP_PATH = '/sitemap.xml';
 
-// The mock bundle (content.bundle.json): 14 regions, 7 dishes, 54
+// The mock bundle (content.bundle.json): 17 regions, 7 dishes, 54
 // variations; home and home Popular, every region, every dish (its
 // Variations page) and every variation (its Recipe page), in en, es and ru.
-export const MOCK_SITEMAP_URL_COUNT = (2 + 14 + 7 + 54) * 3;
+export const MOCK_SITEMAP_URL_COUNT = (2 + 17 + 7 + 54) * 3;
 
 export type Alternate = { hreflang: string; href: string };
 

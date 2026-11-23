@@ -50,12 +50,12 @@ describe('RegionMap server render', () => {
 		}
 	});
 
-	it('renders the map as one list of 14 items', async () => {
+	it('renders the map as one list of 17 items', async () => {
 		const html = await serverHtml();
 		expect(occurrences(html, '<ul'), 'want exactly one list').toBe(1);
 		const list = html.match(/<ul\b[^>]*>/)?.[0] ?? '';
 		expect(list, `got ${list}, want the map box itself`).toContain('data-testid="region-map"');
-		expect(occurrences(html, '<li'), 'want one item per region').toBe(14);
+		expect(occurrences(html, '<li'), 'want one item per region').toBe(17);
 	});
 
 	it('renders no buttons: selection works without JavaScript', async () => {

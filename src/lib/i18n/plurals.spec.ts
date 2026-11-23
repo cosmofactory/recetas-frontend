@@ -78,11 +78,13 @@ const WANT: Record<string, Record<string, readonly string[]>> = {
 	}
 };
 
-// The catalog's 14 regions read exactly as the design's home.regionsCount.
-const FOURTEEN_REGIONS: [string, string][] = [
-	['en', '14 regions'],
-	['es', '14 regiones'],
-	['ru', '14 регионов']
+// The catalog's 17 regions read exactly as the design's home.regionsCount
+// (region revision 2026-11-23: "17 regions" / "17 regiones" / "17 регионов").
+const REGION_COUNT = 17;
+const SEVENTEEN_REGIONS: [string, string][] = [
+	['en', '17 regions'],
+	['es', '17 regiones'],
+	['ru', '17 регионов']
 ];
 
 // The stage file's own examples: 3 варианта, 13 вариантов, 22 варианта, 111 вариантов.
@@ -117,11 +119,19 @@ describe('compiled plural messages', () => {
 		});
 	}
 
-	for (const [locale, want] of FOURTEEN_REGIONS) {
-		it(`home_region in ${locale} for 14 is the design's "${want}"`, async () => {
+	for (const [locale, want] of SEVENTEEN_REGIONS) {
+		it(`home_region in ${locale} for ${REGION_COUNT} is the design's "${want}"`, async () => {
 			const message = (await loadMessages()).home_region;
 			expect(message, 'got no compiled message home_region').toBeTypeOf('function');
-			const got = message({ count: 14 }, { locale });
+			const got = message({ count: REGION_COUNT }, { locale });
+			expect(got, `got ${got}, want ${want}`).toBe(want);
+		});
+
+		// The design's own fixed string, imported as home_regionsCount.
+		it(`home_regionsCount in ${locale} is "${want}"`, async () => {
+			const message = (await loadMessages()).home_regionsCount;
+			expect(message, 'got no compiled message home_regionsCount').toBeTypeOf('function');
+			const got = message({ count: REGION_COUNT }, { locale });
 			expect(got, `got ${got}, want ${want}`).toBe(want);
 		});
 	}

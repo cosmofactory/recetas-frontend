@@ -25,10 +25,14 @@ type Schemas = components['schemas'];
 type CreateMockSource = (input: typeof bundle) => CatalogSource;
 type Validated<T> = Omit<T, 'tileColor'> & { tileColor: string | null };
 
+// Canonical region order (map-grid.json regionOrder, region revision 2026-11-23).
 const REGION_KEYS = [
 	'gal',
 	'ast',
+	'cnb',
 	'bas',
+	'nav',
+	'rio',
 	'cat',
 	'cyl',
 	'mad',
@@ -94,7 +98,7 @@ describe('mock listRegions', () => {
 	}
 
 	for (const lang of LANGS) {
-		it(`lists all 14 regions in region order with order 1..14 in ${lang}`, async () => {
+		it(`lists all 17 regions in region order with order 1..17 in ${lang}`, async () => {
 			const regions = await (await mockSource()).listRegions(lang);
 			expect(regions.map((r) => r.key)).toEqual(REGION_KEYS);
 			expect(regions.map((r) => r.order)).toEqual(REGION_KEYS.map((_, i) => i + 1));

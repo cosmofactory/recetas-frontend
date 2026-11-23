@@ -2,12 +2,15 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import { page, userEvent } from 'vitest/browser';
 import {
+	MAP_ASPECT_RATIO,
 	MAP_COLUMNS,
 	MAP_ROWS,
+	REGION_COUNT,
 	regionHref,
 	regionsIn,
 	type GridCell,
 	type Lang,
+	type LabelCells,
 	type LabelPosition,
 	type MapGrid,
 	type MapRegion,
@@ -35,8 +38,13 @@ import {
 // FE-4 RegionMap: the Spain mosaic, a content component (src/lib/content/,
 // data and callbacks only) used by the mobile home and the desktop Regional
 // grid. Sources, by line:
-// - Mobile README -> Map (shared) L114–117: "CSS grid, 14 columns × 11 rows,
-//   aspect-ratio: 14 / 11, width 100%, gap 3px. Cells are square." "Each
+// - Mobile README -> Map (shared) L115–119 (region revision 2026-11-23):
+//   "CSS grid, 16 columns × 13 rows, aspect-ratio: 16 / 13, width 100%, gap
+//   3px. Cells are square." "Ceuta (K) and Melilla (W) are single squares
+//   across the sea from Andalucía and belong to it: same colour, tapping
+//   either selects Andalucía, and they follow its selected, hover and dimmed
+//   states. They carry no name labels and are left out of Andalucía's label
+//   centroid (map-grid.json → exclaves)." "Each
 //   cell: radius 4px, bg = region tileColor; while a region is selected, it
 //   keeps its tileColor and every other region's cells drop to
 //   --region-dimmed-opacity (labels and their chips are not dimmed; D-FE9-3).
@@ -49,7 +57,7 @@ import {
 //   values, cells `transition:background .2s,filter .2s`; no hover or
 //   selected change on the label.
 // - Desktop README -> Regional L54: "width 100% with max-width max(560px,
-//   calc((100vh − 360px) × 14/11)), cell gap 5px, radius 6px. Hover: cell
+//   calc((100vh − 360px) × 16/13)), cell gap 5px, radius 6px. Hover: cell
 //   brightness(1.12), its label turns solid surface with a shadow. Selected:
 //   the region keeps its tileColor while every other region's cells drop to
 //   --region-dimmed-opacity (labels not dimmed), 200ms; its label stays ink
@@ -87,14 +95,14 @@ import {
 // - The map IS the screen-reader region list (FE-4 PR 1 review): the
 //   data-testid="region-map" box is a list (<ul>) of one item per drawn
 //   region, each holding that region's one link, so screen readers announce
-//   "list, 14 items" once. There is no separate hidden list.
+//   "list, 17 items" once. There is no separate hidden list.
 // - tileColor is validated once at the server boundary (#RRGGBB); a bad one
 //   arrives as null and its cells draw --placeholder.
 // - Forced colours: every cell keeps a visible outline or border, and the
 //   selected region's cells are Highlight (the rule lives in layout.css).
 // - Space activates only a plain, first press: not a key repeat, not with
 //   Shift, Ctrl, Alt or Meta held.
-// - Test hooks: the 14 × 11 aspect-ratio box is data-testid="region-map";
+// - Test hooks: the 16 × 13 aspect-ratio box is data-testid="region-map";
 //   cells are [data-map-cell] grid items placed on their 1-based grid lines
 //   (parseGrid), aria-hidden; each region's label is one [data-map-label]
 //   chip inside its link.
@@ -102,18 +110,16 @@ import {
 //   prototype's `hov` is a region key; the region is one target).
 // - Focus: keyboard focus draws the shared ring (--focus-ring,
 //   --focus-ring-width) on the region's label, and never a box around the
-//   whole map. Keyboard users tab through the 14 visible links once. The ring
+//   whole map. Keyboard users tab through the 17 visible links once. The ring
 //   on the label is a
 //   documented exception to "components never style focus" (its rule lives
 //   in layout.css).
-// - Sizing is the screen's (PR 2): RegionMap fills its container at 14 / 11
+// - Sizing is the screen's (PR 2): RegionMap fills its container at 16 / 13
 //   at every width. The mobile gutter (390 − 2 × 16, prototype L280
 //   `padding:14px 16px 16px`) is applied by the screen.
 //   TODO(FE-4 PR 2): the Regional screen spec must pin the desktop map width
-//   max(560px, calc((100vh − 360px) × 14/11)) and the 560px floor (desktop
-//   README L54, L57) at 1280×800 → 560, 1440×900 → 687.3, 1280×600 → 560,
-//   1280×1100 → 941.8 in a wide column, and resolve the 860px viewport, where
-//   the minmax(0,1.4fr) column is only ~456px.
+//   max(560px, calc((100vh − 360px) × 16/13)) and the 560px floor (desktop
+//   README L54, L57): home-regional.e2e.ts does.
 
 type RegionMapProps = {
 	regions: MapRegion[];
@@ -259,15 +265,31 @@ function cellAt(map: HTMLElement, row: number, col: number): HTMLElement {
 	return cell!;
 }
 
+// Canarias, the bottom-left inset: row 12, columns 1–3 (map-grid.json).
+function isCanariasCell(cell: GridCell): boolean {
+	return cell.row === 12 && cell.col <= 3;
+}
+
 function byLines(a: GridCell, b: GridCell): number {
 	return a.row - b.row || a.col - b.col;
 }
 
 async function layout(): Promise<{ grid: MapGrid; cells: Map<string, GridCell[]> }> {
+	const grid = bundledGrid();
+	const parseGrid = await loadMapExport<ParseGrid>('grid.ts', 'parseGrid');
+	return { grid, cells: parseGrid(grid) };
+}
+
+function bundledGrid(): MapGrid {
 	const grid = gridFiles['../map/map-grid.json'] as MapGrid | undefined;
 	expect(grid, 'src/lib/map/map-grid.json must exist (D-FE4-1)').toBeDefined();
-	const parseGrid = await loadMapExport<ParseGrid>('grid.ts', 'parseGrid');
-	return { grid: grid!, cells: parseGrid(grid!) };
+	return grid!;
+}
+
+// Each region's cells without its exclaves: what its label centres on.
+async function labelLayout(): Promise<Map<string, GridCell[]>> {
+	const labelCells = await loadMapExport<LabelCells>('grid.ts', 'labelCells');
+	return labelCells(bundledGrid());
 }
 
 // WCAG 2.5.3: the visible label first; the full name too when it differs.
@@ -321,7 +343,7 @@ function near(got: number, want: number, what: string, tolerance = PX_TOLERANCE)
 function expectAspectRatio(map: HTMLElement, width: number) {
 	const rect = map.getBoundingClientRect();
 	near(rect.width, width, 'map width');
-	near(rect.height, (rect.width * MAP_ROWS) / MAP_COLUMNS, 'map height (14 / 11)');
+	near(rect.height, (rect.width * MAP_ROWS) / MAP_COLUMNS, `map height (${MAP_ASPECT_RATIO})`);
 }
 
 function gapBetween(first: Element, second: Element, axis: 'x' | 'y'): number {
@@ -336,7 +358,8 @@ function centre(el: Element): { x: number; y: number } {
 }
 
 async function expectLabelsAtCentroids(map: HTMLElement) {
-	const { grid, cells } = await layout();
+	const { grid } = await layout();
+	const cells = await labelLayout();
 	const labelPosition = await loadMapExport<LabelPosition>('grid.ts', 'labelPosition');
 	const box = map.getBoundingClientRect();
 	for (const region of regionsIn('en')) {
@@ -364,7 +387,10 @@ describe('RegionMap regions', () => {
 	it('renders exactly one interactive element per region, a link, in region order', async () => {
 		const map = await renderMap();
 		const focusable = [...map.querySelectorAll(FOCUSABLE)];
-		expect(focusable.length, `got ${focusable.length} focusable elements, want 14`).toBe(14);
+		expect(
+			focusable.length,
+			`got ${focusable.length} focusable elements, want ${REGION_COUNT}`
+		).toBe(REGION_COUNT);
 		expect(focusable.every((el) => el.tagName === 'A')).toBe(true);
 		const got = mapLinks(map).map((a) => a.getAttribute('href'));
 		expect(got).toEqual(regionsIn('en').map((r) => regionHref('en')(r.key)));
@@ -414,9 +440,9 @@ describe('RegionMap regions', () => {
 	it('draws nothing for a region the API did not return (D-FE4-1)', async () => {
 		const regions = regionsIn('en').filter((region) => region.key !== 'can');
 		const map = await renderMap({ regions });
-		expect(mapLinks(map)).toHaveLength(13);
-		const bottomRow = allCells(map).filter((cell) => gridLines(cell).row === MAP_ROWS);
-		expect(bottomRow, 'got cells on Canarias’ row').toEqual([]);
+		expect(mapLinks(map)).toHaveLength(REGION_COUNT - 1);
+		const canarias = allCells(map).filter((cell) => isCanariasCell(gridLines(cell)));
+		expect(canarias, 'got cells where Canarias would be').toEqual([]);
 		expect(map.textContent, 'got the Canarias label').not.toContain('Canarias');
 	});
 
@@ -514,14 +540,108 @@ describe('RegionMap activation', () => {
 		target.append(sentinel());
 		before.focus();
 		const reached: string[] = [];
-		for (let i = 0; i < 14; i++) {
+		for (let i = 0; i < REGION_COUNT; i++) {
 			await userEvent.tab();
 			reached.push(document.activeElement?.getAttribute('href') ?? '');
 		}
 		expect(reached).toEqual(mapLinks(map).map((a) => a.getAttribute('href')));
 		await userEvent.tab();
 		const after = document.activeElement as HTMLElement | null;
-		expect(after?.dataset.sentinel, 'want Tab to leave the map after the 14 regions').toBe('');
+		expect(after?.dataset.sentinel, 'want Tab to leave the map after the 17 regions').toBe('');
+	});
+});
+
+// --- exclaves -----------------------------------------------------------------
+
+// Region revision 2026-11-23: Ceuta (K) and Melilla (W) are single cells of
+// Andalucía across the sea (map-grid.json → exclaves), drawn on its link.
+const EXCLAVES: { name: string; cell: GridCell }[] = [
+	{ name: 'Ceuta', cell: { row: 13, col: 7 } },
+	{ name: 'Melilla', cell: { row: 13, col: 10 } }
+];
+// A mainland Andalucía (D) cell, to compare with.
+const ANDALUCIA_MAINLAND: GridCell = { row: 10, col: 5 };
+
+function exclaveCells(map: HTMLElement): HTMLElement[] {
+	return EXCLAVES.map(({ cell }) => cellAt(map, cell.row, cell.col));
+}
+
+function overlaps(a: DOMRect, b: DOMRect): boolean {
+	return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+}
+
+describe('RegionMap exclaves (Ceuta and Melilla)', () => {
+	useViewport(390, 844);
+
+	for (const { name, cell } of EXCLAVES) {
+		it(`draws ${name} as a cell of Andalucía’s link, in its tileColor`, async () => {
+			const map = await renderMap();
+			const exclave = cellAt(map, cell.row, cell.col);
+			expect(exclave.closest('a'), `got ${name} outside Andalucía’s link`).toBe(linkOf(map, 'and'));
+			const andalucia = regionsIn('en').find((r) => r.key === 'and')!;
+			expect(style(exclave, 'background-color')).toBe(
+				computed('background-color', tileColorOf(andalucia))
+			);
+		});
+
+		it(`selects Andalucía on a click on ${name}, as a mainland cell does`, async () => {
+			const target = mapStage();
+			const hrefs = recordActivations(target);
+			const map = await renderMap({}, target);
+			await userEvent.click(cellAt(map, ANDALUCIA_MAINLAND.row, ANDALUCIA_MAINLAND.col));
+			await userEvent.click(cellAt(map, cell.row, cell.col));
+			const andalucia = regionHref('en')('and');
+			expect(hrefs, `got ${JSON.stringify(hrefs)}`).toEqual([andalucia, andalucia]);
+		});
+	}
+
+	it(`draws ${REGION_COUNT} labels, none on an exclave`, async () => {
+		const map = await renderMap();
+		const labels = [...map.querySelectorAll<HTMLElement>(LABEL)];
+		expect(labels, `got ${labels.length} labels`).toHaveLength(REGION_COUNT);
+		for (const exclave of exclaveCells(map)) {
+			const box = exclave.getBoundingClientRect();
+			const onIt = labels.filter((label) => overlaps(label.getBoundingClientRect(), box));
+			expect(
+				onIt.map((l) => l.textContent),
+				'got a label on an exclave'
+			).toEqual([]);
+		}
+	});
+
+	it('dims the exclaves with Andalucía while another region is selected', async () => {
+		const map = await renderMap({ selectedKey: 'gal' });
+		const dimmed = dimmedOpacity();
+		for (const exclave of exclaveCells(map)) {
+			await expect.poll(() => effectiveOpacity(exclave)).toBeCloseTo(dimmed, 3);
+		}
+	});
+
+	it('keeps the exclaves at full colour while Andalucía is selected', async () => {
+		const map = await renderMap({ selectedKey: 'and' });
+		const dimmed = dimmedOpacity();
+		await expect
+			.poll(() => effectiveOpacity(cellsOf(linkOf(map, 'gal'))[0]), { message: 'gal dimmed' })
+			.toBeCloseTo(dimmed, 3);
+		for (const exclave of exclaveCells(map)) expect(effectiveOpacity(exclave)).toBe(1);
+	});
+
+	it('brightens the exclaves when a mainland Andalucía cell is hovered', async () => {
+		const map = await renderMap();
+		await userEvent.hover(cellAt(map, ANDALUCIA_MAINLAND.row, ANDALUCIA_MAINLAND.col));
+		const want = computed('filter', MOBILE_HOVER_FILTER);
+		for (const exclave of exclaveCells(map)) {
+			await expect.poll(() => style(exclave, 'filter')).toBe(want);
+		}
+	});
+
+	it('brightens mainland Andalucía when Ceuta is hovered', async () => {
+		const map = await renderMap();
+		const [ceuta] = exclaveCells(map);
+		await userEvent.hover(ceuta);
+		const want = computed('filter', MOBILE_HOVER_FILTER);
+		const mainland = cellAt(map, ANDALUCIA_MAINLAND.row, ANDALUCIA_MAINLAND.col);
+		await expect.poll(() => style(mainland, 'filter')).toBe(want);
 	});
 });
 
@@ -580,7 +700,9 @@ describe('RegionMap as the region list', () => {
 		const map = await renderMap();
 		expect(page.getByRole('list').element(), 'want the map box to be the list').toBe(map);
 		const items = await page.getByTestId(MAP_TEST_ID).getByRole('listitem').all();
-		expect(items, `got ${items.length} list items, want 14`).toHaveLength(14);
+		expect(items, `got ${items.length} list items, want ${REGION_COUNT}`).toHaveLength(
+			REGION_COUNT
+		);
 		const hrefs = items.map((item) => {
 			const links = item.element().querySelectorAll('a');
 			expect(links.length, 'want exactly one link per list item').toBe(1);
@@ -593,7 +715,7 @@ describe('RegionMap as the region list', () => {
 		const regions = regionsIn('en').filter((region) => region.key !== 'can');
 		await renderMap({ regions });
 		const items = await page.getByTestId(MAP_TEST_ID).getByRole('listitem').all();
-		expect(items).toHaveLength(13);
+		expect(items).toHaveLength(REGION_COUNT - 1);
 	});
 
 	it('renders no second region list or links outside the map', async () => {
@@ -686,13 +808,13 @@ for (const phone of PHONES) {
 	describe(`RegionMap at ${phone.width}×${phone.height}`, () => {
 		useViewport(phone.width, phone.height);
 
-		it(`fills its ${container}px container at 14 / 11`, async () => {
+		it(`fills its ${container}px container at ${MAP_ASPECT_RATIO}`, async () => {
 			const map = await renderMap({ width: container });
-			expect(style(map, 'aspect-ratio')).toBe('14 / 11');
+			expect(style(map, 'aspect-ratio')).toBe(MAP_ASPECT_RATIO);
 			expectAspectRatio(map, container);
 		});
 
-		it('draws square cells, 14 across with 3px gaps', async () => {
+		it(`draws square cells, ${MAP_COLUMNS} across with 3px gaps`, async () => {
 			const map = await renderMap({ width: container });
 			const want = (container - (MAP_COLUMNS - 1) * MOBILE_GAP_PX) / MAP_COLUMNS;
 			for (const cell of allCells(map)) {
@@ -817,9 +939,9 @@ for (const container of DESKTOP_CONTAINERS) {
 	describe(`RegionMap at 1280×800 in a ${container}px column`, () => {
 		useViewport(1280, 800);
 
-		it(`fills the ${container}px column at 14 / 11`, async () => {
+		it(`fills the ${container}px column at ${MAP_ASPECT_RATIO}`, async () => {
 			const map = await renderMap({ width: container });
-			expect(style(map, 'aspect-ratio')).toBe('14 / 11');
+			expect(style(map, 'aspect-ratio')).toBe(MAP_ASPECT_RATIO);
 			expectAspectRatio(map, container);
 		});
 	});

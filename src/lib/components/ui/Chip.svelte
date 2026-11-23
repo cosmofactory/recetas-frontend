@@ -1,31 +1,52 @@
 <script lang="ts">
 	import { typeset } from '#lib/i18n/typeset.ts';
 	// Controlled: a click asks the caller to flip it; the state lives in the URL.
-	type Props = {
-		label: string;
-		pressed: boolean;
+	// With an href the chip is a link instead (pressed = the current page's,
+	// aria-current), and onclick hears its click before it is followed.
+	type Common = { label: string; pressed: boolean; size?: 'regular' | 'desktop' };
+	type ToggleChip = Common & {
 		onToggle: (pressed: boolean) => void;
-		size?: 'regular' | 'desktop';
+		href?: never;
+		onclick?: never;
 	};
+	type LinkChip = Common & {
+		href: string;
+		onclick?: (event: MouseEvent & { currentTarget: HTMLAnchorElement }) => void;
+		onToggle?: never;
+	};
+	type Props = ToggleChip | LinkChip;
 
-	let { label, pressed, onToggle, size = 'regular' }: Props = $props();
+	let { label, pressed, onToggle, href, onclick, size = 'regular' }: Props = $props();
 </script>
 
-<button
-	type="button"
-	class="chip"
-	class:desktop={size === 'desktop'}
-	aria-pressed={pressed}
-	onclick={() => onToggle(!pressed)}
->
-	{typeset(label)}
-</button>
+{#if href !== undefined}
+	<a
+		class="chip"
+		class:desktop={size === 'desktop'}
+		{href}
+		aria-current={pressed ? 'true' : undefined}
+		{onclick}
+	>
+		{typeset(label)}
+	</a>
+{:else}
+	<button
+		type="button"
+		class="chip"
+		class:desktop={size === 'desktop'}
+		aria-pressed={pressed}
+		onclick={() => onToggle?.(!pressed)}
+	>
+		{typeset(label)}
+	</button>
+{/if}
 
 <style>
 	/* Mobile README -> Popular tab -> Filter bar: "pill, padding 8px 13px, 12px/600, 1px border". */
 	.chip {
 		--chip-border: 1px;
 		position: relative;
+		display: inline-block;
 		flex: none;
 		padding: 8px 13px;
 		border: var(--chip-border) solid var(--border-chip);
@@ -33,6 +54,7 @@
 		background: transparent;
 		color: var(--ink);
 		font: 600 12px var(--font-text);
+		text-decoration: none;
 		white-space: nowrap;
 		cursor: pointer;
 		transition:
@@ -61,7 +83,8 @@
 		inset-block: calc(-1 * var(--chip-border) - var(--chip-hit-extend-block, var(--hit-extend)));
 	}
 
-	.chip[aria-pressed='true'] {
+	.chip[aria-pressed='true'],
+	.chip[aria-current='true'] {
 		border-color: var(--ink);
 		background: var(--ink);
 		color: var(--on-accent);

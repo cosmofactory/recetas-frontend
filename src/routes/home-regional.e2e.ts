@@ -2,6 +2,7 @@ import { emptyRegionPanel } from '../testutil/region-e2e';
 import { expect, test, type Page } from '../testutil/e2e-test';
 import { ABOUT_COPY } from '../testutil/about-copy';
 import { LOCALES } from '../testutil/e2e';
+import { REGION_COUNT } from '../testutil/map-regions-e2e';
 import {
 	bottom,
 	clampPx,
@@ -53,7 +54,8 @@ import {
 //   eyebrow 11.5px/700, .11em, uppercase, rgba(43,30,22,.55); hint
 //   desktop.clickRegion 13px rgba(43,30,22,.5) = --ink-3), then the map,
 //   centred: `width: 100%; max-width: max(560px, calc((100vh - 360px) *
-//   14 / 11))` (560px is the lowest the cap goes; the map is narrower when
+//   16 / 13))` (the grid's aspect ratio since the 17-region revision,
+//   2026-11-23; was 14 / 11) (560px is the lowest the cap goes; the map is narrower when
 //   its column is, e.g. ~456px at 860px);
 // - then "margin-top:22px; padding:28px 4px 0; border-top:1px solid
 //   rgba(43,30,22,.12); grid-template-columns: minmax(0,0.85fr)
@@ -69,7 +71,9 @@ import {
 const eyebrowColour = (page: Page) => tokenValue(page, 'color', 'var(--ink-eyebrow)');
 const ABOUT_RULE_COLOUR = 'rgba(43, 30, 22, 0.12)';
 const ABOUT_BODY_COLOUR = 'rgba(43, 30, 22, 0.64)';
-const MAP_RATIO = 11 / 14;
+// Height over width of the 16 × 13 map grid (map-grid.json aspectRatio 16 / 13).
+const MAP_RATIO = 13 / 16;
+const MAP_COLUMNS_PER_ROW = 16 / 13;
 
 const MOBILE = { bodyTop: 14, bodySide: 16, metaInset: 4, metaToMap: 10 + 6 };
 const DESKTOP = {
@@ -276,7 +280,7 @@ test.describe('mobile Regional layout (< 860px)', () => {
 	});
 
 	test(
-		'map: 16px in from each side, 16px under the meta row, 14:11',
+		'map: 16px in from each side, 16px under the meta row, 16:13',
 		{ tag: '@layout' },
 		async ({ page }) => {
 			skipUnlessMobile(page);
@@ -292,8 +296,8 @@ test.describe('mobile Regional layout (< 860px)', () => {
 	// Stage FE-4 -> Small decisions: "On mobile the map is clamped to the
 	// frame height (prototype `max-height: 100%`), so it fits a landscape
 	// phone". At 844×390 (still the mobile layout) the whole map is on
-	// screen, keeps 14:11 and is centred (prototype: "justify-content:center").
-	test('landscape 844×390: the whole map fits, 14:11, centred', async ({ page }) => {
+	// screen, keeps 16:13 and is centred (prototype: "justify-content:center").
+	test('landscape 844×390: the whole map fits, 16:13, centred', async ({ page }) => {
 		skipUnlessMobile(page);
 		await page.setViewportSize({ width: 844, height: 390 });
 		const m = await measureMobile(page);
@@ -310,29 +314,61 @@ test.describe('mobile Regional layout (< 860px)', () => {
 		);
 	});
 
+	// The map scroller clips its content: a label past its box would be cut
+	// (with its focus ring) and would let the scroller move sideways.
 	test(
-		'every Russian map label lies within the viewport',
+		'every Russian map label lies within the map scroller',
 		{ tag: ['@layout', '@cross-browser'] },
 		async ({ page }) => {
 			skipUnlessMobile(page);
 			await gotoHydrated(page, '/ru/');
 			const labels = visibleMap(page).locator('[data-map-label]');
-			await expect(labels, 'want the 14 region labels on the visible map').toHaveCount(14);
+			await expect(labels, `want the ${REGION_COUNT} region labels on the visible map`).toHaveCount(
+				REGION_COUNT
+			);
 			const overhang = await page.evaluate(() => {
-				const width = document.documentElement.clientWidth;
-				const labels = [...document.querySelectorAll('[data-map-label]')].filter((l) =>
+				const scroller = [...document.querySelectorAll('.map-scroller')].find((el) =>
+					el.checkVisibility()
+				);
+				if (!scroller) return ['no visible .map-scroller'];
+				const clip = scroller.getBoundingClientRect();
+				const labels = [...scroller.querySelectorAll('[data-map-label]')].filter((l) =>
 					l.checkVisibility()
 				);
 				return labels
 					.map((l) => ({ text: l.textContent, r: l.getBoundingClientRect() }))
-					.filter(({ r }) => r.left < 0 || r.right > width)
+					.filter(({ r }) => r.left < clip.left || r.right > clip.right)
 					.map(
-						({ text, r }) => `${text} [${r.left.toFixed(1)}, ${r.right.toFixed(1)}] of ${width}`
+						({ text, r }) =>
+							`${text} [${r.left.toFixed(1)}, ${r.right.toFixed(1)}] of [${clip.left.toFixed(1)}, ${clip.right.toFixed(1)}]`
 					);
 			});
-			expect(overhang, `got labels past the screen edge: ${JSON.stringify(overhang)}`).toEqual([]);
+			expect(overhang, `got labels past the scroller's edge: ${JSON.stringify(overhang)}`).toEqual(
+				[]
+			);
 		}
 	);
+
+	for (const lang of LOCALES) {
+		for (const width of [360, 390]) {
+			test(`/${lang}/ at ${width}px: the map scroller never scrolls sideways`, async ({ page }) => {
+				skipUnlessMobile(page);
+				await page.setViewportSize({ width, height: 844 });
+				await gotoHydrated(page, `/${lang}/`);
+				const sizes = await page.evaluate(() => {
+					const scroller = [...document.querySelectorAll('.map-scroller')].find((el) =>
+						el.checkVisibility()
+					);
+					return scroller ? { scroll: scroller.scrollWidth, client: scroller.clientWidth } : null;
+				});
+				expect(sizes, 'got no visible .map-scroller').not.toBeNull();
+				expect(
+					sizes!.scroll,
+					`got scrollWidth ${sizes!.scroll} > clientWidth ${sizes!.client}`
+				).toBeLessThanOrEqual(sizes!.client);
+			});
+		}
+	}
 
 	test(
 		'the home frame is the viewport, positioned, overflow hidden',
@@ -540,14 +576,17 @@ function desktopTracks(viewport: Viewport, clientWidth: number) {
 }
 
 function desktopMapWidth(viewport: Viewport, mapColumn: number): number {
-	const cap = Math.max(DESKTOP.mapCapMin, ((viewport.height - DESKTOP.mapCapOffset) * 14) / 11);
+	const cap = Math.max(
+		DESKTOP.mapCapMin,
+		(viewport.height - DESKTOP.mapCapOffset) * MAP_COLUMNS_PER_ROW
+	);
 	return Math.min(mapColumn, cap);
 }
 
 // Stage FE-4 "Resolved for PR 2": the pinned widths.
 const VIEWPORTS: { viewport: Viewport; note: string }[] = [
 	{ viewport: { width: 1280, height: 800 }, note: 'cap 560' },
-	{ viewport: { width: 1440, height: 900 }, note: 'cap 687.3' },
+	{ viewport: { width: 1440, height: 900 }, note: 'cap 664.6' },
 	{ viewport: { width: 1280, height: 600 }, note: 'cap stays 560 on a short viewport' },
 	{ viewport: { width: 1280, height: 1100 }, note: 'limited by the column' },
 	{ viewport: { width: 860, height: 800 }, note: 'fills its ~456px column' },
@@ -589,7 +628,7 @@ test.describe('desktop Regional grid (≥ 860px)', () => {
 			expectPx(grid.box.y, bottom(present(m.header, 'top bar').box), 'grid top vs top bar');
 		});
 
-		test(`${size}: map width ${note}, centred, 14:11`, async ({ page }) => {
+		test(`${size}: map width ${note}, centred, 16:13`, async ({ page }) => {
 			skipUnlessDesktopProject(page);
 			const m = await measureDesktop(page, viewport);
 			const column = present(m.column, 'map column').box;

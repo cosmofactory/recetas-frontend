@@ -88,10 +88,11 @@
 	}
 
 	/*
-	 * Accessibility (44px targets, FE-8): Canarias is one row tall (about
-	 * 23px on a phone), so a region on the map's bottom row grows its target
-	 * invisibly below the map, where no other region is, to --hit-min from
-	 * the row's top. Positioned in the row's grid area, so 100% is the row.
+	 * Accessibility (44px targets, FE-8; map tiles are exempt since D-REG-1,
+	 * but the room is free): Canarias is one row tall with only sea below
+	 * it, so a region like that grows its target invisibly downward, where
+	 * no other region is, to --hit-min from the row's top. Positioned in the
+	 * row's grid area, so 100% is the row.
 	 */
 	.hit-extension {
 		position: absolute;

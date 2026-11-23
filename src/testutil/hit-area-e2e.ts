@@ -22,12 +22,28 @@ import { evaluateWith } from './in-page-e2e';
 //   over its ::before takes those points). A target whose centre is covered
 //   (by a scrim, an open sheet or overlay) isn't pressable in that state, and
 //   it and one partly off screen keep the geometric measure.
-// The one documented exception, stage FE-3 -> Acceptance (FE-3:89,
-// 2026-10-20): a chip in a wrapping row extends only half the row gap above
-// and below, so its height must be its border box plus the row gap (its
-// width the full 44px). FE-8 (2026-10-23) applies it to every chip button
-// in a wrapping row: the filter chips (ChipRow wrap) and the search
-// suggestion chips (SearchSuggestions).
+// Two documented exceptions:
+// - Stage FE-3 -> Acceptance (FE-3:89, 2026-10-20): a chip in a wrapping row
+//   extends only half the row gap above and below, so its height must be
+//   its border box plus the row gap (its width the full 44px). FE-8
+//   (2026-10-23) applies it to every chip button in a wrapping row: the
+//   filter chips (ChipRow wrap) and the search suggestion chips
+//   (SearchSuggestions).
+// - D-REG-1 (owner, 2026-11-23; both READMEs -> Accessibility and the
+//   region revision): map region tiles are exempt from 44px ("several
+//   regions are smaller than 44px on a phone" on the 16-column map). A map
+//   region must still take a press on some cell, and every map region needs
+//   a full-size equivalent elsewhere on the page: a link to the same region
+//   URL that passes the 44px check (mobile: the region chip row under the
+//   map; desktop: the panel's empty-state chips). That pairing is
+//   `mapRegionsWithoutFullSizeTarget`. Every other control keeps 44px,
+//   the region chips included.
+// One documented allowance (owner, 2026-11-23, PR #55): a point covered by
+// an open search dropdown or language menu counts as reached for a target
+// outside it. Those two overlays cover the page on purpose while open, and
+// with 17 region chips the desktop panel's chips can sit partly under the
+// dropdown. Only these two overlays, named in `openOverlays`; a neighbour,
+// a label or any other layer painted over a target still takes its points.
 
 export const HIT_MIN_PX = 44;
 // Sub-pixel layout (fractional clamps, 1.5px borders) and the press
@@ -211,9 +227,19 @@ function targetName(el: Element): string {
 	return `<${el.tagName.toLowerCase()}> ${role} "${name.slice(0, 40)}"${href ? ` ${href}` : ''}`;
 }
 
+// The open overlays of the allowance above (in-page code can't see a module constant).
+function openOverlays(): string {
+	return '[data-testid="search-dropdown"], [role="menu"]';
+}
+
+function coveredByOverlay(el: Element, hit: Element): boolean {
+	const overlay = hit.closest(openOverlays());
+	return overlay !== null && !overlay.contains(el);
+}
+
 function lands(el: Element, x: number, y: number): boolean {
 	const hit = document.elementFromPoint(x, y);
-	return hit !== null && (hit === el || el.contains(hit));
+	return hit !== null && (hit === el || el.contains(hit) || coveredByOverlay(el, hit));
 }
 
 function onScreen(box: Box): boolean {
@@ -277,8 +303,20 @@ function pressableSize(el: Element, box: Box): Size {
 	return { width: across(1, 0, geometric.width / 2), height: across(0, 1, geometric.height / 2) };
 }
 
+function isMapRegion(el: Element): boolean {
+	return el.querySelector('[data-map-cell]') !== null;
+}
+
+// The D-REG-1 exception: a map region needs no 44px, only a cell a press reaches.
+function mapRegionUnpressable(el: Element, size: Size): Undersized | null {
+	if (size.width > 0 && size.height > 0) return null;
+	const want = 'a pressable cell (map tiles are exempt from 44px, D-REG-1)';
+	return { target: targetName(el), width: size.width, height: size.height, want };
+}
+
 function measure(el: Element, min: number, tolerance: number): Undersized | null {
 	const { width, height } = pressableSize(el, clipped(el, ownHitBox(el)));
+	if (isMapRegion(el)) return mapRegionUnpressable(el, { width, height });
 	const minHeight = wantedHeight(el, min);
 	if (width >= min - tolerance && height >= minHeight - tolerance) return null;
 	const round = (n: number) => Math.round(n * 10) / 10;
@@ -292,6 +330,29 @@ function undersized(arg: { selector: string; min: number; tolerance: number }): 
 		.map((el) => measure(el, arg.min, arg.tolerance))
 		.filter((found) => found !== null)
 		.concat(mapOverlaps());
+}
+
+// D-REG-1: a link to the same region URL, outside the map, that passes 44px.
+function hasFullSizeTwin(region: Element, arg: { min: number; tolerance: number }): boolean {
+	const href = region.getAttribute('href');
+	return [...document.querySelectorAll('a[href]')].some(
+		(link) =>
+			link !== region &&
+			!isMapRegion(link) &&
+			link.getAttribute('href') === href &&
+			isTarget(link) &&
+			measure(link, arg.min, arg.tolerance) === null
+	);
+}
+
+type TwinReport = { mapRegions: number; missing: string[] };
+
+function regionsWithoutTwin(arg: { min: number; tolerance: number }): TwinReport {
+	const regions = [...document.querySelectorAll('a[href]')].filter(
+		(el) => isMapRegion(el) && isTarget(el)
+	);
+	const missing = regions.filter((region) => !hasFullSizeTwin(region, arg)).map(targetName);
+	return { mapRegions: regions.length, missing };
 }
 
 const IN_PAGE_HELPERS = [
@@ -312,6 +373,8 @@ const IN_PAGE_HELPERS = [
 	wantedHeight,
 	isTarget,
 	targetName,
+	openOverlays,
+	coveredByOverlay,
 	lands,
 	onScreen,
 	reachStep,
@@ -320,13 +383,23 @@ const IN_PAGE_HELPERS = [
 	pieceLost,
 	mapPressableSize,
 	pressableSize,
-	measure
+	isMapRegion,
+	mapRegionUnpressable,
+	measure,
+	hasFullSizeTwin
 ];
 
 // Every visible, enabled interactive element whose hit area is under 44×44.
 export function undersizedTargets(page: Page): Promise<Undersized[]> {
 	const arg = { selector: INTERACTIVE, min: HIT_MIN_PX, tolerance: TOLERANCE_PX };
 	return evaluateWith(page, undersized, IN_PAGE_HELPERS, arg);
+}
+
+// D-REG-1: how many map regions are shown, and those with no full-size
+// equivalent (a ≥ 44px link to the same region URL outside the map).
+export function mapRegionsWithoutFullSizeTarget(page: Page): Promise<TwinReport> {
+	const arg = { min: HIT_MIN_PX, tolerance: TOLERANCE_PX };
+	return evaluateWith(page, regionsWithoutTwin, IN_PAGE_HELPERS, arg);
 }
 
 export function describeUndersized(found: Undersized[]): string {

@@ -8,7 +8,7 @@
 	import PrimaryButton from '#lib/components/ui/PrimaryButton.svelte';
 	import SegmentedSwitch from '#lib/components/ui/SegmentedSwitch.svelte';
 	import TextButton from '#lib/components/ui/TextButton.svelte';
-	import { localizedHref, variationsHref } from '#lib/i18n/localized-href.ts';
+	import { localizedHref, regionHref, variationsHref } from '#lib/i18n/localized-href.ts';
 	import { m } from '#lib/paraglide/messages.js';
 	import ContainersDemo from './ContainersDemo.svelte';
 	import DesktopTopBarDemo from './DesktopTopBarDemo.svelte';
@@ -30,6 +30,9 @@
 	const dishHref = $derived(dish ? variationsHref(dish.key, page.params.lang!) : '');
 	const homeHref = $derived(localizedHref('/', page.params.lang!));
 	const popularHref = $derived(localizedHref('/?tab=popular', page.params.lang!));
+	// Link chips (RegionChips): the first one is the current page's, so both
+	// states show side by side.
+	const chipRegions = $derived(data.regions.slice(0, 3));
 </script>
 
 <svelte:head>
@@ -61,6 +64,15 @@
 					{/each}
 				</ChipRow>
 			{/each}
+			<ChipRow>
+				{#each chipRegions as chipRegion, index (chipRegion.key)}
+					<Chip
+						label={chipRegion.name}
+						pressed={index === 0}
+						href={regionHref(chipRegion.key, page.params.lang!)}
+					/>
+				{/each}
+			</ChipRow>
 		</section>
 
 		<section>

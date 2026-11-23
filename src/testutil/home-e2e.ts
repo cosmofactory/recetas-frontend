@@ -22,13 +22,13 @@ export type HomeCopy = {
 
 // strings.json home.* / desktop.* (the about copy from about-copy.ts); extra-strings.json a11y.search,
 // a11y.homeTabs (the switch's tablist name) and home.region (the plural
-// eyebrow; 14 reads as the design's home.regionsCount).
+// eyebrow; 17 reads as the design's home.regionsCount).
 export const HOME_COPY: Record<Locale, HomeCopy> = {
 	en: {
 		regional: 'Regional',
 		popular: 'Popular',
 		tabsLabel: 'Browse',
-		regionsCount: '14 regions',
+		regionsCount: '17 regions',
 		tapRegion: 'Tap a region to preview',
 		clickRegion: 'Click a region to explore',
 		aboutTitle: ABOUT_COPY.en.title,
@@ -40,7 +40,7 @@ export const HOME_COPY: Record<Locale, HomeCopy> = {
 		regional: 'Regional',
 		popular: 'Popular',
 		tabsLabel: 'Explorar',
-		regionsCount: '14 regiones',
+		regionsCount: '17 regiones',
 		tapRegion: 'Toca una región',
 		clickRegion: 'Haz clic en una región',
 		aboutTitle: ABOUT_COPY.es.title,
@@ -52,7 +52,7 @@ export const HOME_COPY: Record<Locale, HomeCopy> = {
 		regional: 'По регионам',
 		popular: 'Популярное',
 		tabsLabel: 'Обзор',
-		regionsCount: '14 регионов',
+		regionsCount: '17 регионов',
 		tapRegion: 'Нажмите на регион',
 		clickRegion: 'Выберите регион на карте',
 		aboutTitle: ABOUT_COPY.ru.title,

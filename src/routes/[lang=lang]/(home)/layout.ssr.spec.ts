@@ -2,6 +2,7 @@ import { createRawSnippet, type Component, type Snippet } from 'svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import bundle from '#lib/server/mock/content.bundle.json';
 import { buildView } from '#lib/server/mock/bundle-mapping.ts';
+import mapGridFile from '#lib/map/map-grid.json';
 import { loadExport } from '../../../testutil/load-export';
 import {
 	decodeAmp,
@@ -26,7 +27,7 @@ import { ABOUT_COPY, ABOUT_LOCALES, LOGO } from '../../../testutil/about-copy';
 // and the acceptance checks deep links with JavaScript disabled):
 // - Meta row (stage FE-4 -> Meta row): "Shows the regionsCount eyebrow with
 //   a plural from the API count". The design's home.regionsCount is the
-//   fixed "14 regions"; the count comes from the API's list, through the
+//   fixed "17 regions"; the count comes from the API's list, through the
 //   plural message home_region (extra-strings.json). Here the layout gets
 //   fewer regions than 14 and the eyebrow must follow.
 // - Header (mobile README -> Screen 1 -> Header; desktop README -> Top
@@ -52,6 +53,10 @@ const LAYOUT = 'src/routes/[lang=lang]/(home)/+layout.svelte';
 const ORIGIN = 'http://localhost';
 
 type RenderSpec = { lang: Lang; path?: string; regionCount?: number };
+
+// The canonical region order (map-grid.json regionOrder, region revision
+// 2026-11-23); the 14-region grid had none.
+const REGION_ORDER = (mapGridFile as { regionOrder?: string[] }).regionOrder ?? [];
 
 function layoutData(lang: Lang, regionCount: number): LayoutData {
 	const view = buildView(bundle, lang);
@@ -82,7 +87,7 @@ function pageState(url: URL, data: LayoutData) {
 const pageSlot = createRawSnippet(() => ({ render: () => '<span data-page-slot></span>' }));
 
 async function renderHome(spec: RenderSpec): Promise<string> {
-	const data = layoutData(spec.lang, spec.regionCount ?? 14);
+	const data = layoutData(spec.lang, spec.regionCount ?? 17);
 	const url = new URL(spec.path ?? `/${spec.lang}/`, ORIGIN);
 	vi.resetModules();
 	vi.doMock('$app/state', () => ({ page: pageState(url, data), navigating: null }));
@@ -132,9 +137,9 @@ describe(
 	{ timeout: COLD_COMPILE_TIMEOUT_MS },
 	() => {
 		const cases: { lang: Lang; regionCount: number; want: string }[] = [
-			{ lang: 'en', regionCount: 14, want: '14 regions' },
-			{ lang: 'es', regionCount: 14, want: '14 regiones' },
-			{ lang: 'ru', regionCount: 14, want: '14 регионов' },
+			{ lang: 'en', regionCount: 17, want: '17 regions' },
+			{ lang: 'es', regionCount: 17, want: '17 regiones' },
+			{ lang: 'ru', regionCount: 17, want: '17 регионов' },
 			{ lang: 'en', regionCount: 1, want: '1 region' },
 			{ lang: 'en', regionCount: 5, want: '5 regions' },
 			{ lang: 'es', regionCount: 1, want: '1 región' },
@@ -149,10 +154,10 @@ describe(
 			});
 		}
 
-		it('does not show the fixed "14 regions" when the API returns 5', async () => {
+		it('does not show the fixed "17 regions" when the API returns 5', async () => {
 			const text = visibleText(await renderHome({ lang: 'en', regionCount: 5 }));
-			expect(text, 'got the design\'s fixed "14 regions", want the API count').not.toContain(
-				'14 regions'
+			expect(text, 'got the design\'s fixed "17 regions", want the API count').not.toContain(
+				'17 regions'
 			);
 		});
 	}
@@ -370,7 +375,9 @@ const GALICIA_RU = {
 	]
 };
 
-const ANDALUCIA_EN_DESCRIPTION = 'Cold soups, fried fish and eight provinces of contrasts.';
+// Region revision 2026-11-23: the description mentions Ceuta and Melilla.
+const ANDALUCIA_EN_DESCRIPTION =
+	'Cold soups, fried fish and eight provinces of contrasts. Ceuta and Melilla, across the Strait, are listed here too.';
 
 describe(
 	'(home) layout: region sheet in the server HTML',
@@ -467,9 +474,12 @@ describe(
 				expect(visibleText(empty)).toContain(COPY[lang].clickRegion);
 			});
 
-			it(`/${lang}/: the empty state links the 14 regions in map order`, async () => {
+			it(`/${lang}/: the empty state links the 17 regions in map order`, async () => {
 				const empty = emptyPanelHtml(await renderHome({ lang, path: `/${lang}/` }));
-				expect(chipLinks(empty)).toEqual(wantedChips(lang));
+				const got = chipLinks(empty);
+				expect(got).toEqual(wantedChips(lang));
+				const keys = got.map((chip) => chip.href.split('/').pop());
+				expect(keys, 'want the chips in map-grid.json regionOrder').toEqual(REGION_ORDER);
 			});
 		}
 
@@ -508,6 +518,92 @@ describe(
 			expect(panelNames(html), 'got a region panel on Popular').toEqual([]);
 			expect(openDialogs(html), 'got an open sheet on Popular').toEqual([]);
 		});
+	}
+);
+
+// D-REG-1 (owner, 2026-11-23), mobile README -> Regional tab — body:
+// "Region chips, directly under the map: one horizontally scrolling chip row
+// ... with all 17 regions in map order, each labelled with the region name.
+// Tapping a chip does exactly what tapping the region on the map does";
+// mobile only (the desktop panel's empty state has its own chips). Assumed
+// hooks: the row is data-testid="region-chips" (RegionChips), its chips are
+// links to /:lang/regions/:key, the selected one aria-current="true", and the
+// row sits in a .mobile-only wrapper (SSR renders both layouts, CSS hides one).
+const REGION_CHIPS = 'data-testid="region-chips"';
+
+function regionChipsHtml(html: string): string {
+	const found = elementsWith(html, REGION_CHIPS);
+	expect(found.length, `got ${found.length} region chip rows, want 1`).toBe(1);
+	return found[0];
+}
+
+// The HTML of every element whose class list has `className`.
+function elementsWithClass(html: string, className: string): string[] {
+	const starts = [...html.matchAll(/<[a-zA-Z][^>]*\bclass="([^"]*)"[^>]*>/g)];
+	return starts
+		.filter((m) => m[1].split(/\s+/).includes(className))
+		.map((m) => elementHtml(html, m.index));
+}
+
+function currentChipHrefs(chips: string): string[] {
+	return startTags(chips)
+		.filter((t) => t.name === 'a' && t.attrs['aria-current'] === 'true')
+		.map((t) => t.attrs.href);
+}
+
+describe(
+	'(home) layout: mobile region chips (D-REG-1)',
+	{ timeout: COLD_COMPILE_TIMEOUT_MS },
+	() => {
+		for (const lang of ['en', 'es', 'ru'] as const) {
+			it(`/${lang}/: links the 17 regions by name, in map order`, async () => {
+				const chips = regionChipsHtml(await renderHome({ lang, path: `/${lang}/` }));
+				const got = chipLinks(chips);
+				expect(got).toEqual(wantedChips(lang));
+				const keys = got.map((chip) => chip.href.split('/').pop());
+				expect(keys, 'want the chips in map-grid.json regionOrder').toEqual(REGION_ORDER);
+			});
+		}
+
+		it('/en/: the row has no "all" chip and no button', async () => {
+			const chips = regionChipsHtml(await renderHome({ lang: 'en', path: '/en/' }));
+			const controls = startTags(chips).filter((t) => t.name === 'a' || t.name === 'button');
+			expect(controls).toHaveLength(wantedChips('en').length);
+		});
+
+		it('/en/: sits in a mobile-only wrapper (not rendered on desktop)', async () => {
+			const html = await renderHome({ lang: 'en', path: '/en/' });
+			const wrapped = elementsWithClass(html, 'mobile-only').some((el) =>
+				el.includes(REGION_CHIPS)
+			);
+			expect(wrapped, 'want the region chips inside a .mobile-only element').toBe(true);
+			const inDesktop = elementsWithClass(html, 'desktop-only').some((el) =>
+				el.includes(REGION_CHIPS)
+			);
+			expect(inDesktop, 'got the region chips inside a .desktop-only element').toBe(false);
+		});
+
+		it('/en/: comes after the map and before the about title', async () => {
+			const html = await renderHome({ lang: 'en', path: '/en/' });
+			const map = html.indexOf('data-testid="region-map"');
+			const chips = html.indexOf(REGION_CHIPS);
+			const about = html.indexOf('<h1');
+			expect(map, 'got no map').toBeGreaterThan(-1);
+			expect(chips, 'want the chips after the map').toBeGreaterThan(map);
+			expect(about, 'want the about title after the chips').toBeGreaterThan(chips);
+		});
+
+		it('/en/: marks no chip selected', async () => {
+			const chips = regionChipsHtml(await renderHome({ lang: 'en', path: '/en/' }));
+			expect(currentChipHrefs(chips)).toEqual([]);
+		});
+
+		for (const key of ['gal', 'rio']) {
+			it(`/en/regions/${key}: marks only that region's chip aria-current`, async () => {
+				const html = await renderHome({ lang: 'en', path: `/en/regions/${key}` });
+				expect(currentChipHrefs(regionChipsHtml(html))).toEqual([`/en/regions/${key}`]);
+			});
+		}
 	}
 );
 

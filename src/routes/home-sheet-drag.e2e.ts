@@ -81,7 +81,9 @@ const header = (page: Page) =>
 const description = (page: Page) =>
 	regionSheet(page).getByText(REGION.description, { exact: true });
 const rows = (page: Page) => regionSheet(page).locator('a[href^="/en/dishes/"]');
-const listRow = (page: Page) => rows(page).nth(1);
+// The first row: Andalucía's longer description (it names Ceuta and Melilla
+// since the region revision) pushes the second row below the peek's fold.
+const listRow = (page: Page) => rows(page).first();
 
 async function openRegion(page: Page) {
 	await gotoHydrated(page, REGION_URL);
