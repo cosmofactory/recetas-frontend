@@ -25,7 +25,10 @@ export const RECIPE_TEST_IDS = {
 	// One per method step: the toggle <button aria-pressed>, the whole row.
 	step: 'recipe-step',
 	// Inside an ingredient or step row: the check / number circle.
-	check: 'recipe-check'
+	check: 'recipe-check',
+	// FE-10 (D-CNT2-3): the tips section after the method steps, absent when
+	// the recipe has no tips.
+	tips: 'recipe-tips'
 } as const;
 
 // Mobile README -> Screen 3: the bar's title and hairline appear past 280px.
@@ -52,6 +55,8 @@ export type RecipeCopy = {
 	// extra-strings.json: time unit labels ("1 h 15 min", "1 ч 15 мин").
 	hours: string;
 	minutes: string;
+	// FE-10 (D-CNT2-3): extra-strings.json recipe.tips, the tips heading.
+	tips: string;
 };
 
 export const RECIPE_COPY: Record<RecipeLocale, RecipeCopy> = {
@@ -64,7 +69,8 @@ export const RECIPE_COPY: Record<RecipeLocale, RecipeCopy> = {
 		more: 'More servings',
 		servings: { one: '# serving', other: '# servings' },
 		hours: 'h',
-		minutes: 'min'
+		minutes: 'min',
+		tips: 'Tips'
 	},
 	es: {
 		time: 'Tiempo',
@@ -75,7 +81,8 @@ export const RECIPE_COPY: Record<RecipeLocale, RecipeCopy> = {
 		more: 'Más raciones',
 		servings: { one: '# ración', other: '# raciones' },
 		hours: 'h',
-		minutes: 'min'
+		minutes: 'min',
+		tips: 'Trucos'
 	},
 	ru: {
 		time: 'Время',
@@ -86,7 +93,8 @@ export const RECIPE_COPY: Record<RecipeLocale, RecipeCopy> = {
 		more: 'Больше порций',
 		servings: { one: '# порция', few: '# порции', many: '# порций' },
 		hours: 'ч',
-		minutes: 'мин'
+		minutes: 'мин',
+		tips: 'Советы'
 	}
 };
 
@@ -254,4 +262,24 @@ export const PAELLA_VAL_TITLE: Record<RecipeLocale, string> = {
 	en: 'Rice dishes · Paella valenciana',
 	es: 'Arroces · Paella valenciana',
 	ru: 'Блюда из риса · Paella valenciana'
+};
+
+// FE-10 (D-CNT2-3): three one-line tips for the Betanzos recipe, per locale
+// and in order. The vendored bundle has no tips yet, so the specs add these.
+export const BETANZOS_TIPS: Record<RecipeLocale, string[]> = {
+	en: [
+		'Slice the potatoes evenly so they all cook at the same rate.',
+		'Let the beaten eggs rest with the potatoes before they go in the pan.',
+		'A small, very hot pan gives a thick tortilla with a runny centre.'
+	],
+	es: [
+		'Corta las patatas del mismo grosor para que se hagan por igual.',
+		'Deja reposar el huevo batido con las patatas antes de cuajar.',
+		'Una sartén pequeña y muy caliente da una tortilla alta y jugosa por dentro.'
+	],
+	ru: [
+		'Нарежьте картофель одинаково, чтобы он приготовился равномерно.',
+		'Дайте яйцам постоять с картофелем, прежде чем выливать их на сковороду.',
+		'Маленькая, сильно разогретая сковорода даёт высокую тортилью с жидкой серединкой.'
+	]
 };

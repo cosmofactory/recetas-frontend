@@ -12,6 +12,7 @@ import {
 	type RegionDetail
 } from '../../../testutil/catalog';
 import { loadExport } from '../../../testutil/load-export';
+import { BETANZOS_TIPS } from '../../../testutil/recipe-copy';
 // Type-only: erased at run time, checked by `pnpm check`.
 import type { components } from '#lib/api/schema.d.ts';
 import type { createMockSource as CreateMockSourceImpl } from './mock-source.ts';
@@ -51,12 +52,12 @@ const DISH_KEYS = [
 ];
 const LANGS: Lang[] = ['en', 'es', 'ru'];
 
-async function mockSource() {
+async function mockSource(input: typeof bundle = bundle) {
 	const create = await loadExport<CreateMockSource>(
 		'src/lib/server/mock/mock-source.ts',
 		'createMockSource'
 	);
-	return create(bundle);
+	return create(input);
 }
 
 const notFoundError = () => loadExport<ErrorClass>('src/lib/server/api-errors.ts', 'NotFoundError');
@@ -290,6 +291,68 @@ describe('mock getRecipe', () => {
 			);
 		}
 	});
+});
+
+// FE-10 (D-CNT2-3, BE-8): a bundle recipe may carry `tips`, an optional list
+// of {en, es, ru} (max 3). The API's Recipe.tips is a required array of
+// strings in the request's locale, in bundle order, and [] when the recipe
+// has none, never null or missing (recetas-backend api/openapi.yaml).
+type BundleTip = Record<Lang, string>;
+
+const TORTILLA_GAL = { dishKey: 'tortilla', regionKey: 'gal' };
+
+// The Betanzos tips per locale, zipped into the bundle's per-tip shape.
+function betanzosBundleTips(): BundleTip[] {
+	return BETANZOS_TIPS.en.map((en, i) => ({
+		en,
+		es: BETANZOS_TIPS.es[i],
+		ru: BETANZOS_TIPS.ru[i]
+	}));
+}
+
+// The vendored bundle with `tips` set on one recipe.
+function bundleWithTips(recipeKey: string, tips: BundleTip[]): typeof bundle {
+	const recipes = bundle.recipes.map((r) => (r.recipeKey === recipeKey ? { ...r, tips } : r));
+	return { ...bundle, recipes };
+}
+
+describe('mock getRecipe tips (FE-10)', () => {
+	for (const lang of LANGS) {
+		it(`${lang}: maps the bundle's tips to strings in ${lang}, in order`, async () => {
+			const source = await mockSource(bundleWithTips('tortilla-gal', betanzosBundleTips()));
+			const recipe = await source.getRecipe(lang, TORTILLA_GAL);
+			expect(recipe.tips, `got ${JSON.stringify(recipe.tips)}`).toEqual(BETANZOS_TIPS[lang]);
+		});
+	}
+
+	it("leaves another recipe's tips empty", async () => {
+		const source = await mockSource(bundleWithTips('tortilla-gal', betanzosBundleTips()));
+		const recipe = await source.getRecipe('en', { dishKey: 'tortilla', regionKey: 'ast' });
+		expect(recipe.tips, `got ${JSON.stringify(recipe.tips)}, want []`).toEqual([]);
+	});
+
+	it('maps an empty tips list to []', async () => {
+		const recipe = await (
+			await mockSource(bundleWithTips('tortilla-gal', []))
+		).getRecipe('es', TORTILLA_GAL);
+		expect(recipe.tips, `got ${JSON.stringify(recipe.tips)}, want []`).toEqual([]);
+	});
+
+	for (const lang of LANGS) {
+		it(`${lang}: maps a missing tips field to [] for every recipe`, async () => {
+			const source = await mockSource();
+			const refs = (await source.listDishes(lang)).flatMap((d) =>
+				d.variations.map((v) => ({ dishKey: d.key, regionKey: v.regionKey }))
+			);
+			for (const ref of refs) {
+				const { tips } = await source.getRecipe(lang, ref);
+				expect(
+					tips,
+					`got ${JSON.stringify(tips)} for ${ref.dishKey}/${ref.regionKey}, want []`
+				).toEqual([]);
+			}
+		});
+	}
 });
 
 describe('mock unknown keys', () => {

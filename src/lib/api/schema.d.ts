@@ -248,6 +248,8 @@ export interface components {
             baseServings: number;
             ingredients: components["schemas"]["Ingredient"][];
             steps: string[];
+            /** @description Optional cooking tips shown after the steps, in order. Empty when the recipe has none; never `null`. */
+            tips: string[];
             photos: components["schemas"]["Photos"];
         };
         Health: {

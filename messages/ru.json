@@ -144,5 +144,6 @@
 		}
 	],
 	"recipe_hours": "ч",
-	"recipe_minutes": "мин"
+	"recipe_minutes": "мин",
+	"recipe_tips": "Советы"
 }

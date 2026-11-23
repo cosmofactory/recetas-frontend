@@ -86,5 +86,7 @@ export const tortillaGalRecipe: Recipe = {
 	baseServings: 2,
 	ingredients: [{ quantity: 4, unit: null, name: 'Eggs' }],
 	steps: ['Peel the potatoes and slice them very thin.'],
+	// FE-10 (BE-8): required, [] when the recipe has none.
+	tips: [],
 	photos: NO_PHOTOS
 };

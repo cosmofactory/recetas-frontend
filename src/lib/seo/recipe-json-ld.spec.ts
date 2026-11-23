@@ -3,7 +3,12 @@ import type { components } from '#lib/api/schema.d.ts';
 import { withRequestLocale } from '#lib/server/request-locale.ts';
 import { loadExport } from '../../testutil/load-export';
 import { expectedIngredients, recipeIn, type Recipe } from '../../testutil/recipe';
-import { BETANZOS, RECIPE_LOCALES, type RecipeLocale } from '../../testutil/recipe-copy';
+import {
+	BETANZOS,
+	BETANZOS_TIPS,
+	RECIPE_LOCALES,
+	type RecipeLocale
+} from '../../testutil/recipe-copy';
 
 // FE-8 PR 2 (stage FE-8 -> SEO: "JSON-LD schema.org/Recipe on recipe pages,
 // in the page's locale"; Acceptance: the Rich Results Test passes for a
@@ -112,6 +117,16 @@ describe('recipeJsonLd: snapshot', () => {
 	it('Betanzos-style runny (en, with a hero) is exactly the expected object', async () => {
 		const got = await build({ lang: 'en' });
 		expect({ ...got, image: sortedImages(got) }).toEqual(BETANZOS_EN);
+	});
+
+	// FE-10 (D-CNT2-3): schema.org Recipe has no tips property, so the tips
+	// stay on the page only.
+	it('tips change nothing: the same object with and without them', async () => {
+		const recipe = recipeIn('en', 'tortilla', 'gal');
+		const withTips = await build({ lang: 'en', recipe: { ...recipe, tips: BETANZOS_TIPS.en } });
+		const withoutTips = await build({ lang: 'en', recipe: { ...recipe, tips: [] } });
+		expect(withTips).toEqual(withoutTips);
+		expect(JSON.stringify(withTips)).not.toContain(BETANZOS_TIPS.en[0]);
 	});
 
 	it('is plain JSON (nothing JSON.stringify would drop or change)', async () => {

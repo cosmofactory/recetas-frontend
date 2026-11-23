@@ -4,7 +4,12 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { loadExport, repoFile } from '../src/testutil/load-export';
-import { EXPECTED_MESSAGE_KEYS, EXTRA_MESSAGE_KEYS, pluralMessage } from './testdata/message-keys';
+import {
+	EXPECTED_MESSAGE_KEYS,
+	EXTRA_MESSAGE_KEYS,
+	pluralMessage,
+	RECIPE_TIPS_HEADING
+} from './testdata/message-keys';
 
 // scripts/import-strings.ts (FE-1) converts the design strings.json, merged
 // with src/lib/i18n/extra-strings.json (same per-locale shape; copy the
@@ -290,6 +295,16 @@ describe('src/lib/i18n/extra-strings.json', () => {
 		it(`turns the extra ${locale} home.region into a plural message`, async () => {
 			const got = (await loadConvert())({}, readJson(extraPath))[locale].home_region;
 			expectPluralMessage(got, forms);
+		});
+	}
+
+	// FE-10 (D-CNT2-3): the recipe tips heading is extra copy (the design
+	// strings.json has no tips), a plain string per locale.
+	for (const locale of LOCALES) {
+		const want = RECIPE_TIPS_HEADING[locale];
+		it(`has the ${locale} recipe tips heading recipe.tips = "${want}"`, async () => {
+			const got = (await loadConvert())({}, readJson(extraPath))[locale].recipe_tips;
+			expect(got, `got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`).toBe(want);
 		});
 	}
 });

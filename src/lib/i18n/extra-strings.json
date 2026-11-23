@@ -119,21 +119,24 @@
 			"moreServings": "More servings",
 			"servings": ["serving", "servings"],
 			"hours": "h",
-			"minutes": "min"
+			"minutes": "min",
+			"tips": "Tips"
 		},
 		"es": {
 			"fewerServings": "Menos raciones",
 			"moreServings": "Más raciones",
 			"servings": ["ración", "raciones"],
 			"hours": "h",
-			"minutes": "min"
+			"minutes": "min",
+			"tips": "Trucos"
 		},
 		"ru": {
 			"fewerServings": "Меньше порций",
 			"moreServings": "Больше порций",
 			"servings": ["порция", "порции", "порций"],
 			"hours": "ч",
-			"minutes": "мин"
+			"minutes": "мин",
+			"tips": "Советы"
 		}
 	}
 }

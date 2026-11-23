@@ -62,8 +62,8 @@
 
 	.heading {
 		margin: 0;
-		padding-bottom: 6px;
-		font: 400 24px var(--font-display);
+		padding-bottom: var(--recipe-heading-padding-bottom);
+		font: var(--recipe-heading-font);
 	}
 
 	.steps {
@@ -79,7 +79,7 @@
 		display: flex;
 		gap: 14px;
 		width: 100%;
-		padding: 12px 0;
+		padding: var(--recipe-row-padding);
 		border: 0;
 		border-bottom: 1px solid var(--border-hairline);
 		background: transparent;
@@ -115,8 +115,8 @@
 	.text {
 		flex: 1;
 		padding-top: 3px;
-		font-size: 14.5px;
-		line-height: 1.5;
+		font-size: var(--recipe-text-size);
+		line-height: var(--recipe-text-line-height);
 		text-wrap: pretty;
 		transition: color var(--dur-colour);
 	}
@@ -138,12 +138,12 @@
 		}
 
 		.heading {
-			font-size: 34px;
+			font-size: var(--recipe-heading-size-desktop);
 		}
 
 		.step {
 			gap: 22px;
-			padding: 24px 0;
+			padding: var(--recipe-row-padding-desktop);
 			border-bottom-color: var(--border-card);
 		}
 
@@ -154,10 +154,10 @@
 		}
 
 		.text {
-			max-width: 640px;
+			max-width: var(--recipe-text-max-width-desktop);
 			padding-top: 7px;
-			font-size: 18px;
-			line-height: 1.6;
+			font-size: var(--recipe-text-size-desktop);
+			line-height: var(--recipe-text-line-height-desktop);
 		}
 	}
 </style>

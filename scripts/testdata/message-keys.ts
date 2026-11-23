@@ -106,8 +106,13 @@ export const EXTRA_MESSAGE_KEYS = [
 	// FE-4: the home regions eyebrow (a plural on the API's region count) and
 	// the Regional | Popular tablist's accessible name.
 	'home_region',
-	'a11y_homeTabs'
+	'a11y_homeTabs',
+	// FE-10 (D-CNT2-3): the heading of the recipe tips after the method steps.
+	'recipe_tips'
 ] as const;
+
+// FE-10 (D-CNT2-3, glossary entries): the tips heading per locale.
+export const RECIPE_TIPS_HEADING = { en: 'Tips', es: 'Trucos', ru: 'Советы' } as const;
 
 // Moved to a11y_* (FE-3 review); the dev gallery block keeps only its own copy.
 export const RETIRED_MESSAGE_KEYS = [

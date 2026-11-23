@@ -15,6 +15,7 @@ import {
 import { expectedIngredients, recipeIn, type Recipe } from '../../../../../testutil/recipe';
 import {
 	BETANZOS,
+	BETANZOS_TIPS,
 	FABADA_TIME,
 	RECIPE_COPY,
 	RECIPE_LOCALES,
@@ -95,6 +96,8 @@ type RenderSpec = {
 	description?: string;
 	// Overrides the API's dishName, for a variation that starts with it.
 	dishName?: string;
+	// FE-10: the recipe's tips (the vendored bundle has none).
+	tips?: string[];
 };
 
 const photos = (prefix: string): Photos => ({
@@ -110,7 +113,8 @@ function fixtureRecipe(spec: RenderSpec): Recipe {
 	const description = spec.description ?? recipe.description;
 	const dishName = spec.dishName ?? recipe.dishName;
 	const photoSet = spec.withPhotos ? photos(prefix) : recipe.photos;
-	return { ...recipe, baseServings, description, dishName, photos: photoSet };
+	const tips = spec.tips ?? recipe.tips;
+	return { ...recipe, baseServings, description, dishName, photos: photoSet, tips };
 }
 
 function pageData(spec: RenderSpec): PageData {
@@ -364,6 +368,101 @@ describe('Recipe page: method', { timeout: COLD_COMPILE_TIMEOUT_MS }, () => {
 				'false'
 			]);
 		}
+	});
+});
+
+// FE-10 (D-CNT2-3): 0–3 one-line tips after the method steps, under a
+// heading, in both layouts (one RecipeBody serves both, so the server HTML
+// pins it once). Decisions pinned here:
+// - The tips are one element, data-testid="recipe-tips", after the last
+//   step; its heading is an <h2> like "Ingredients" and "Method" (the tips
+//   are a sibling section of the method, not a sub-part of it), reading the
+//   extra-strings.json recipe.tips copy, then one <li> per tip in a list,
+//   in the API's order.
+// - The tips are plain text: no toggle, link or button (unlike the steps).
+// - No tips (the API's []) renders no heading and no empty element.
+const tipsCopy = (lang: RecipeLocale) => RECIPE_COPY[lang].tips;
+
+function tipTexts(tipsHtml: string): string[] {
+	const items = [...tipsHtml.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/g)];
+	return items.map((m) => decodeAmp(visibleText(m[1])));
+}
+
+describe('Recipe page: tips (FE-10)', { timeout: COLD_COMPILE_TIMEOUT_MS }, () => {
+	for (const lang of RECIPE_LOCALES) {
+		const tips = BETANZOS_TIPS[lang];
+
+		it(`${lang}: the <h2>s are Ingredients, Method, "${tipsCopy(lang)}"`, async () => {
+			const { body } = await renderPage({ lang, tips });
+			expect(headingTexts(body, 2)).toEqual([
+				RECIPE_COPY[lang].ingredients,
+				RECIPE_COPY[lang].method,
+				tipsCopy(lang)
+			]);
+		});
+
+		it(`${lang}: every tip is a list item, in order`, async () => {
+			const { body } = await renderPage({ lang, tips });
+			expect(tipTexts(onlyByTestId(body, RECIPE_TEST_IDS.tips))).toEqual(tips);
+		});
+	}
+
+	it('the tips come after the last method step', async () => {
+		const { body } = await renderPage({ lang: 'en', tips: BETANZOS_TIPS.en });
+		const lastStep = body.lastIndexOf(`data-testid="${RECIPE_TEST_IDS.step}"`);
+		const tipsAt = body.indexOf(`data-testid="${RECIPE_TEST_IDS.tips}"`);
+		expect(lastStep, 'got no step').toBeGreaterThan(-1);
+		expect(
+			tipsAt,
+			`got the tips at ${tipsAt}, want after the last step at ${lastStep}`
+		).toBeGreaterThan(lastStep);
+	});
+
+	it('inside the tips the heading comes before the list', async () => {
+		const tipsHtml = onlyByTestId(
+			(await renderPage({ lang: 'en', tips: BETANZOS_TIPS.en })).body,
+			RECIPE_TEST_IDS.tips
+		);
+		const headingAt = tipsHtml.indexOf('<h2');
+		const listAt = tipsHtml.search(/<(ul|ol)\b/);
+		expect([headingAt > -1, listAt > -1], 'want an <h2> and a <ul>/<ol>').toEqual([true, true]);
+		expect(headingAt, 'got the list before the heading').toBeLessThan(listAt);
+	});
+
+	it('a single tip renders one item', async () => {
+		const { body } = await renderPage({ lang: 'es', tips: [BETANZOS_TIPS.es[0]] });
+		expect(tipTexts(onlyByTestId(body, RECIPE_TEST_IDS.tips))).toEqual([BETANZOS_TIPS.es[0]]);
+	});
+
+	it('the tips are plain text: no button or link inside', async () => {
+		const tipsHtml = onlyByTestId(
+			(await renderPage({ lang: 'en', tips: BETANZOS_TIPS.en })).body,
+			RECIPE_TEST_IDS.tips
+		);
+		const controls = startTags(tipsHtml).filter((t) => t.name === 'a' || t.name === 'button');
+		expect(
+			controls.map((t) => t.name),
+			'want no control in the tips'
+		).toEqual([]);
+	});
+
+	for (const lang of RECIPE_LOCALES) {
+		it(`${lang}: no tips: no "${tipsCopy(lang)}" heading and no tips element`, async () => {
+			const { body } = await renderPage({ lang, tips: [] });
+			expect(byTestId(body, RECIPE_TEST_IDS.tips)).toEqual([]);
+			expect(headingTexts(body, 2)).toEqual([
+				RECIPE_COPY[lang].ingredients,
+				RECIPE_COPY[lang].method
+			]);
+			expect(headingTexts(body, 3), 'want no <h3> tips heading either').not.toContain(
+				tipsCopy(lang)
+			);
+		});
+	}
+
+	it('the mock recipe (no tips in the bundle) shows no tips', async () => {
+		const { body } = await renderPage({ lang: 'en' });
+		expect(byTestId(body, RECIPE_TEST_IDS.tips)).toEqual([]);
 	});
 });
 
