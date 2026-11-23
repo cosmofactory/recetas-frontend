@@ -38,6 +38,12 @@ import { evaluateWith } from './in-page-e2e';
 //   map; desktop: the panel's empty-state chips). That pairing is
 //   `mapRegionsWithoutFullSizeTarget`. Every other control keeps 44px,
 //   the region chips included.
+// One documented allowance (owner, 2026-11-23, PR #55): a point covered by
+// an open search dropdown or language menu counts as reached for a target
+// outside it. Those two overlays cover the page on purpose while open, and
+// with 17 region chips the desktop panel's chips can sit partly under the
+// dropdown. Only these two overlays, named in `openOverlays`; a neighbour,
+// a label or any other layer painted over a target still takes its points.
 
 export const HIT_MIN_PX = 44;
 // Sub-pixel layout (fractional clamps, 1.5px borders) and the press
@@ -221,9 +227,19 @@ function targetName(el: Element): string {
 	return `<${el.tagName.toLowerCase()}> ${role} "${name.slice(0, 40)}"${href ? ` ${href}` : ''}`;
 }
 
+// The open overlays of the allowance above (in-page code can't see a module constant).
+function openOverlays(): string {
+	return '[data-testid="search-dropdown"], [role="menu"]';
+}
+
+function coveredByOverlay(el: Element, hit: Element): boolean {
+	const overlay = hit.closest(openOverlays());
+	return overlay !== null && !overlay.contains(el);
+}
+
 function lands(el: Element, x: number, y: number): boolean {
 	const hit = document.elementFromPoint(x, y);
-	return hit !== null && (hit === el || el.contains(hit));
+	return hit !== null && (hit === el || el.contains(hit) || coveredByOverlay(el, hit));
 }
 
 function onScreen(box: Box): boolean {
@@ -357,6 +373,8 @@ const IN_PAGE_HELPERS = [
 	wantedHeight,
 	isTarget,
 	targetName,
+	openOverlays,
+	coveredByOverlay,
 	lands,
 	onScreen,
 	reachStep,
