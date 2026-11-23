@@ -25,7 +25,7 @@
 <style>
 	/*
 	 * Desktop README -> Regional (D-FE9-8): "the 'Click a region to explore'
-	 * hint as a serif title followed by the 14 regions as chips". The title
+	 * hint as a serif title followed by the 17 regions as chips". The title
 	 * takes the region name's size; the chips are the panel's regional dish
 	 * chips (RegionDetails, desktop), as links. Centred in the panel, an
 	 * empty state, which also keeps the links clear of the search dropdown

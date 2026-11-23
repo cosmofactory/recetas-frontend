@@ -67,7 +67,7 @@ import { expectDropdownClosed, typeInDesktopSearch } from '../testutil/desktop-s
 // README -> Regional, State `region: none on first load`): "No region is
 // selected on first load ... the whole map is at full colour and the panel
 // shows its empty state, the "Click a region to explore" hint as a serif
-// title followed by the 14 regions as chips linking to /:lang/regions/:key
+// title followed by the 17 regions as chips linking to /:lang/regions/:key
 // (map order). Clicking a region selects it (others dim, D-FE9-3); clicking
 // the selected region again, or Esc, clears it back to /:lang/."
 //
@@ -370,7 +370,7 @@ test.describe('desktop region panel', () => {
 	});
 
 	for (const lang of LOCALES) {
-		test(`/${lang}/: the empty panel lists the 14 regions in map order`, async ({ page }) => {
+		test(`/${lang}/: the empty panel lists the 17 regions in map order`, async ({ page }) => {
 			await gotoHydrated(page, `/${lang}/`);
 			await expectEmptyPanel(page, lang);
 		});
@@ -678,7 +678,7 @@ test.describe('desktop home fits the viewport', () => {
 	}
 });
 
-// FE-4 acceptance: "Each of the 14 regions can be selected with a tap and
+// FE-4 acceptance: "Each of the 17 regions can be selected with a tap and
 // with the keyboard. Its URL updates, and back/forward restore the
 // selection." and "The screen-reader fallback list is present": the map is
 // that list (a <ul> of one link per region, FE-4 PR 1), so it is checked in
@@ -707,9 +707,26 @@ async function expectHomeAgain(page: Page, lang: Locale) {
 	await expectSheetHidden(page);
 }
 
+// Andalucía's map cell on the given 1-based grid lines.
+async function exclaveCell(page: Page, at: { row: number; col: number }): Promise<Locator> {
+	const cells = regionLink(page, 'and').locator('[data-map-cell]');
+	const index = await cells.evaluateAll(
+		(els, want) =>
+			els.findIndex((el) => {
+				const style = getComputedStyle(el);
+				return (
+					Number(style.gridRowStart) === want.row && Number(style.gridColumnStart) === want.col
+				);
+			}),
+		at
+	);
+	expect(index, `got no Andalucía cell at row ${at.row}, col ${at.col}`).toBeGreaterThanOrEqual(0);
+	return cells.nth(index);
+}
+
 test.describe('every region', () => {
 	for (const lang of LOCALES) {
-		test(`/${lang}/: the map is the list of the 14 regions, each link named by it`, async ({
+		test(`/${lang}/: the map is the list of the 17 regions, each link named by it`, async ({
 			page
 		}) => {
 			await gotoHydrated(page, `/${lang}/`);
@@ -724,10 +741,10 @@ test.describe('every region', () => {
 	}
 
 	test(
-		'a tap on each of the 14 regions opens it at its URL; Back returns home',
+		'a tap on each of the 17 regions opens it at its URL; Back returns home',
 		{ tag: '@layout' },
 		async ({ page }) => {
-			// 14 sheet open/close cycles: ~20s on mobile, two thirds of the default timeout.
+			// 17 sheet open/close cycles: ~25s on mobile, two thirds of the default timeout.
 			test.slow();
 			await gotoHydrated(page, '/es/');
 			for (const region of mapRegions('es')) {
@@ -738,6 +755,24 @@ test.describe('every region', () => {
 			}
 		}
 	);
+
+	// Region revision 2026-11-23: Ceuta (row 13, col 7) and Melilla (row 13,
+	// col 10) are Andalucía's unlabelled exclave cells; tapping either selects it.
+	for (const exclave of [
+		{ name: 'Ceuta', row: 13, col: 7 },
+		{ name: 'Melilla', row: 13, col: 10 }
+	]) {
+		test(`a tap on ${exclave.name} opens Andalucía`, async ({ page }) => {
+			await gotoHydrated(page, '/en/');
+			const cell = await exclaveCell(page, exclave);
+			await cell.click();
+			await expectRegionShown(
+				page,
+				'en',
+				mapRegions('en').find((r) => r.key === 'and')!
+			);
+		});
+	}
 
 	test(
 		'ru: each region opens from the keyboard; Back and Forward walk the selections',

@@ -10,6 +10,10 @@ export type MapGrid = {
 	grid: string[];
 	labelNudges?: Record<string, number[]>;
 	labelNudgeUnit?: string;
+	regionOrder?: string[];
+	insets?: Record<string, string>;
+	// Letters drawn as part of a region but left out of its label centroid.
+	exclaves?: Record<string, { name: string; regionKey: string }>;
 };
 
 // 1-based CSS grid lines (grid-row-start / grid-column-start).
@@ -49,13 +53,12 @@ function checkEveryRegionDrawn(mapGrid: MapGrid, cells: Map<string, GridCell[]>)
 	if (missing.length > 0) throw new Error(`map grid: legend regions without cells: ${missing}`);
 }
 
-// Each region's cells in row-major order, on 1-based grid lines.
-export function parseGrid(mapGrid: MapGrid): Map<string, GridCell[]> {
+function cellsByRegion(mapGrid: MapGrid, skipped: (letter: string) => boolean) {
 	checkShape(mapGrid);
 	const cells = new Map<string, GridCell[]>();
 	mapGrid.grid.forEach((line, rowIndex) => {
 		[...line].forEach((letter, colIndex) => {
-			if (letter === mapGrid.emptyCell) return;
+			if (letter === mapGrid.emptyCell || skipped(letter)) return;
 			const cell = { row: rowIndex + 1, col: colIndex + 1 };
 			const key = regionAt(mapGrid, letter, cell);
 			cells.set(key, [...(cells.get(key) ?? []), cell]);
@@ -63,6 +66,18 @@ export function parseGrid(mapGrid: MapGrid): Map<string, GridCell[]> {
 	});
 	checkEveryRegionDrawn(mapGrid, cells);
 	return cells;
+}
+
+// Each region's cells in row-major order, on 1-based grid lines; exclave
+// letters are plain cells of their region.
+export function parseGrid(mapGrid: MapGrid): Map<string, GridCell[]> {
+	return cellsByRegion(mapGrid, () => false);
+}
+
+// The cells a region's label centres on: parseGrid without the exclaves.
+export function labelCells(mapGrid: MapGrid): Map<string, GridCell[]> {
+	const exclaves = mapGrid.exclaves ?? {};
+	return cellsByRegion(mapGrid, (letter) => Object.hasOwn(exclaves, letter));
 }
 
 // The mean of the cell centres plus the nudge [dx, dy], in cell units (the

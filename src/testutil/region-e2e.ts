@@ -2,7 +2,8 @@ import { expect, type Locator, type Page } from '@playwright/test';
 import type { Locale } from './e2e';
 import { HOME_COPY, pathAndQuery, tokenValue, visibleMap } from './home-e2e';
 import { expectMapSelection } from './map-dim-e2e';
-import { mapRegions } from './map-regions-e2e';
+import mapGrid from '../lib/map/map-grid.json' with { type: 'json' };
+import { mapRegions, REGION_COUNT } from './map-regions-e2e';
 
 // Shared fixtures for the FE-4 PR 3 region sheet / panel Playwright specs
 // (home-region*.e2e.ts, home-head.e2e.ts). Content is the vendored mock
@@ -72,7 +73,9 @@ export const GALICIA_ES = {
 export const ANDALUCIA_EN: RegionCopy = {
 	key: 'and',
 	name: 'Andalucía',
-	description: 'Cold soups, fried fish and eight provinces of contrasts.',
+	// Region revision 2026-11-23: the description mentions Ceuta and Melilla.
+	description:
+		'Cold soups, fried fish and eight provinces of contrasts. Ceuta and Melilla, across the Strait, are listed here too.',
 	count: '6 variations',
 	chips: ['Gazpacho andaluz', 'Salmorejo cordobés', 'Pescaíto frito'],
 	rows: [
@@ -239,7 +242,8 @@ export function selectedRegions(page: Page): Locator {
 }
 
 // FE-9 FB-13 (D-FE9-8): the desktop panel's empty state on /:lang/, the
-// "Click a region to explore" serif title and the 14 regions as chip links.
+// "Click a region to explore" serif title and the 17 regions as chip links,
+// in map order (map-grid.json regionOrder, the same as content.json regions[]).
 // Test hook: data-testid="region-panel-empty".
 export const EMPTY_PANEL_TEST_ID = 'region-panel-empty';
 
@@ -268,7 +272,16 @@ export async function expectEmptyPanel(page: Page, lang: Locale) {
 	const serif = await tokenValue(page, 'font-family', 'var(--font-display)');
 	await expect(title, 'want the hint as a serif title').toHaveCSS('font-family', serif);
 	const want = mapRegions(lang).map((r) => ({ href: `/${lang}/regions/${r.key}`, text: r.name }));
-	expect(await chipLinksIn(empty)).toEqual(want);
+	const got = await chipLinksIn(empty);
+	expect(got).toEqual(want);
+	expect(got, `got ${got.length} chips, want ${REGION_COUNT}`).toHaveLength(REGION_COUNT);
+	const order = got.map((chip) => chip.href.split('/').pop());
+	expect(order, 'want the chips in map-grid.json regionOrder').toEqual(regionOrder());
+}
+
+// The canonical region order; the 14-region grid had none.
+function regionOrder(): string[] {
+	return (mapGrid as { regionOrder?: string[] }).regionOrder ?? [];
 }
 
 // Clicks a cell of a region already selected (the URL stays its region

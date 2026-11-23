@@ -1,11 +1,14 @@
 {
-  "columns": 14,
-  "rows": 11,
-  "aspectRatio": "14 / 11",
+  "columns": 16,
+  "rows": 13,
+  "aspectRatio": "16 / 13",
   "legend": {
     "G": "gal",
     "A": "ast",
+    "C": "cnb",
     "B": "bas",
+    "N": "nav",
+    "J": "rio",
     "T": "cat",
     "Y": "cyl",
     "M": "mad",
@@ -16,34 +19,81 @@
     "D": "and",
     "U": "mur",
     "P": "bal",
-    "Q": "can"
+    "Q": "can",
+    "K": "and",
+    "W": "and"
   },
   "emptyCell": ".",
   "grid": [
-    ".GGAABB.......",
-    "GGGAABBRRTTTT.",
-    "GGYYYYRRRRTTTT",
-    "..YYYYYRRRTTT.",
-    "..YYYMMRRVV.PP",
-    "..EYMMMLLVV.PP",
-    "..EELLLLLVV...",
-    "..EELLLLUUV...",
-    ".DDDDDLUUU....",
-    ".DDDDDDUU.....",
-    "QQQQ.........."
+    ".GGAAACCBBN.....",
+    "GGGAYYCCBNNRTTTT",
+    "GGGYYYYJJNRRRTTT",
+    "...YYYYYRRRRTTT.",
+    "...YYYMMLRRRTT..",
+    "...EEMMMLLRVV.PP",
+    "...EELLLLLVV..PP",
+    "...EELLLLLVV....",
+    "...EEDDDLUUV....",
+    "..DDDDDDDUU.....",
+    "...DDDDDDD......",
+    "QQQ.DD..........",
+    "......K..W......"
   ],
+  "regionOrder": [
+    "gal",
+    "ast",
+    "cnb",
+    "bas",
+    "nav",
+    "rio",
+    "cat",
+    "cyl",
+    "mad",
+    "ara",
+    "val",
+    "ext",
+    "clm",
+    "mur",
+    "and",
+    "bal",
+    "can"
+  ],
+  "regionOrderNote": "Canonical region order (north to south, islands last). Same order as content.json regions[]. Use it for region lists, chip lists and for ordering a dish's variations.",
+  "insets": {
+    "can": "Canarias: 3-cell inset bottom-left (not to scale)",
+    "bal": "Illes Balears: 2x2 block off the Valencian coast"
+  },
+  "exclaves": {
+    "K": {
+      "name": "Ceuta",
+      "regionKey": "and"
+    },
+    "W": {
+      "name": "Melilla",
+      "regionKey": "and"
+    }
+  },
+  "exclavesNote": "Ceuta (K) and Melilla (W) are single squares across the sea from Andalucía. They are part of Andalucía: tapping either selects 'and' and they highlight with it. Leave them out of the label centroid so the Andalucía label stays on the mainland. Accessible names: 'Ceuta (Andalucía)' / 'Melilla (Andalucía)'.",
   "labelNudges": {
-    "ast": [
-      -0.6,
-      0.5
-    ],
-    "bas": [
-      0.3,
-      -0.2
-    ],
     "gal": [
       -0.2,
       -0.5
+    ],
+    "ast": [
+      0.2,
+      -0.25
+    ],
+    "cnb": [
+      0,
+      0.5
+    ],
+    "bas": [
+      0.2,
+      -0.33
+    ],
+    "nav": [
+      0.3,
+      0.1
     ],
     "mad": [
       0,

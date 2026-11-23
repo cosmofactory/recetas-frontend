@@ -39,6 +39,12 @@ export type MapGrid = {
 	grid: string[];
 	labelNudges?: Record<string, number[]>;
 	labelNudgeUnit?: string;
+	// Region revision 2026-11-23: the canonical region order, the inset
+	// notes and the exclaves (a legend letter drawn as part of a region but
+	// left out of its label centroid: Ceuta K and Melilla W, both `and`).
+	regionOrder?: string[];
+	insets?: Record<string, string>;
+	exclaves?: Record<string, { name: string; regionKey: string }>;
 };
 
 export type ParseGrid = (mapGrid: MapGrid) => Map<string, GridCell[]>;
@@ -46,9 +52,13 @@ export type ParseGrid = (mapGrid: MapGrid) => Map<string, GridCell[]>;
 // Cell units from the map's top-left corner: (0, 0) .. (columns, rows).
 export type LabelPoint = { x: number; y: number };
 export type LabelPosition = (cells: GridCell[], nudge?: readonly number[]) => LabelPoint;
+// Each region's cells without its exclave cells: what its label centres on.
+export type LabelCells = (mapGrid: MapGrid) => Map<string, GridCell[]>;
 
-export const MAP_COLUMNS = 14;
-export const MAP_ROWS = 11;
+export const MAP_COLUMNS = 16;
+export const MAP_ROWS = 13;
+export const MAP_ASPECT_RATIO = '16 / 13';
+export const REGION_COUNT = 17;
 
 export function regionsIn(lang: Lang): Region[] {
 	return buildView(bundle, lang).regions;

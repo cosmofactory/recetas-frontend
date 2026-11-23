@@ -1,18 +1,16 @@
 <script lang="ts">
 	import type { components } from '#lib/api/schema.d.ts';
 	import { MediaQuery } from 'svelte/reactivity';
-	import StickyPanel from '#lib/components/ui/StickyPanel.svelte';
-	import RegionChooser from '#lib/content/RegionChooser.svelte';
-	import RegionDetails from '#lib/content/RegionDetails.svelte';
+	import RegionChips from '#lib/content/RegionChips.svelte';
 	import RegionMap from '#lib/content/RegionMap.svelte';
 	import type { RegionClick } from '#lib/content/region-click.ts';
 	import { recipeHref as recipeHrefIn, regionHref } from '#lib/i18n/localized-href.ts';
 	import type { MapRegionData } from '#lib/map/region-map.ts';
-	import { m } from '#lib/paraglide/messages.js';
 	import { desktopQuery } from '#lib/ui/breakpoints.ts';
 	import { sheetOpener } from '#lib/ui/sheet-opener.ts';
 	import AboutBlock from './AboutBlock.svelte';
 	import MetaRow from './MetaRow.svelte';
+	import RegionPanelColumn from './RegionPanelColumn.svelte';
 	import RegionSheet from './RegionSheet.svelte';
 	import { desktopRegionClear } from './desktop-region-clear.svelte.ts';
 	import { findRegion } from './region-selection.ts';
@@ -72,18 +70,22 @@
 					<RegionMap {regions} selectedKey={selected?.key} {hrefFor} onActivate={activateRegion} />
 				</div>
 			</div>
+			<!-- D-REG-1: the map regions' full-size twins; a chip acts like its region. -->
+			<div class="region-chips mobile-only" data-sveltekit-reset="false">
+				<RegionChips {regions} selectedKey={selected?.key} {hrefFor} onActivate={activateRegion} />
+			</div>
 			<AboutBlock />
 		</div>
 	</div>
-	<div class="panel-column desktop-only" bind:this={panelColumn}>
-		<StickyPanel label={selected?.name ?? m.desktop_clickRegion()} contentKey={selected?.key}>
-			{#if selected}
-				<RegionDetails region={selected} {dishes} {recipeHref} {mediaBaseUrl} />
-			{:else}
-				<RegionChooser {regions} {hrefFor} />
-			{/if}
-		</StickyPanel>
-	</div>
+	<RegionPanelColumn
+		bind:element={panelColumn}
+		region={selected}
+		{regions}
+		{dishes}
+		{hrefFor}
+		{recipeHref}
+		{mediaBaseUrl}
+	/>
 </div>
 <RegionSheet
 	region={selected}
@@ -113,18 +115,19 @@
 	 * Mobile README -> Regional tab: "body (flex:1, padding 14px 16px 16px,
 	 * column, gap 10px)". The prototype's map wrapper is "flex:1; min-height:0;
 	 * justify-content:center; padding-top:6px" and the map "width:100%;
-	 * max-height:100%; aspect-ratio:14/11". Under the meta row the map and the
+	 * max-height:100%; aspect-ratio:16/13". Under the meta row the map and the
 	 * about block (D-FE9-4, "reached by scrolling") scroll inside the frame;
 	 * the scroller is a size container, so the map's width follows the height
 	 * it shows (a landscape phone) and the about block sits right below it.
 	 */
 	@media not all and (min-width: 860px) {
 		.regional {
+			--body-side: 16px;
 			display: flex;
 			flex: 1;
 			flex-direction: column;
 			min-height: 0;
-			padding: 14px 16px 0;
+			padding: 14px var(--body-side) 0;
 		}
 
 		.map-column {
@@ -133,11 +136,17 @@
 			min-height: 0;
 		}
 
+		/*
+		 * The scroller spans the body's side gutters (its content box, and so
+		 * 100cqw, stays the body's), so a label or focus ring past the map's
+		 * edge isn't clipped and doesn't scroll it sideways.
+		 */
 		.map-scroller {
 			container-type: size;
 			flex: 1;
 			min-height: 0;
-			padding: 6px 0 16px;
+			margin-inline: calc(-1 * var(--body-side));
+			padding: 6px var(--body-side) 16px;
 			overflow-y: auto;
 		}
 
@@ -148,6 +157,15 @@
 
 		.map-box {
 			width: var(--map-max-width-mobile);
+		}
+
+		/*
+		 * "Region chips (D-REG-1), directly under the map": the body's 10px
+		 * gap. Inset by ChipRow's focus-ring room, the margin it takes back.
+		 */
+		.region-chips {
+			margin-top: 10px;
+			padding-inline: calc(var(--focus-ring-width) + var(--focus-ring-offset));
 		}
 	}
 

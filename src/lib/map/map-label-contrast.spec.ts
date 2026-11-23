@@ -48,8 +48,8 @@ function expectAa(text: Rgba, background: Rgba, what: string) {
 }
 
 describe('map label contrast (AA, normal text)', () => {
-	it('covers all 14 region tiles of the mock catalog', () => {
-		expect(regionsIn('en').length).toBe(14);
+	it('covers all 17 region tiles of the mock catalog', () => {
+		expect(regionsIn('en').length).toBe(17);
 	});
 
 	const labelBgs = ['--map-label-bg', '--map-label-bg-desktop'];

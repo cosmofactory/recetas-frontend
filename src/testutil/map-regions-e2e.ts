@@ -1,12 +1,12 @@
 import bundle from '../lib/server/mock/content.bundle.json' with { type: 'json' };
 import type { Locale } from './e2e';
 
-// The 14 regions as the map shows them, per locale, from the vendored mock
+// The 17 regions as the map shows them, per locale, from the vendored mock
 // bundle (DATA_SOURCE=mock; demo is seeded from the same design content).
 
 export type MapRegionCopy = { key: string; name: string; mapLabel: string };
 
-export const REGION_COUNT = 14;
+export const REGION_COUNT = 17;
 
 export function mapRegions(lang: Locale): MapRegionCopy[] {
 	return bundle.regions.map((region) => ({
