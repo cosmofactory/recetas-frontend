@@ -62,6 +62,7 @@ export const tortilla: Dish = {
 		{
 			regionKey: 'gal',
 			regionName: 'Galicia',
+			variationSlug: null,
 			regionRank: 1,
 			recipeKey: 'tortilla-gal',
 			name: 'Betanzos-style runny',
@@ -77,6 +78,7 @@ export const tortillaGalRecipe: Recipe = {
 	dishName: 'Tortilla de patatas',
 	regionKey: 'gal',
 	regionName: 'Galicia',
+	variationSlug: null,
 	recipeKey: 'tortilla-gal',
 	name: 'Betanzos-style runny',
 	nameEs: 'Estilo Betanzos, jugosa',
@@ -89,4 +91,19 @@ export const tortillaGalRecipe: Recipe = {
 	// FE-10 (BE-8): required, [] when the recipe has none.
 	tips: [],
 	photos: NO_PHOTOS
+};
+
+// FE-11 (BE-9): a Spanish (Spain-wide) variation's recipe, as
+// getSpainWideRecipe serves it: regionKey esp, regionName null, its slug.
+export const allioliMorterRecipe: Recipe = {
+	...tortillaGalRecipe,
+	dishKey: 'allioli',
+	dishName: 'Allioli',
+	regionKey: 'esp',
+	regionName: null,
+	variationSlug: 'allioli-de-morter',
+	recipeKey: 'allioli-esp-allioli-de-morter',
+	name: 'Allioli de morter',
+	nameEs: 'Allioli de morter',
+	description: 'Garlic and oil only, pounded by hand'
 };

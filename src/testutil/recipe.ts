@@ -18,6 +18,15 @@ export function recipeIn(lang: RecipeLocale, dishKey: string, regionKey: string)
 	return recipe;
 }
 
+// FE-11: a Spanish (Spain-wide) variation's recipe, found by its dish and
+// slug (whatever key the mapping files it under).
+export function spainWideRecipeIn(lang: RecipeLocale, dishKey: string, slug: string): Recipe {
+	const recipes = [...buildView(bundle, lang).recipes.values()];
+	const recipe = recipes.find((r) => r.dishKey === dishKey && r.variationSlug === slug);
+	if (!recipe) throw new Error(`fixture has no recipe ${dishKey}/esp/${slug}`);
+	return recipe;
+}
+
 export type ExpectedIngredient = { name: string; quantity: string };
 
 // Every ingredient's name and its quantity at `servings`.

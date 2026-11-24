@@ -2,6 +2,7 @@
 	import { tick } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import type { components } from '#lib/api/schema.d.ts';
+	import { hasVariationsPage } from '#lib/content/dish-variations.ts';
 	import { m } from '#lib/paraglide/messages.js';
 	import {
 		clearFiltersHref,
@@ -38,7 +39,11 @@
 
 	const active = $derived(parseFilters(url));
 	const shown = $derived(filterDishes(dishes, active));
-	const openDish = $derived(dishes.find((dish) => dish.key === openDishKey(url)));
+	// A one-variation dish has no sheet: it would list one row whose "See all"
+	// redirects back to that recipe (FE-11).
+	const openDish = $derived(
+		dishes.find((dish) => dish.key === openDishKey(url) && hasVariationsPage(dish))
+	);
 
 	const desktop = new MediaQuery(desktopQuery, false);
 

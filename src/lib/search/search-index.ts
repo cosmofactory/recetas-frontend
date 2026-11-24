@@ -1,7 +1,9 @@
 import type { CatalogRegion } from '#lib/api/catalog-region.ts';
 import type { components } from '#lib/api/schema.d.ts';
+import { variationPlace } from '#lib/content/variation-place.ts';
 import { DOT_SEPARATOR } from '#lib/i18n/format.ts';
 import type { Locale } from '#lib/i18n/locales.ts';
+import { soleVariationOf, type VariationTarget } from '#lib/content/dish-variations.ts';
 import { m } from '#lib/paraglide/messages.js';
 import { normalize } from './normalize.ts';
 
@@ -21,6 +23,11 @@ export type SearchEntry = {
 	subtitle: string;
 	dishKey?: string;
 	regionKey?: string;
+	// A Spanish variation's slug (its recipe URL), else null.
+	variationSlug?: string | null;
+	// Set when the dish has exactly one variation: it has no Variations page,
+	// so its dish and variation results open this recipe (FE-11).
+	soleVariation?: VariationTarget;
 	tileColor?: string | null;
 	// Normalised title, subtitle and the other matched texts (normalize.ts).
 	haystack: string;
@@ -39,7 +46,7 @@ export function buildIndex({ regions, dishes }: SearchCatalog, locale: Locale): 
 	return [
 		...dishes.map((dish) => dishEntry(dish, locale)),
 		...dishes.flatMap((dish) =>
-			dish.variations.map((variation) => variationEntry(dish, variation))
+			dish.variations.map((variation) => variationEntry(dish, variation, locale))
 		),
 		...regions.map(regionEntry)
 	];
@@ -56,19 +63,28 @@ function dishEntry(dish: Dish, locale: Locale): SearchEntry {
 		title,
 		subtitle,
 		dishKey: dish.key,
+		...soleVariation(dish),
 		haystack: haystack([title, subtitle, dish.nameEs, ...variationNames])
 	};
 }
 
-function variationEntry(dish: Dish, variation: Variation): SearchEntry {
+function soleVariation(dish: Dish): Pick<SearchEntry, 'soleVariation'> {
+	const only = soleVariationOf(dish);
+	if (!only) return {};
+	return { soleVariation: { regionKey: only.regionKey, variationSlug: only.variationSlug } };
+}
+
+function variationEntry(dish: Dish, variation: Variation, locale: Locale): SearchEntry {
 	const title = variation.name;
-	const subtitle = [variation.regionName, dish.name].join(DOT_SEPARATOR);
+	const subtitle = [variationPlace(variation, locale), dish.name].join(DOT_SEPARATOR);
 	return {
 		group: 'variation',
 		title,
 		subtitle,
 		dishKey: dish.key,
 		regionKey: variation.regionKey,
+		variationSlug: variation.variationSlug,
+		...soleVariation(dish),
 		haystack: haystack([title, subtitle, variation.nameEs, variation.description])
 	};
 }

@@ -4,6 +4,7 @@
 	import type { components } from '#lib/api/schema.d.ts';
 	import TextButton from '#lib/components/ui/TextButton.svelte';
 	import DishCard from '#lib/content/DishCard.svelte';
+	import { hasVariationsPage } from '#lib/content/dish-variations.ts';
 	import { m } from '#lib/paraglide/messages.js';
 	import { dishCardHref } from '#lib/popular/card-href.ts';
 	import { clearFiltersHref, type FilterUrl } from '#lib/popular/filters.ts';
@@ -11,9 +12,9 @@
 	import { scrollSnapshot } from '#lib/ui/scroll-snapshot.ts';
 
 	// The Popular tab's filtered list, or its empty state. A card opens its
-	// dish sheet on mobile, the Variations page on desktop (dishCardHref), and
-	// reports itself through onOpenDish; onClear handles a click on the empty
-	// state's "Clear all" link.
+	// dish sheet on mobile, the Variations page on desktop, or on both the
+	// recipe of a one-variation dish (dishCardHref), and reports itself through
+	// onOpenDish; onClear handles a click on the empty state's "Clear all" link.
 	type Props = {
 		dishes: components['schemas']['Dish'][];
 		url: FilterUrl;
@@ -28,9 +29,11 @@
 	// layouts without JavaScript; crossing 860px swaps the hrefs live.
 	const desktop = new MediaQuery(desktopQuery, true);
 	const layout = $derived(desktop.current ? 'desktop' : 'mobile');
-	// Mobile: focus stays on the card, so closing its sheet returns it there.
-	// Desktop: the Variations page gets the default scroll and focus reset.
-	const reset = $derived(desktop.current ? undefined : 'false');
+	// Mobile: focus stays on a card that opens a sheet, so closing it returns
+	// focus there. A card that opens another page (desktop, or a one-variation
+	// dish's recipe) keeps Kit's default scroll and focus reset (WCAG 2.4.3).
+	const resetFor = (dish: components['schemas']['Dish']) =>
+		desktop.current || !hasVariationsPage(dish) ? undefined : 'false';
 
 	// The mobile list scrolls itself, so its offset comes back with the entry
 	// (D-FE6-1); on desktop the window scrolls and Kit restores that.
@@ -40,12 +43,12 @@
 
 <div bind:this={list} class="list">
 	{#if dishes.length > 0}
-		<ul class="cards" role="list" data-sveltekit-reset={reset}>
+		<ul class="cards" role="list">
 			{#each dishes as dish (dish.key)}
-				<li>
+				<li data-sveltekit-reset={resetFor(dish)}>
 					<DishCard
 						{dish}
-						href={dishCardHref(url, dish.key, layout)}
+						href={dishCardHref(url, dish, layout)}
 						{mediaBaseUrl}
 						onclick={(event) => onOpenDish(dish.key, event.currentTarget)}
 					/>

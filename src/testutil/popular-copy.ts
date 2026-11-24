@@ -32,7 +32,7 @@ export type PopularCopy = {
 	noMatch: string;
 	quick: Record<QuickId, string>;
 	// home.dish plural, for the result counts the specs use.
-	dishes: Record<0 | 1 | 2 | 3 | 7, string>;
+	dishes: Record<0 | 1 | 2 | 3 | 4 | 5 | 9, string>;
 };
 
 export const POPULAR_COPY: Record<PopularLocale, PopularCopy> = {
@@ -42,7 +42,15 @@ export const POPULAR_COPY: Record<PopularLocale, PopularCopy> = {
 		clearAll: 'Clear all',
 		noMatch: 'No dishes match these filters.',
 		quick: { vegetarian: 'Vegetarian', quick: 'Quick', desserts: 'Desserts', summer: 'Summer' },
-		dishes: { 0: '0 dishes', 1: '1 dish', 2: '2 dishes', 3: '3 dishes', 7: '7 dishes' }
+		dishes: {
+			0: '0 dishes',
+			1: '1 dish',
+			2: '2 dishes',
+			3: '3 dishes',
+			4: '4 dishes',
+			5: '5 dishes',
+			9: '9 dishes'
+		}
 	},
 	es: {
 		popular: 'Popular',
@@ -50,7 +58,15 @@ export const POPULAR_COPY: Record<PopularLocale, PopularCopy> = {
 		clearAll: 'Borrar todo',
 		noMatch: 'Ningún plato coincide con estos filtros.',
 		quick: { vegetarian: 'Vegetariano', quick: 'Rápido', desserts: 'Postres', summer: 'Verano' },
-		dishes: { 0: '0 platos', 1: '1 plato', 2: '2 platos', 3: '3 platos', 7: '7 platos' }
+		dishes: {
+			0: '0 platos',
+			1: '1 plato',
+			2: '2 platos',
+			3: '3 platos',
+			4: '4 platos',
+			5: '5 platos',
+			9: '9 platos'
+		}
 	},
 	ru: {
 		popular: 'Популярное',
@@ -58,7 +74,15 @@ export const POPULAR_COPY: Record<PopularLocale, PopularCopy> = {
 		clearAll: 'Сбросить',
 		noMatch: 'Нет блюд по этим фильтрам.',
 		quick: { vegetarian: 'Вегетарианское', quick: 'Быстро', desserts: 'Десерты', summer: 'Лето' },
-		dishes: { 0: '0 блюд', 1: '1 блюдо', 2: '2 блюда', 3: '3 блюда', 7: '7 блюд' }
+		dishes: {
+			0: '0 блюд',
+			1: '1 блюдо',
+			2: '2 блюда',
+			3: '3 блюда',
+			4: '4 блюда',
+			5: '5 блюд',
+			9: '9 блюд'
+		}
 	}
 };
 
@@ -67,7 +91,8 @@ export const POPULAR_COPY: Record<PopularLocale, PopularCopy> = {
 export const filtersLabel = (lang: PopularLocale, count: number) =>
 	count === 0 ? POPULAR_COPY[lang].filters : `${POPULAR_COPY[lang].filters} · ${count}`;
 
-// The bundle's dishes in dish order (Dish.order).
+// The bundle's dishes in dish order (Dish.order). FE-11: the design's two
+// Spanish (Spain-wide) samples, unscored, come last.
 export const DISH_KEYS = [
 	'tortilla',
 	'paella',
@@ -75,7 +100,9 @@ export const DISH_KEYS = [
 	'gazpacho',
 	'croquetas',
 	'torrijas',
-	'arrozleche'
+	'arrozleche',
+	'allioli',
+	'arrozblanco'
 ] as const;
 
 export const DISH_NAMES: Record<PopularLocale, Record<(typeof DISH_KEYS)[number], string>> = {
@@ -86,7 +113,9 @@ export const DISH_NAMES: Record<PopularLocale, Record<(typeof DISH_KEYS)[number]
 		gazpacho: 'Cold soups',
 		croquetas: 'Croquetas',
 		torrijas: 'Fried sweets',
-		arrozleche: 'Milk puddings'
+		arrozleche: 'Milk puddings',
+		allioli: 'Allioli',
+		arrozblanco: 'Arroz blanco con tomate'
 	},
 	es: {
 		tortilla: 'Tortilla de patatas',
@@ -95,7 +124,9 @@ export const DISH_NAMES: Record<PopularLocale, Record<(typeof DISH_KEYS)[number]
 		gazpacho: 'Sopas frías',
 		croquetas: 'Croquetas',
 		torrijas: 'Dulces fritos',
-		arrozleche: 'Postres de leche'
+		arrozleche: 'Postres de leche',
+		allioli: 'Allioli',
+		arrozblanco: 'Arroz blanco con tomate'
 	},
 	ru: {
 		tortilla: 'Тортилья',
@@ -104,7 +135,9 @@ export const DISH_NAMES: Record<PopularLocale, Record<(typeof DISH_KEYS)[number]
 		gazpacho: 'Холодные супы',
 		croquetas: 'Крокеты',
 		torrijas: 'Жареные сладости',
-		arrozleche: 'Молочные десерты'
+		arrozleche: 'Молочные десерты',
+		allioli: 'Альиоли',
+		arrozblanco: 'Арроз бланко с томатом'
 	}
 };
 
@@ -119,15 +152,20 @@ export const PREVIEWS: Record<
 	en: {
 		tortilla: 'Galicia · Betanzos-style runny · Asturias · With chorizo',
 		paella: 'Catalonia · Arròs negre · Aragón · Arroz con conejo',
-		gazpacho: 'Valencia · Ajoblanco con uvas · Extremadura · Ajoblanco extremeño'
+		gazpacho: 'Valencia · Ajoblanco con uvas · Extremadura · Ajoblanco extremeño',
+		// FE-11, the region-slot rule: spainWide.label in the region's place.
+		allioli: 'Spanish · Allioli de morter · Spanish · Allioli de codony',
+		arrozblanco: 'Spanish · Arroz blanco con tomate'
 	},
 	es: {
 		tortilla: 'Galicia · Estilo Betanzos, jugosa · Asturias · Con chorizo',
-		paella: 'Cataluña · Arròs negre · Aragón · Arroz con conejo'
+		paella: 'Cataluña · Arròs negre · Aragón · Arroz con conejo',
+		allioli: 'España · Allioli de morter · España · Allioli de codony'
 	},
 	ru: {
 		tortilla: 'Галисия · По-бетансосски, жидкая внутри · Астурия · С чорисо',
-		paella: 'Каталония · Arròs negre · Арагон · Arroz con conejo'
+		paella: 'Каталония · Arròs negre · Арагон · Arroz con conejo',
+		allioli: 'Испания · Allioli de morter · Испания · Allioli de codony'
 	}
 };
 
@@ -136,9 +174,21 @@ export const VARIATION_COUNTS: Record<
 	PopularLocale,
 	Partial<Record<(typeof DISH_KEYS)[number], string>>
 > = {
-	en: { tortilla: '13 variations', paella: '7 variations', gazpacho: '5 variations' },
-	es: { tortilla: '13 variantes', paella: '7 variantes' },
-	ru: { tortilla: '13 вариантов', paella: '7 вариантов', torrijas: '6 вариантов' }
+	en: {
+		tortilla: '13 variations',
+		paella: '7 variations',
+		gazpacho: '5 variations',
+		// FE-11: counts include Spanish variations.
+		allioli: '2 variations',
+		arrozblanco: '1 variation'
+	},
+	es: { tortilla: '13 variantes', paella: '7 variantes', allioli: '2 variantes' },
+	ru: {
+		tortilla: '13 вариантов',
+		paella: '7 вариантов',
+		torrijas: '6 вариантов',
+		allioli: '2 варианта'
+	}
 };
 
 // Words the UI must never use for a variation (CLAUDE.md glossary).
@@ -153,6 +203,7 @@ export const FILTER_IDS = [
 	'tapas',
 	'mains',
 	'desserts',
+	'basics',
 	'quick',
 	'slow-cooked',
 	'summer',
@@ -168,7 +219,7 @@ export type GroupKey = (typeof GROUP_KEYS)[number];
 // Mobile README -> Filters sheet: the four groups and their chips, in order.
 export const GROUP_IDS: Record<GroupKey, readonly FilterIdCopy[]> = {
 	diet: ['vegetarian', 'seafood', 'pork'],
-	course: ['tapas', 'mains', 'desserts'],
+	course: ['tapas', 'mains', 'desserts', 'basics'],
 	effort: ['quick', 'slow-cooked'],
 	season: ['summer', 'winter', 'easter', 'all-year']
 };
@@ -192,6 +243,7 @@ export const SHEET_COPY: Record<PopularLocale, SheetCopy> = {
 			tapas: 'Tapas',
 			mains: 'Mains',
 			desserts: 'Desserts',
+			basics: 'Basics',
 			quick: 'Quick',
 			'slow-cooked': 'Slow-cooked',
 			summer: 'Summer',
@@ -211,6 +263,7 @@ export const SHEET_COPY: Record<PopularLocale, SheetCopy> = {
 			tapas: 'Tapas',
 			mains: 'Principales',
 			desserts: 'Postres',
+			basics: 'Básicos',
 			quick: 'Rápido',
 			'slow-cooked': 'Cocción lenta',
 			summer: 'Verano',
@@ -230,6 +283,7 @@ export const SHEET_COPY: Record<PopularLocale, SheetCopy> = {
 			tapas: 'Тапас',
 			mains: 'Основные',
 			desserts: 'Десерты',
+			basics: 'Базовые',
 			quick: 'Быстро',
 			'slow-cooked': 'Долгая готовка',
 			summer: 'Лето',

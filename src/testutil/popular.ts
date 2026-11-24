@@ -38,11 +38,12 @@ export type FilterGroupsProps = {
 
 // What DishDetails takes (FE-5 PR 2 contract): the dish sheet's content.
 // variationsHref is the "See all variations" link (/:lang/dishes/:dishKey);
-// recipeHref(dishKey, regionKey) is a variation row's link, as in RegionDetails.
+// recipeHref(dishKey, variation) is a variation row's link (FE-11: the
+// variation, since a Spanish one's URL needs its slug).
 export type DishDetailsProps = {
 	dish: Dish;
 	variationsHref: string;
-	recipeHref: (dishKey: string, regionKey: string) => string;
+	recipeHref: (dishKey: string, variation: Dish['variations'][number]) => string;
 	mediaBaseUrl: string | undefined;
 };
 

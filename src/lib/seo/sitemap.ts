@@ -1,6 +1,7 @@
 import type { components } from '#lib/api/schema.d.ts';
 import { headLinks, type HeadLinks } from '#lib/i18n/head-links.ts';
-import { recipeHref, regionHref, variationsHref } from '#lib/i18n/localized-href.ts';
+import { hasVariationsPage } from '#lib/content/dish-variations.ts';
+import { regionHref, variationRecipeHref, variationsHref } from '#lib/i18n/localized-href.ts';
 import { locales, type Locale } from '#lib/i18n/locales.ts';
 import { HOME_TABS, tabHref } from '#lib/ui/home-tab.ts';
 
@@ -27,14 +28,15 @@ const XML_ESCAPES: Record<string, string> = {
 const escapeXml = (value: string) => value.replace(/[&<>"']/g, (char) => XML_ESCAPES[char]);
 
 // Every indexable page in `lang`: home (both tabs), each region, each dish's
-// Variations page and each variation's Recipe page.
+// Variations page (none for a one-variation dish: that URL redirects) and
+// each variation's Recipe page.
 function pageHrefs({ regions, dishes }: SitemapCatalog, lang: Locale): string[] {
 	return [
 		...HOME_TABS.map((tab) => tabHref(tab, lang)),
 		...regions.map((region) => regionHref(region.key, lang)),
-		...dishes.map((dish) => variationsHref(dish.key, lang)),
+		...dishes.filter(hasVariationsPage).map((dish) => variationsHref(dish.key, lang)),
 		...dishes.flatMap((dish) =>
-			dish.variations.map((variation) => recipeHref(dish.key, variation.regionKey, lang))
+			dish.variations.map((variation) => variationRecipeHref(dish.key, variation, lang))
 		)
 	];
 }

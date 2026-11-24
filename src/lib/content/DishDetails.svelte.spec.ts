@@ -18,6 +18,7 @@ import {
 	type PopularLocale
 } from '../../testutil/popular-copy';
 import { scrollerOf } from '../../testutil/sheet';
+import { ALLIOLI, SPAIN_WIDE_LABEL } from '../../testutil/spain-wide';
 import {
 	computed,
 	loadContent,
@@ -91,7 +92,7 @@ const variationsHrefFor = (lang: PopularLocale, dishKey: string) =>
 
 const recipeHrefIn =
 	(lang: PopularLocale): DishDetailsProps['recipeHref'] =>
-	(dishKey, regionKey) =>
+	(dishKey, { regionKey }) =>
 		localizedHref(`/dishes/${dishKey}/${regionKey}`, lang);
 
 async function renderDetails(spec: RenderSpec = {}): Promise<HTMLElement> {
@@ -255,7 +256,7 @@ describe('DishDetails: the variation list', () => {
 				const link = links[i];
 				expect(link, `got no row ${i + 1}`).toBeDefined();
 				textElement(link, bindShortWords(variation.name, lang));
-				textElement(link, bindShortWords(variation.regionName, lang));
+				textElement(link, bindShortWords(variation.regionName ?? '', lang));
 				textElement(link, bindShortWords(variation.description, lang));
 			});
 		});
@@ -313,6 +314,32 @@ describe('DishDetails: the variation list', () => {
 			expect(link.querySelector('img'), 'got an <img> without a photo').toBeNull();
 			photoIn(link);
 		}
+	});
+});
+
+// FE-11 (both READMEs -> "Spanish (Spain-wide) variations"): a row shows
+// its region, so a Spanish variation's row shows spainWide.label there
+// (assumption: the README's list of region slots names the card preview,
+// variation card, recipe and search; the sheet row shows a region name too,
+// and "wherever a region name is shown" covers it). Counts include them.
+describe('DishDetails: Spanish variations (FE-11)', () => {
+	for (const lang of POPULAR_LOCALES) {
+		it(`${lang}: each allioli row reads its name and "${SPAIN_WIDE_LABEL[lang]}"`, async () => {
+			const root = await renderDetails({ lang, dish: dishIn(lang, 'allioli') });
+			for (const variation of ALLIOLI.variations) {
+				textElement(root, bindShortWords(variation.name, lang));
+			}
+			const labels = [...root.querySelectorAll('*')].filter(
+				(el) => el.children.length === 0 && el.textContent?.trim() === SPAIN_WIDE_LABEL[lang]
+			);
+			expect(labels.length, `want "${SPAIN_WIDE_LABEL[lang]}" once per row`).toBe(2);
+			expect(root.textContent ?? '').not.toMatch(/\bnull\b|undefined/);
+		});
+	}
+
+	it('ru: the title row counts both Spanish variations, "2 варианта"', async () => {
+		const root = await renderDetails({ lang: 'ru', dish: dishIn('ru', 'allioli') });
+		textElement(root, '2 варианта');
 	});
 });
 
@@ -415,7 +442,7 @@ describe('DishDetails: mobile sheet styles (< 860px)', () => {
 		const variation = dishIn('en', 'tortilla').variations[0];
 		const [row] = rowLinks(await renderDetails());
 		const name = textElement(row, variation.name);
-		const region = textElement(row, variation.regionName);
+		const region = textElement(row, variation.regionName ?? '');
 		const description = textElement(row, variation.description);
 		expect(style(name, 'font-size')).toBe('13.5px');
 		expect(style(name, 'font-weight')).toBe('600');
@@ -447,7 +474,7 @@ describe('DishDetails: mobile sheet styles (< 860px)', () => {
 		const variation = dishIn('en', 'tortilla').variations[0];
 		const [row] = rowLinks(await renderDetails());
 		const surface = computed('background-color', 'var(--bg-surface)');
-		const ratio = textContrast(textElement(row, variation.regionName), surface);
+		const ratio = textContrast(textElement(row, variation.regionName ?? ''), surface);
 		expect(ratio, `got ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(MIN_TEXT_CONTRAST);
 	});
 

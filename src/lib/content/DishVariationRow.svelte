@@ -2,6 +2,8 @@
 	import { typeset } from '#lib/i18n/typeset.ts';
 	import type { components } from '#lib/api/schema.d.ts';
 	import Photo from '#lib/components/Photo.svelte';
+	import { getLocale } from '#lib/paraglide/runtime.js';
+	import { variationPlace } from './variation-place.ts';
 
 	type Props = {
 		variation: components['schemas']['VariationSummary'];
@@ -29,7 +31,7 @@
 	<span class="text">
 		<span class="name-line">
 			<span class="name">{typeset(variation.name)}</span>
-			<span class="region">{typeset(variation.regionName)}</span>
+			<span class="region">{typeset(variationPlace(variation, getLocale()))}</span>
 		</span>
 		<span class="description">{typeset(variation.description)}</span>
 	</span>

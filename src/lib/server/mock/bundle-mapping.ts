@@ -10,12 +10,14 @@ import type {
 import { parseCourse, parseSeason, parseUnit } from './enums.ts';
 import { withValidTileColor } from '../region-colour.ts';
 import { byDisplayOrder, regionRanks } from './importance.ts';
+import { isSpainWide, SPAIN_WIDE_KEY } from '#lib/content/spain-wide.ts';
 
 // Maps the import bundle into the API's response bodies for one locale, the
 // way the backend does after `make seed`: dishes in display order (importance
 // score, then bundle order; `order` is the 1-based position), a dish's
-// variations in region order with their regionRank, Spanish text rides along
-// as *Es, and a missing photo is a set of null roles.
+// variations in region order with their regionRank, then its Spanish (esp)
+// variations in bundle order with no region name or rank (BE-9 D-ESP-3..5),
+// Spanish text rides along as *Es, and a missing photo is a set of null roles.
 
 const SPANISH: Lang = 'es';
 
@@ -24,7 +26,7 @@ export type CatalogView = {
 	dishes: Dish[];
 	dishesByKey: Map<string, Dish>;
 	regionDetails: Map<string, RegionDetail>;
-	// Keyed by recipePath(dishKey, regionKey).
+	// Keyed by recipePath(dishKey, regionKey), or spainWideRecipePath.
 	recipes: Map<string, Recipe>;
 };
 
@@ -41,6 +43,10 @@ type Context = {
 
 export function recipePath(dishKey: string, regionKey: string): string {
 	return `${dishKey}/${regionKey}`;
+}
+
+export function spainWideRecipePath(dishKey: string, variationSlug: string): string {
+	return `${dishKey}/${SPAIN_WIDE_KEY}/${variationSlug}`;
 }
 
 export function buildView(bundle: ContentBundle, lang: Lang): CatalogView {
@@ -92,17 +98,34 @@ function toRegion(region: BundleRegion, index: number, lang: Lang): Region {
 	});
 }
 
+// Spanish variations sort after every region; toSorted is stable, so they
+// keep their bundle order.
 function byRegionOrder(variations: BundleVariation[], ctx: Context): BundleVariation[] {
 	const order = (v: BundleVariation) => lookup(ctx.regionOrder, v.regionKey, 'region');
-	return variations.toSorted((a, b) => order(a) - order(b));
+	return variations.toSorted((a, b) => {
+		if (isSpainWide(a) || isSpainWide(b)) return Number(isSpainWide(a)) - Number(isSpainWide(b));
+		return order(a) - order(b);
+	});
+}
+
+// D-ESP-6: a slug exactly when the variation is Spanish.
+function variationSlug(v: BundleVariation): string | null {
+	const slug = v.variationSlug ?? null;
+	if (isSpainWide(v) === (slug !== null)) return slug;
+	throw new Error(`content bundle: variation ${v.recipeKey} has a slug iff it is esp`);
+}
+
+function regionName(v: BundleVariation, ctx: Context): string | null {
+	if (isSpainWide(v)) return null;
+	return lookup(ctx.regions, v.regionKey, 'region').name[ctx.lang];
 }
 
 // The fields a variation shares with its Recipe; the summary adds its rank.
 function variationFields(v: BundleVariation, ctx: Context) {
-	const region = lookup(ctx.regions, v.regionKey, 'region');
 	return {
 		regionKey: v.regionKey,
-		regionName: region.name[ctx.lang],
+		regionName: regionName(v, ctx),
+		variationSlug: variationSlug(v),
 		recipeKey: v.recipeKey,
 		name: v.name[ctx.lang],
 		nameEs: v.name[SPANISH],
@@ -114,7 +137,7 @@ function variationFields(v: BundleVariation, ctx: Context) {
 function toVariationSummary(v: BundleVariation, ctx: Context): Dish['variations'][number] {
 	return {
 		...variationFields(v, ctx),
-		regionRank: lookup(ctx.regionRanks, v.recipeKey, 'variation')
+		regionRank: isSpainWide(v) ? null : lookup(ctx.regionRanks, v.recipeKey, 'variation')
 	};
 }
 
@@ -161,7 +184,12 @@ function toRegionDetail(region: Region, ctx: Context): RegionDetail {
 }
 
 function dishRecipes(dish: BundleDish, ctx: Context): [string, Recipe][] {
-	return dish.variations.map((v) => [recipePath(dish.key, v.regionKey), toRecipe(dish, v, ctx)]);
+	return dish.variations.map((v) => [recipeKeyPath(dish.key, v), toRecipe(dish, v, ctx)]);
+}
+
+function recipeKeyPath(dishKey: string, v: BundleVariation): string {
+	const slug = variationSlug(v);
+	return slug === null ? recipePath(dishKey, v.regionKey) : spainWideRecipePath(dishKey, slug);
 }
 
 function toRecipe(dish: BundleDish, v: BundleVariation, ctx: Context): Recipe {

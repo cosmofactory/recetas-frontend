@@ -32,8 +32,18 @@ export const HOME_ROUTE_ID = '/[lang=lang]/(home)';
 export const REGION_ROUTE_ID = '/[lang=lang]/(home)/regions/[regionKey]';
 export const DISH_ROUTE_ID = '/[lang=lang]/dishes/[dishKey]';
 export const RECIPE_ROUTE_ID = '/[lang=lang]/dishes/[dishKey]/[regionKey]';
+// FE-11: a Spanish (Spain-wide) variation's Recipe page.
+export const SPAIN_WIDE_RECIPE_ROUTE_ID = '/[lang=lang]/dishes/[dishKey]/esp/[variationSlug]';
+
+function matchSpainWide(lang: string, rest: string[]): Matched | undefined {
+	const [section, dishKey, esp, variationSlug, ...extra] = rest;
+	if (section !== 'dishes' || esp !== 'esp' || !variationSlug || extra.length > 0) return undefined;
+	return { id: SPAIN_WIDE_RECIPE_ROUTE_ID, params: { lang, dishKey, variationSlug } };
+}
 
 function matchRoute(lang: string, rest: string[]): Matched {
+	const spainWide = matchSpainWide(lang, rest);
+	if (spainWide) return spainWide;
 	const [section, first, second, ...extra] = rest;
 	if (extra.length > 0) return { id: null, params: {} };
 	if (section === undefined) return { id: HOME_ROUTE_ID, params: { lang } };

@@ -93,6 +93,7 @@ export function fixtureRegion(fields: RegionFixture): Region {
 function fixtureVariation(fields: VariationFixture): Dish['variations'][number] {
 	return {
 		regionName: fields.regionKey,
+		variationSlug: null,
 		recipeKey: `${fields.regionKey}-recipe`,
 		regionRank: 1,
 		nameEs: fields.name,

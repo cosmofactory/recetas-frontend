@@ -109,7 +109,10 @@ describe('search: matching (mock catalog)', () => {
 			'ё in the text matches е in the query',
 			'ru',
 			'печен',
-			{ variation: ['variation:tortilla/bas', 'variation:tortilla/cat'] }
+			// FE-11: and Allioli de codony's "С печёной айвой".
+			{
+				variation: ['variation:tortilla/bas', 'variation:tortilla/cat', 'variation:allioli/esp']
+			}
 		],
 		['й matches й', 'ru', 'пряный', { variation: ['variation:paella/bal'] }],
 		['и does not match й (D-FE7-1)', 'ru', 'пряныи', { variation: [] }]

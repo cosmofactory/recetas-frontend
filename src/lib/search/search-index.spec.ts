@@ -184,3 +184,84 @@ describe('buildIndex: regions', () => {
 		expectEntry(entry, { group: 'region', title: 'Galicia', subtitle: '', tileColor: null });
 	});
 });
+
+// FE-11 (both READMEs -> "Spanish (Spain-wide) variations"; stage FE-11 ->
+// Labels): search indexes Spanish variations like any other, and their
+// subtitle's region slot is spainWide.label ("Spanish · Allioli"), through
+// the same helper as the other slots. Counts include them.
+describe('buildIndex: Spanish variations (FE-11)', () => {
+	const SPANISH_CASES: [Locale, SearchEntry][] = [
+		[
+			'en',
+			{
+				group: 'variation',
+				title: 'Allioli de morter',
+				subtitle: 'Spanish · Allioli',
+				dishKey: 'allioli',
+				regionKey: 'esp'
+			}
+		],
+		[
+			'es',
+			{
+				group: 'variation',
+				title: 'Allioli de codony',
+				subtitle: 'España · Allioli',
+				dishKey: 'allioli',
+				regionKey: 'esp'
+			}
+		],
+		[
+			'ru',
+			{
+				group: 'variation',
+				title: 'Arroz blanco con tomate',
+				subtitle: 'Испания · Арроз бланко с томатом',
+				dishKey: 'arrozblanco',
+				regionKey: 'esp'
+			}
+		]
+	];
+
+	it.each(SPANISH_CASES)('%s: %o', async (lang, want) => {
+		const variations = await mockEntries(lang, 'variation');
+		expectEntry(findEntry(variations, { dishKey: want.dishKey, title: want.title }), want);
+	});
+
+	it('indexes all three Spanish variations of the design bundle', async () => {
+		const spanish = (await mockEntries('en', 'variation')).filter((e) => e.regionKey === 'esp');
+		const got = spanish.map((e) => `${e.dishKey}: ${e.title}`);
+		expect(got).toEqual([
+			'allioli: Allioli de morter',
+			'allioli: Allioli de codony',
+			'arrozblanco: Arroz blanco con tomate'
+		]);
+	});
+
+	it('a Spanish subtitle never shows a null region ("null · …")', async () => {
+		for (const lang of ['en', 'es', 'ru'] as const) {
+			const subtitles = (await mockEntries(lang, 'variation')).map((e) => e.subtitle);
+			const broken = subtitles.filter((s) => /null|undefined/.test(s) || s.startsWith(' · '));
+			expect(broken, `got ${show(broken)} in ${lang}`).toEqual([]);
+		}
+	});
+
+	const DISH_COUNTS: [Locale, SearchEntry][] = [
+		['en', { group: 'dish', title: 'Allioli', subtitle: '2 variations', dishKey: 'allioli' }],
+		[
+			'es',
+			{
+				group: 'dish',
+				title: 'Arroz blanco con tomate',
+				subtitle: '1 variante',
+				dishKey: 'arrozblanco'
+			}
+		],
+		['ru', { group: 'dish', title: 'Альиоли', subtitle: '2 варианта', dishKey: 'allioli' }]
+	];
+
+	it.each(DISH_COUNTS)('%s: the dish count includes Spanish variations: %o', async (lang, want) => {
+		const dishes = await mockEntries(lang, 'dish');
+		expectEntry(findEntry(dishes, { dishKey: want.dishKey }), want);
+	});
+});

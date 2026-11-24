@@ -2,16 +2,17 @@
 	import { typeset } from '#lib/i18n/typeset.ts';
 	import type { components } from '#lib/api/schema.d.ts';
 	import PrimaryButton from '#lib/components/ui/PrimaryButton.svelte';
+	import type { VariationTarget } from '#lib/i18n/localized-href.ts';
 	import { m } from '#lib/paraglide/messages.js';
 	import DishVariationRow from './DishVariationRow.svelte';
 
 	// The dish sheet's content (mobile). Variations come in region order and
 	// stay in it: all are equal, none is counted or highlighted.
-	// recipeHref(dishKey, regionKey) is a row's link, variationsHref "See all".
+	// recipeHref(dishKey, variation) is a row's link, variationsHref "See all".
 	type Props = {
 		dish: components['schemas']['Dish'];
 		variationsHref: string;
-		recipeHref: (dishKey: string, regionKey: string) => string;
+		recipeHref: (dishKey: string, variation: VariationTarget) => string;
 		mediaBaseUrl: string | undefined;
 	};
 
@@ -26,13 +27,9 @@
 	</div>
 	<p class="description">{typeset(dish.description)}</p>
 	<ul class="rows" role="list">
-		{#each dish.variations as variation (variation.regionKey)}
+		{#each dish.variations as variation (variation.recipeKey)}
 			<li>
-				<DishVariationRow
-					{variation}
-					href={recipeHref(dish.key, variation.regionKey)}
-					{mediaBaseUrl}
-				/>
+				<DishVariationRow {variation} href={recipeHref(dish.key, variation)} {mediaBaseUrl} />
 			</li>
 		{/each}
 	</ul>

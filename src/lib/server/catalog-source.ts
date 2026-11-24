@@ -15,6 +15,8 @@ export type Photos = Schemas['Photos'];
 
 // A variation is one dish in one region; its recipe is addressed the same way.
 export type VariationRef = { dishKey: string; regionKey: string };
+// A Spanish (esp) variation is addressed by its slug within the dish (BE-9).
+export type SpainWideRef = { dishKey: string; variationSlug: string };
 
 // Rejects with NotFoundError for an unknown key and UnavailableError when the
 // backend can't answer (api-errors.ts).
@@ -24,4 +26,5 @@ export interface CatalogSource {
 	getRegion(lang: Lang, regionKey: string): Promise<RegionDetail>;
 	getDish(lang: Lang, dishKey: string): Promise<Dish>;
 	getRecipe(lang: Lang, ref: VariationRef): Promise<Recipe>;
+	getSpainWideRecipe(lang: Lang, ref: SpainWideRef): Promise<Recipe>;
 }

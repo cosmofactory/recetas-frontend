@@ -1,7 +1,8 @@
 // Mobile README -> State: "route stack: home → variations(dishKey) →
-// recipe(dishKey, regionKey)". A move deeper in the stack pushes the new
-// page in from the right; a move back up pops the top page off. The region
-// sheet sits over the home map, so a region shares the home's depth.
+// recipe(dishKey, regionKey)" (or a Spanish recipe by its slug). A move
+// deeper in the stack pushes the new page in from the right; a move back up
+// pops the top page off. The region sheet sits over the home map, so a
+// region shares the home's depth.
 
 export type PageDirection = 'push' | 'pop' | 'none';
 
@@ -23,7 +24,8 @@ const ROUTE_DEPTH: Record<string, number> = {
 	'/[lang=lang]/(home)': HOME_DEPTH,
 	'/[lang=lang]/(home)/regions/[regionKey]': HOME_DEPTH,
 	'/[lang=lang]/dishes/[dishKey]': 1,
-	'/[lang=lang]/dishes/[dishKey]/[regionKey]': 2
+	'/[lang=lang]/dishes/[dishKey]/[regionKey]': 2,
+	'/[lang=lang]/dishes/[dishKey]/esp/[variationSlug]': 2
 };
 
 export function depthOf(target: RouteTarget): number | undefined {

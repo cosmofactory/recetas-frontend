@@ -39,6 +39,8 @@ export const EXPECTED_MESSAGE_KEYS: readonly string[] = [
 	'home_filterLabels_tapas',
 	'home_filterLabels_mains',
 	'home_filterLabels_desserts',
+	// FE-11 (BE-9): the fourth Course filter, stocks and sauces.
+	'home_filterLabels_basics',
 	'home_filterLabels_quick',
 	'home_filterLabels_slowCooked',
 	'home_filterLabels_summer',
@@ -74,7 +76,9 @@ export const EXPECTED_MESSAGE_KEYS: readonly string[] = [
 	'desktop_viewRecipe',
 	// FE-9 FB-10 (D-FE9-6): "{dish} · {variation}", a variation's title outside
 	// its dish page (region rows, the Recipe page). ICU placeholders, no plural.
-	'variation_fullTitle'
+	'variation_fullTitle',
+	// FE-11 (D-ESP-3): the Spanish (Spain-wide) term in a region slot.
+	'spainWide_label'
 ];
 
 // The inlang message-format shape of a plural message. Each form includes the

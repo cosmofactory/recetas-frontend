@@ -12,7 +12,9 @@ import { waitForPagePushEnd } from './variations-e2e';
 export type DishKey = (typeof DISH_KEYS)[number];
 
 export const HOME_WITH_FILTERS = '/en/?tab=popular&f=tapas&f=mains&f=desserts';
-// The last dish the filters keep, so the list must scroll to reach it.
+// A dish at the end of what the filters keep, so the list must scroll to
+// reach it. FE-11: Arroz blanco (mains) now follows it, but it has one
+// variation and so no dish sheet; Arroz con leche is the lowest with one.
 export const LOWEST_DISH = 'arrozleche' satisfies DishKey;
 const SCROLL_TOLERANCE_PX = 1;
 
@@ -40,7 +42,11 @@ export async function seeAllFromSheet(page: Page, lang: VariationsLocale, dishKe
 // sheet open, then its Variations page. Returns the home URL and offset.
 export async function leaveScrolledHome(page: Page): Promise<HomeState> {
 	await gotoHydrated(page, HOME_WITH_FILTERS);
-	const { scrollTop } = await scrollListToEnd(page);
+	await scrollListToEnd(page);
+	// The click below would scroll a partly hidden card into view first, so
+	// reveal it now and record the offset the home is really left at.
+	await dishCard(page, LOWEST_DISH).scrollIntoViewIfNeeded();
+	const { scrollTop } = await listScroller(page);
 	expect(scrollTop, 'want the Popular list scrolled before leaving').toBeGreaterThan(0);
 	await seeAllFromSheet(page, 'en', LOWEST_DISH);
 	return { url: `${HOME_WITH_FILTERS}&dish=${LOWEST_DISH}`, scrollTop };

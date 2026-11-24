@@ -741,8 +741,17 @@ const ALL_DISHES = [
 	'gazpacho',
 	'croquetas',
 	'torrijas',
-	'arrozleche'
+	'arrozleche',
+	'allioli',
+	'arrozblanco'
 ];
+
+// FE-11: a dish with exactly one variation has no Variations page, so its
+// card links straight to its recipe (Arroz blanco's one Spanish variation).
+const cardHrefOf = (lang: string, key: string) =>
+	key === 'arrozblanco'
+		? `/${lang}/dishes/arrozblanco/esp/arroz-blanco-con-tomate`
+		: `/${lang}/dishes/${key}`;
 
 describe(
 	'(home) layout: the Popular list in the server HTML',
@@ -750,9 +759,41 @@ describe(
 	() => {
 		it('/en/?tab=popular: every dish card, in dish order, each linking to its Variations page', async () => {
 			const html = popularPanel(await renderHome({ lang: 'en', path: '/en/?tab=popular' }));
-			const want = ALL_DISHES.map((key) => `/en/dishes/${key}`);
+			const want = ALL_DISHES.map((key) => cardHrefOf('en', key));
 			expect(cardHrefs(html)).toEqual(want);
-			expect(resultCount(html)).toBe('7 dishes');
+			expect(resultCount(html)).toBe('9 dishes');
+		});
+
+		it('/en/?tab=popular&f=basics: only allioli, "1 dish" (FE-11)', async () => {
+			const html = popularPanel(
+				await renderHome({ lang: 'en', path: '/en/?tab=popular&f=basics' })
+			);
+			expect(cardHrefs(html)).toEqual(['/en/dishes/allioli']);
+			expect(resultCount(html)).toBe('1 dish');
+		});
+
+		it('/ru/?tab=popular&f=mains: arroz blanco links to its recipe (FE-11)', async () => {
+			const html = popularPanel(await renderHome({ lang: 'ru', path: '/ru/?tab=popular&f=mains' }));
+			expect(cardHrefs(html)).toEqual(
+				['paella', 'cocido', 'arrozblanco'].map((key) => cardHrefOf('ru', key))
+			);
+		});
+
+		it('/ru/?tab=popular: the filter sidebar has the Basics chip, "Базовые" (FE-11)', async () => {
+			const html = popularPanel(await renderHome({ lang: 'ru', path: '/ru/?tab=popular' }));
+			const chips = startTags(html).filter(
+				(t) => t.name === 'button' && t.attrs['aria-pressed'] !== undefined
+			);
+			const labels = elementsWith(html, 'aria-pressed=').map((el) => visibleText(el).trim());
+			expect(chips.length, 'got no filter chips').toBeGreaterThan(0);
+			expect(labels).toContain('Базовые');
+		});
+
+		it('/es/?tab=popular: the Spanish preview line reads "España · …" (FE-11)', async () => {
+			const html = popularPanel(await renderHome({ lang: 'es', path: '/es/?tab=popular' }));
+			const text = decodeAmp(visibleText(html));
+			expect(text).toContain('España · Allioli de morter · España · Allioli de codony');
+			expect(text).not.toMatch(/\bnull\b|undefined/);
 		});
 
 		it('/ru/?tab=popular&f=vegetarian&f=summer: only gazpacho, "1 блюдо"', async () => {
@@ -764,14 +805,16 @@ describe(
 			expect(visibleText(html)).toContain('Холодные супы');
 		});
 
-		it('/es/?tab=popular&f=vegetarian: three dishes, "3 platos"', async () => {
+		it('/es/?tab=popular&f=vegetarian: five dishes, "5 platos"', async () => {
 			const html = popularPanel(
 				await renderHome({ lang: 'es', path: '/es/?tab=popular&f=vegetarian' })
 			);
 			expect(cardHrefs(html)).toEqual(
-				['tortilla', 'gazpacho', 'arrozleche'].map((k) => `/es/dishes/${k}`)
+				['tortilla', 'gazpacho', 'arrozleche', 'allioli', 'arrozblanco'].map((k) =>
+					cardHrefOf('es', k)
+				)
 			);
-			expect(resultCount(html)).toBe('3 platos');
+			expect(resultCount(html)).toBe('5 platos');
 		});
 
 		it('a messy filter URL reads canonical: order, duplicates and unknown ids', async () => {
@@ -859,7 +902,9 @@ describe('(home) layout: the Popular panel heading', { timeout: COLD_COMPILE_TIM
 			'Cold soups',
 			'Croquetas',
 			'Fried sweets',
-			'Milk puddings'
+			'Milk puddings',
+			'Allioli',
+			'Arroz blanco con tomate'
 		]);
 	});
 });
@@ -971,7 +1016,20 @@ describe(
 		it('/en/?tab=popular&dish=bogus: an unknown key opens nothing', async () => {
 			const html = await renderHome({ lang: 'en', path: '/en/?tab=popular&dish=bogus' });
 			expect(openDialogs(html), 'got a sheet open for an unknown dish').toEqual([]);
-			expect(cardHrefs(popularPanel(html)).length, 'want the full list still').toBe(7);
+			expect(cardHrefs(popularPanel(html)).length, 'want the full list still').toBe(9);
+		});
+
+		// FE-11: a one-variation dish has no sheet (its "See all" would 301
+		// straight back to the recipe its card already opens).
+		it('/en/?tab=popular&dish=arrozblanco: a one-variation dish opens no sheet', async () => {
+			const html = await renderHome({ lang: 'en', path: '/en/?tab=popular&dish=arrozblanco' });
+			expect(openDialogs(html), 'got a sheet open for a one-variation dish').toEqual([]);
+			expect(cardHrefs(popularPanel(html)).length, 'want the full list still').toBe(9);
+		});
+
+		it('/en/?tab=popular&dish=allioli: two Spanish variations still open the sheet', async () => {
+			const html = await renderHome({ lang: 'en', path: '/en/?tab=popular&dish=allioli' });
+			expect(openDialogs(html).length, 'want the allioli sheet open').toBe(1);
 		});
 
 		it('/en/?dish=tortilla (Regional): the dish sheet stays closed', async () => {
@@ -1044,6 +1102,8 @@ const SIDEBAR_CHIPS_EN = [
 	'Tapas',
 	'Mains',
 	'Desserts',
+	// FE-11: the fourth Course filter.
+	'Basics',
 	'Quick',
 	'Slow-cooked',
 	'Summer',
@@ -1082,7 +1142,7 @@ describe(
 			expect(root.attrs['aria-labelledby']).toBe(headingId);
 		});
 
-		it('/en/?tab=popular: the twelve chips in group order, none pressed; Clear all aria-disabled', async () => {
+		it('/en/?tab=popular: the thirteen chips in group order, none pressed; Clear all aria-disabled', async () => {
 			const html = popularPanel(await renderHome({ lang: 'en', path: '/en/?tab=popular' }));
 			const buttons = buttonsIn(sidebarHtml(html));
 			const chips = buttons.filter((b) => 'aria-pressed' in b.attrs);

@@ -26,6 +26,7 @@ import {
 	imagePreloads
 } from '../../../../testutil/hero-preload';
 import { renderKitPage, unmockKit } from '../../../../testutil/ssr-page';
+import { ALLIOLI, SPAIN_WIDE_LABEL, spainWideRecipePath } from '../../../../testutil/spain-wide';
 import {
 	backFallback,
 	PAGE_COPY,
@@ -69,7 +70,14 @@ const ORIGIN = 'http://localhost';
 const MEDIA_BASE_URL = 'https://media.example.test';
 const ROUTE_ID = '/[lang=lang]/dishes/[dishKey]';
 
-type RenderSpec = { lang: Lang; dishKey?: string; variationCount?: number; withPhotos?: boolean };
+type RenderSpec = {
+	lang: Lang;
+	dishKey?: string;
+	variationCount?: number;
+	withPhotos?: boolean;
+	// FE-11: a crafted dish instead of a bundle one.
+	dish?: Dish;
+};
 
 const photos = (prefix: string): Photos => ({
 	thumb: `${prefix}/thumb-1a2b`,
@@ -89,6 +97,7 @@ function withPhotos(dish: Dish): Dish {
 }
 
 function fixtureDish(spec: RenderSpec): Dish {
+	if (spec.dish) return spec.dish;
 	const view = buildView(bundle, spec.lang);
 	const dish = view.dishesByKey.get(spec.dishKey ?? 'tortilla');
 	if (!dish) throw new Error(`no fixture dish ${spec.dishKey}`);
@@ -444,3 +453,76 @@ describe('Variations page: hero preload (FE-8)', { timeout: COLD_COMPILE_TIMEOUT
 		expect(imagePreloads(body)).toEqual([]);
 	});
 });
+
+// FE-11 (both READMEs -> "Spanish (Spain-wide) variations"): a dish's
+// Spanish variations get the same card as the regional ones, after them (the
+// API's order: regional in region order, then Spanish), never highlighted;
+// the card's eyebrow, its region slot, is spainWide.label; each links to
+// /:lang/dishes/:dishKey/esp/:variationSlug; the count includes them.
+const allioliPaths = (lang: Lang) =>
+	ALLIOLI.variations.map((v) => spainWideRecipePath(lang, ALLIOLI.key, v.slug));
+
+// Tortilla with allioli's two Spanish variations after its regional ones,
+// as the API orders a mixed dish (D-ESP-4).
+function mixedTortilla(lang: Lang): Dish {
+	const view = buildView(bundle, lang);
+	const tortilla = view.dishesByKey.get('tortilla')!;
+	const spanish = view.dishesByKey.get('allioli')!.variations;
+	return { ...tortilla, variations: [...tortilla.variations, ...spanish] };
+}
+
+describe(
+	'Variations page: Spanish variations (FE-11)',
+	{ timeout: COLD_COMPILE_TIMEOUT_MS },
+	() => {
+		for (const lang of VARIATIONS_LOCALES) {
+			it(`${lang}: allioli has two cards, each to its /esp/ recipe`, async () => {
+				const { body } = await renderPage({ lang, dishKey: 'allioli' });
+				expect(cardHrefs(body)).toEqual(allioliPaths(lang));
+			});
+
+			it(`${lang}: each Spanish card reads "${SPAIN_WIDE_LABEL[lang]}", its name and description`, async () => {
+				const cards = cardsIn((await renderPage({ lang, dishKey: 'allioli' })).body);
+				for (const [i, want] of ALLIOLI.variations.entries()) {
+					const text = decodeAmp(visibleText(cards[i] ?? ''));
+					expect(text, `card ${i}: "${text}"`).toContain(SPAIN_WIDE_LABEL[lang]);
+					expect(text, `card ${i}: "${text}"`).toContain(want.name);
+					expect(text).not.toMatch(/\bnull\b|undefined/);
+				}
+			});
+		}
+
+		it('ru: the header counts both Spanish variations, "2 варианта"', async () => {
+			const text = visibleText((await renderPage({ lang: 'ru', dishKey: 'allioli' })).body);
+			expect(text).toContain('2 варианта');
+		});
+
+		it('a mixed dish: regional cards in region order, then the Spanish ones', async () => {
+			const { body } = await renderPage({ lang: 'en', dish: mixedTortilla('en') });
+			const regional = VARIATION_REGIONS.tortilla.map((r) => recipePath('en', 'tortilla', r));
+			const spanish = ALLIOLI.variations.map((v) => spainWideRecipePath('en', 'tortilla', v.slug));
+			expect(cardHrefs(body)).toEqual([...regional, ...spanish]);
+		});
+
+		it('a mixed dish: every card has the same markup apart from its href', async () => {
+			const cards = cardsIn((await renderPage({ lang: 'en', dish: mixedTortilla('en') })).body);
+			const shapes = cards.map((card) => {
+				const { href, ...rest } = startTags(card)[0].attrs;
+				return JSON.stringify(rest) + (href ? '' : ' (no href)');
+			});
+			expect(new Set(shapes).size, `got differing cards: ${[...new Set(shapes)].join(' | ')}`).toBe(
+				1
+			);
+			expect(cards.join('')).not.toMatch(/aria-current=|\b(best|primary|featured|highlight)\b/i);
+		});
+
+		it('the ItemList lists the Spanish recipe URLs', async () => {
+			const list = onlyNodeOfType(
+				(await renderPage({ lang: 'es', dishKey: 'allioli' })).head,
+				'ItemList'
+			);
+			const urls = itemListEntries(list).map((e) => e.url);
+			expect(urls).toEqual(allioliPaths('es').map((path) => `${ORIGIN}${path}`));
+		});
+	}
+);

@@ -1,5 +1,6 @@
 import type { components } from '#lib/api/schema.d.ts';
-import { recipeHref, variationsHref } from '#lib/i18n/localized-href.ts';
+import { hasVariationsPage } from '#lib/content/dish-variations.ts';
+import { variationRecipeHref, variationsHref } from '#lib/i18n/localized-href.ts';
 import type { Locale } from '#lib/i18n/locales.ts';
 import { SITE_NAME } from '#lib/page-title.ts';
 import { REGIONAL, tabHref } from '#lib/ui/home-tab.ts';
@@ -25,7 +26,7 @@ export function variationsPageJsonLd(dish: Dish, location: PageLocation): JsonLd
 	const { origin, lang, url } = location;
 	const recipes = dish.variations.map((variation) => ({
 		name: variation.name,
-		url: `${origin}${recipeHref(dish.key, variation.regionKey, lang)}`
+		url: `${origin}${variationRecipeHref(dish.key, variation, lang)}`
 	}));
 	return [
 		breadcrumbJsonLd([homeCrumb(location), { name: dish.name, url }]),
@@ -40,17 +41,18 @@ export type RecipePageInput = {
 	mediaBaseUrl: string | undefined;
 };
 
-// Recipe page: the Recipe, and Home → dish → variation.
+// Recipe page: the Recipe, and Home → dish → variation. A one-variation
+// dish has no Variations page (its URL redirects here), so no dish crumb.
 export function recipePageJsonLd(input: RecipePageInput, location: PageLocation): JsonLdNode[] {
 	const { recipe, dishes, mediaBaseUrl } = input;
 	const { origin, lang, url } = location;
-	const course = dishes.find((dish) => dish.key === recipe.dishKey)?.course;
-	const dishCrumb = {
-		name: recipe.dishName,
-		url: `${origin}${variationsHref(recipe.dishKey, lang)}`
-	};
+	const dish = dishes.find((entry) => entry.key === recipe.dishKey);
+	const dishCrumbs: LinkedPage[] =
+		dish && !hasVariationsPage(dish)
+			? []
+			: [{ name: recipe.dishName, url: `${origin}${variationsHref(recipe.dishKey, lang)}` }];
 	return [
-		recipeJsonLd({ recipe, course, lang, url, origin, mediaBaseUrl }),
-		breadcrumbJsonLd([homeCrumb(location), dishCrumb, { name: recipe.name, url }])
+		recipeJsonLd({ recipe, course: dish?.course, lang, url, origin, mediaBaseUrl }),
+		breadcrumbJsonLd([homeCrumb(location), ...dishCrumbs, { name: recipe.name, url }])
 	];
 }

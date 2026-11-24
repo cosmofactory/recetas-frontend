@@ -1,4 +1,5 @@
 import { tabLabel } from '#lib/components/home/home-header.ts';
+import { hasVariationsPage } from '#lib/content/dish-variations.ts';
 import { variationsHref } from '#lib/i18n/localized-href.ts';
 import { POPULAR, tabHref } from '#lib/ui/home-tab.ts';
 import type { BackOrigin } from '#lib/ui/back-origin.ts';
@@ -8,9 +9,12 @@ export type BackPillLink = { label: string; href: string };
 type RecipeNames = { dishKey: string; dishName: string };
 
 type Named = { key: string; name: string };
+// The layout's dishes carry their variations, which tell a dish with no
+// Variations page (FE-11).
+type CatalogDish = Named & { variations?: readonly unknown[] };
 
 // The [lang=lang] layout's lists, which name the page an origin URL is.
-export type OriginCatalog = { dishes: readonly Named[]; regions: readonly Named[] };
+export type OriginCatalog = { dishes: readonly CatalogDish[]; regions: readonly Named[] };
 
 // /:lang/dishes/:dishKey or /:lang/regions/:regionKey (and below).
 const ORIGIN_PAGE = /^\/[^/]+\/(dishes|regions)\/([^/?#]+)/;
@@ -23,7 +27,8 @@ export function variationsBackPill(origin: BackOrigin | null, lang: string): Bac
 }
 
 // Desktop prototype recipeBack: on a direct load the dish name, to its
-// Variations page. Else the label names the page the href goes to (stage
+// Variations page, or "‹ Popular" for a dish with one variation, which has
+// none (FE-11). Else the label names the page the href goes to (stage
 // FE-7 -> Small decisions: a search pick can open another dish's recipe):
 // a Variations page by its dish, a region by its region, the home by its tab
 // (the bare Regional home shows no region, D-FE9-8).
@@ -33,8 +38,21 @@ export function recipeBackPill(
 	lang: string,
 	catalog: OriginCatalog
 ): BackPillLink {
-	if (!origin) return { label: recipe.dishName, href: variationsHref(recipe.dishKey, lang) };
+	if (!origin) return recipeDirectBack(recipe, lang, catalog);
 	return { label: originPageName(origin, catalog) ?? tabLabel(origin.tab), href: origin.href };
+}
+
+// Where a recipe's back link goes on a direct load (both layouts).
+export function recipeDirectBack(
+	recipe: RecipeNames,
+	lang: string,
+	catalog: OriginCatalog
+): BackPillLink {
+	const dish = catalog.dishes.find((entry) => entry.key === recipe.dishKey);
+	if (dish?.variations && !hasVariationsPage({ variations: dish.variations })) {
+		return variationsBackPill(null, lang);
+	}
+	return { label: recipe.dishName, href: variationsHref(recipe.dishKey, lang) };
 }
 
 function originPageName(origin: BackOrigin, catalog: OriginCatalog): string | undefined {

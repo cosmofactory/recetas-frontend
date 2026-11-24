@@ -260,6 +260,36 @@ describe('DishCard: the preview line (first two variations, region order)', () =
 	});
 });
 
+// FE-11, the region-slot rule (both READMEs -> "Spanish (Spain-wide)
+// variations"): a Spanish variation shows spainWide.label where the region
+// goes, "Spanish · Allioli de morter"; the count includes Spanish variations.
+describe('DishCard: Spanish variations (FE-11)', () => {
+	const cases: { lang: PopularLocale; key: 'allioli' | 'arrozblanco' }[] = [
+		{ lang: 'en', key: 'allioli' },
+		{ lang: 'en', key: 'arrozblanco' },
+		{ lang: 'es', key: 'allioli' },
+		{ lang: 'ru', key: 'allioli' }
+	];
+	for (const tc of cases) {
+		it(`${tc.lang} ${tc.key}: the preview reads "${PREVIEWS[tc.lang][tc.key]}"`, async () => {
+			const card = await renderCard({ lang: tc.lang, dish: dishIn(tc.lang, tc.key) });
+			textElement(card, PREVIEWS[tc.lang][tc.key]!);
+		});
+	}
+
+	for (const lang of ['en', 'es', 'ru'] as const) {
+		it(`${lang}: allioli counts its two Spanish variations: "${VARIATION_COUNTS[lang].allioli}"`, async () => {
+			const card = await renderCard({ lang, dish: dishIn(lang, 'allioli') });
+			textElement(card, VARIATION_COUNTS[lang].allioli!);
+		});
+	}
+
+	it('never shows "null" for a Spanish variation\'s region', async () => {
+		const card = await renderCard({ dish: dishIn('en', 'allioli') });
+		expect(normalized(card.textContent)).not.toMatch(/\bnull\b|undefined/);
+	});
+});
+
 describe('DishCard: photo', () => {
 	it('uses the dish\'s card photo, decorative (alt "")', async () => {
 		const tortilla = dishIn('en', 'tortilla');

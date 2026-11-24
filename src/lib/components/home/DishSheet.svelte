@@ -1,7 +1,11 @@
 <script lang="ts">
 	import type { components } from '#lib/api/schema.d.ts';
 	import DishDetails from '#lib/content/DishDetails.svelte';
-	import { recipeHref, variationsHref } from '#lib/i18n/localized-href.ts';
+	import {
+		variationRecipeHref,
+		variationsHref,
+		type VariationTarget
+	} from '#lib/i18n/localized-href.ts';
 	import UrlSheet from './UrlSheet.svelte';
 
 	// D-FE5-2: the dish the URL's ?dish opens (none or unknown: hidden); shown
@@ -18,8 +22,8 @@
 
 	let { dish, active, lang, mediaBaseUrl, onClose, opener }: Props = $props();
 
-	const recipeHrefFor = (dishKey: string, regionKey: string) =>
-		recipeHref(dishKey, regionKey, lang);
+	const recipeHrefFor = (dishKey: string, variation: VariationTarget) =>
+		variationRecipeHref(dishKey, variation, lang);
 </script>
 
 <UrlSheet item={dish} {active} {onClose} {opener}>

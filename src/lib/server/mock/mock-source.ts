@@ -2,7 +2,7 @@ import { locales } from '#lib/i18n/locales.ts';
 import { NotFoundError } from '../api-errors.ts';
 import type { CatalogSource, Lang } from '../catalog-source.ts';
 import type { ContentBundle } from './bundle.ts';
-import { buildView, recipePath, type CatalogView } from './bundle-mapping.ts';
+import { buildView, recipePath, spainWideRecipePath, type CatalogView } from './bundle-mapping.ts';
 
 // DATA_SOURCE=mock: the CatalogSource for local dev and tests, serving the
 // vendored backend import bundle exactly as the API would. Every locale is
@@ -23,7 +23,9 @@ export function createMockSource(bundle: ContentBundle): CatalogSource {
 		getRegion: (lang, regionKey) => find(view(lang).regionDetails, regionKey, 'region'),
 		getDish: (lang, dishKey) => find(view(lang).dishesByKey, dishKey, 'dish'),
 		getRecipe: (lang, { dishKey, regionKey }) =>
-			find(view(lang).recipes, recipePath(dishKey, regionKey), 'recipe')
+			find(view(lang).recipes, recipePath(dishKey, regionKey), 'recipe'),
+		getSpainWideRecipe: (lang, { dishKey, variationSlug }) =>
+			find(view(lang).recipes, spainWideRecipePath(dishKey, variationSlug), 'recipe')
 	};
 }
 
