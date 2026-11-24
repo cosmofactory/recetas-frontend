@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '../testutil/e2e-test';
+import { MOCK_DATA_TAG } from '../testutil/e2e-target';
 import { getRaw, redirectTarget } from '../testutil/e2e';
 import { gotoHydrated, isDesktopPage, onlyVisible } from '../testutil/home-e2e';
 import { expectUrl } from '../testutil/home-flow-e2e';
@@ -35,7 +36,9 @@ import { backLink, variationCards } from '../testutil/variations-e2e';
 // "Allioli shows two Spanish cards after regional ones (none here); Arroz
 // blanco opens its recipe from Popular and search; the Basics filter; mobile
 // and desktop, under the existing a11y checks" (the a11y checks run over the
-// FE-11 states added to a11y-states-e2e.ts UI_STATES).
+// FE-11 states added to a11y-states-e2e.ts UI_STATES). Every test reads the
+// mock bundle's Spanish variations (MOCK_DATA_TAG): a deployment's content
+// may have none.
 
 const MOVED_PERMANENTLY = 301;
 const NOT_FOUND = 404;
@@ -56,7 +59,7 @@ async function expectArrozBlancoRecipe(page: Page) {
 	await expect(page.getByText(ARROZ_BLANCO_FIRST_STEP)).toBeVisible();
 }
 
-test.describe('Allioli: a dish of Spanish variations only', () => {
+test.describe('Allioli: a dish of Spanish variations only', { tag: MOCK_DATA_TAG }, () => {
 	test('/en/dishes/allioli: two Spanish cards, each to its /esp/ recipe', async ({ page }) => {
 		await gotoHydrated(page, '/en/dishes/allioli');
 		await expect(page.getByRole('heading', { level: 1 })).toHaveText(ALLIOLI.name.en);
@@ -103,7 +106,7 @@ test.describe('Allioli: a dish of Spanish variations only', () => {
 	});
 });
 
-test.describe('Arroz blanco: a dish with exactly one variation', () => {
+test.describe('Arroz blanco: a dish with exactly one variation', { tag: MOCK_DATA_TAG }, () => {
 	test('GET /en/dishes/arrozblanco answers 301 to its recipe', async ({ request, baseURL }) => {
 		const res = await getRaw(request, '/en/dishes/arrozblanco');
 		expect(res.status(), `got ${res.status()}, want 301`).toBe(MOVED_PERMANENTLY);
@@ -150,7 +153,7 @@ test.describe('Arroz blanco: a dish with exactly one variation', () => {
 	});
 });
 
-test.describe('search finds Spanish variations', () => {
+test.describe('search finds Spanish variations', { tag: MOCK_DATA_TAG }, () => {
 	test('mobile: the dish result opens the Arroz blanco recipe', async ({ page }) => {
 		skipOnDesktop(page, 'the mobile search overlay');
 		await gotoHydrated(page, '/en/');
@@ -186,7 +189,7 @@ test.describe('search finds Spanish variations', () => {
 	});
 });
 
-test.describe('the Basics filter', () => {
+test.describe('the Basics filter', { tag: MOCK_DATA_TAG }, () => {
 	test('mobile: Basics in the Filters sheet keeps only Allioli', async ({ page }) => {
 		skipOnDesktop(page, 'the mobile Filters sheet');
 		await gotoHydrated(page, '/en/?tab=popular');
@@ -215,15 +218,19 @@ test.describe('the Basics filter', () => {
 	});
 });
 
-test.describe('the map and region lists leave Spanish variations out', () => {
-	test('the map links no esp region', async ({ page }) => {
-		await gotoHydrated(page, '/en/');
-		await expect(page.locator('a[href="/en/regions/esp"]')).toHaveCount(0);
-	});
+test.describe(
+	'the map and region lists leave Spanish variations out',
+	{ tag: MOCK_DATA_TAG },
+	() => {
+		test('the map links no esp region', async ({ page }) => {
+			await gotoHydrated(page, '/en/');
+			await expect(page.locator('a[href="/en/regions/esp"]')).toHaveCount(0);
+		});
 
-	test("a region's list has no Spanish variation (Catalonia)", async ({ page }) => {
-		await gotoHydrated(page, '/en/regions/cat');
-		const allioli = page.locator('a[href*="/dishes/allioli/"], a[href*="/dishes/arrozblanco/"]');
-		await expect(allioli).toHaveCount(0);
-	});
-});
+		test("a region's list has no Spanish variation (Catalonia)", async ({ page }) => {
+			await gotoHydrated(page, '/en/regions/cat');
+			const allioli = page.locator('a[href*="/dishes/allioli/"], a[href*="/dishes/arrozblanco/"]');
+			await expect(allioli).toHaveCount(0);
+		});
+	}
+);

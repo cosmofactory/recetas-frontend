@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page, type TestInfo } from '../testutil/e2e-test';
+import { MOCK_DATA_TAG } from '../testutil/e2e-target';
 import { LOCALES } from '../testutil/e2e';
 import {
 	boxOf,
@@ -235,35 +236,41 @@ test.describe('Popular (desktop): the grid', () => {
 		}
 	);
 
-	test('the result count: 11.5px/700, .1em, uppercase, --ink-3, padding-top 10px', async ({
-		page
-	}) => {
-		await openPopular(page, 'en');
-		await expect(resultCount(page)).toHaveText(POPULAR_COPY.en.dishes[9]);
-		const got = await computedStyle(resultCount(page), [
-			'font-size',
-			'font-weight',
-			'letter-spacing',
-			'text-transform',
-			'color',
-			'padding-top'
-		]);
-		expect(got['font-size']).toBe('11.5px');
-		expect(got['font-weight']).toBe('700');
-		expectPx(parseFloat(got['letter-spacing']), 1.15, 'count letter-spacing');
-		expect(got['text-transform']).toBe('uppercase');
-		expect(got.color).toBe(await tokenValue(page, 'color', 'var(--ink-3)'));
-		expect(got['padding-top']).toBe('10px');
-	});
+	test(
+		'the result count: 11.5px/700, .1em, uppercase, --ink-3, padding-top 10px',
+		{ tag: MOCK_DATA_TAG },
+		async ({ page }) => {
+			await openPopular(page, 'en');
+			await expect(resultCount(page)).toHaveText(POPULAR_COPY.en.dishes[9]);
+			const got = await computedStyle(resultCount(page), [
+				'font-size',
+				'font-weight',
+				'letter-spacing',
+				'text-transform',
+				'color',
+				'padding-top'
+			]);
+			expect(got['font-size']).toBe('11.5px');
+			expect(got['font-weight']).toBe('700');
+			expectPx(parseFloat(got['letter-spacing']), 1.15, 'count letter-spacing');
+			expect(got['text-transform']).toBe('uppercase');
+			expect(got.color).toBe(await tokenValue(page, 'color', 'var(--ink-3)'));
+			expect(got['padding-top']).toBe('10px');
+		}
+	);
 
 	for (const lang of LOCALES) {
-		test(`${lang}: every dish as a card, in dish order, with its name`, async ({ page }) => {
-			await openPopular(page, lang);
-			await expectDishes(page, DISH_KEYS, `${lang} unfiltered`);
-			const names = DISH_KEYS.map((key) => DISH_NAMES[lang][key]);
-			await expect(dishCards(page).locator('h3')).toHaveText(names);
-			await expect(resultCount(page)).toHaveText(POPULAR_COPY[lang].dishes[9]);
-		});
+		test(
+			`${lang}: every dish as a card, in dish order, with its name`,
+			{ tag: MOCK_DATA_TAG },
+			async ({ page }) => {
+				await openPopular(page, lang);
+				await expectDishes(page, DISH_KEYS, `${lang} unfiltered`);
+				const names = DISH_KEYS.map((key) => DISH_NAMES[lang][key]);
+				await expect(dishCards(page).locator('h3')).toHaveText(names);
+				await expect(resultCount(page)).toHaveText(POPULAR_COPY[lang].dishes[9]);
+			}
+		);
 	}
 });
 
@@ -410,7 +417,7 @@ test.describe('Popular (desktop): sidebar content', () => {
 		});
 	}
 
-	test('the URL presses the chips: ?f=pork&f=winter', async ({ page }) => {
+	test('the URL presses the chips: ?f=pork&f=winter', { tag: MOCK_DATA_TAG }, async ({ page }) => {
 		await openPopular(page, 'en', '&f=pork&f=winter');
 		expect(await sidebarPressedIds(page, 'en', FILTER_IDS)).toEqual(['pork', 'winter']);
 		await expectDishes(page, ['cocido'], 'pork AND winter');
@@ -530,7 +537,7 @@ async function expectChipMetrics(page: Page, eyebrow: Locator) {
 	expectPx(second.x - (first.x + first.width), CHIP_GAP_PX, 'chip gap');
 }
 
-test.describe('Popular (desktop): sidebar chips drive the URL', () => {
+test.describe('Popular (desktop): sidebar chips drive the URL', { tag: MOCK_DATA_TAG }, () => {
 	test.beforeEach(({ page }) => skipOnMobile(page));
 
 	for (const lang of LOCALES) {
@@ -610,21 +617,23 @@ test.describe('Popular (desktop): the sidebar "Clear all"', () => {
 		});
 	}
 
-	test('pressed with filters: empties them, replaces the entry, focus stays on it, dims it', async ({
-		page
-	}) => {
-		await openPopular(page, 'es', '&f=vegetarian&f=quick');
-		await markDocument(page);
-		const before = await historyLength(page);
-		await clearAllInSidebar(page, 'es').click();
-		await expectUrl(page, '/es/?tab=popular');
-		await expectDishes(page, DISH_KEYS, 'after Clear all');
-		expect(await sidebarPressedIds(page, 'es', FILTER_IDS)).toEqual([]);
-		expect(await historyLength(page), 'want the entry replaced').toBe(before);
-		await expectSameDocument(page, 'after the sidebar Clear all');
-		await expect(clearAllInSidebar(page, 'es')).toBeFocused();
-		await expect(clearAllInSidebar(page, 'es')).toHaveAttribute('aria-disabled', 'true');
-	});
+	test(
+		'pressed with filters: empties them, replaces the entry, focus stays on it, dims it',
+		{ tag: MOCK_DATA_TAG },
+		async ({ page }) => {
+			await openPopular(page, 'es', '&f=vegetarian&f=quick');
+			await markDocument(page);
+			const before = await historyLength(page);
+			await clearAllInSidebar(page, 'es').click();
+			await expectUrl(page, '/es/?tab=popular');
+			await expectDishes(page, DISH_KEYS, 'after Clear all');
+			expect(await sidebarPressedIds(page, 'es', FILTER_IDS)).toEqual([]);
+			expect(await historyLength(page), 'want the entry replaced').toBe(before);
+			await expectSameDocument(page, 'after the sidebar Clear all');
+			await expect(clearAllInSidebar(page, 'es')).toBeFocused();
+			await expect(clearAllInSidebar(page, 'es')).toHaveAttribute('aria-disabled', 'true');
+		}
+	);
 
 	test('pressed with nothing active: no navigation, no history entry', async ({ page }) => {
 		await openPopular(page, 'en', '&dish=tortilla');
@@ -638,7 +647,7 @@ test.describe('Popular (desktop): the sidebar "Clear all"', () => {
 	});
 });
 
-test.describe('Popular (desktop): nothing matches', () => {
+test.describe('Popular (desktop): nothing matches', { tag: MOCK_DATA_TAG }, () => {
 	test.beforeEach(({ page }) => skipOnMobile(page));
 
 	for (const lang of LOCALES) {
@@ -684,21 +693,23 @@ test.describe('Popular (desktop): cards open the Variations page', () => {
 	test.beforeEach(({ page }) => skipOnMobile(page));
 
 	for (const lang of LOCALES) {
-		test(`${lang}: every card links to /${lang}/dishes/:dishKey, without the filters`, async ({
-			page
-		}) => {
-			await openPopular(page, lang, '&f=vegetarian');
-			// FE-11: Arroz blanco has one variation, so its card opens its recipe.
-			const want = VEGETARIAN_DISHES.map((key) =>
-				key === 'arrozblanco' ? ARROZ_BLANCO_RECIPE_PATH(lang) : `/${lang}/dishes/${key}`
-			);
-			await expect.poll(() => cardHrefs(page)).toEqual(want);
-		});
+		test(
+			`${lang}: every card links to /${lang}/dishes/:dishKey, without the filters`,
+			{ tag: MOCK_DATA_TAG },
+			async ({ page }) => {
+				await openPopular(page, lang, '&f=vegetarian');
+				// FE-11: Arroz blanco has one variation, so its card opens its recipe.
+				const want = VEGETARIAN_DISHES.map((key) =>
+					key === 'arrozblanco' ? ARROZ_BLANCO_RECIPE_PATH(lang) : `/${lang}/dishes/${key}`
+				);
+				await expect.poll(() => cardHrefs(page)).toEqual(want);
+			}
+		);
 	}
 
 	test(
 		'a click goes straight to the Variations page (client-side), no sheet; Back restores the filters',
-		{ tag: '@cross-browser' },
+		{ tag: ['@cross-browser', MOCK_DATA_TAG] },
 		async ({ page }) => {
 			await openPopular(page, 'en', '&f=vegetarian');
 			await markDocument(page);
@@ -762,7 +773,7 @@ test.describe('Popular (desktop): headings', () => {
 
 // Crossing 860px keeps the URL's filters: the sidebar and the mobile bar
 // read the same `f` params, and the card href follows the layout.
-test.describe('Popular: resizing across 860px with filters', () => {
+test.describe('Popular: resizing across 860px with filters', { tag: MOCK_DATA_TAG }, () => {
 	const PROJECT = 'chromium-desktop-1280';
 	const MOBILE = { width: 390, height: 844 };
 	const DESKTOP = { width: 1280, height: 800 };

@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page, type TestInfo } from '../testutil/e2e-test';
+import { MOCK_DATA_TAG } from '../testutil/e2e-target';
 import { LOCALES } from '../testutil/e2e';
 import { expectNoVariationStandsOut } from '../testutil/equal-variations-e2e';
 import {
@@ -221,7 +222,7 @@ test.describe('Filters sheet (mobile): opening', () => {
 	});
 });
 
-test.describe('Filters sheet (mobile): chips drive the URL', () => {
+test.describe('Filters sheet (mobile): chips drive the URL', { tag: MOCK_DATA_TAG }, () => {
 	test.beforeEach(({ page }) => skipOnDesktop(page));
 
 	test('a sheet chip writes f=, keeps the sheet open and focus on the chip, replaces the entry', async ({
@@ -357,16 +358,20 @@ test.describe('Filters sheet (mobile): closing', () => {
 		}
 	);
 
-	test('closing after a chip press: the list behind shows the new filters', async ({ page }) => {
-		await openPopular(page, 'en');
-		await openFiltersSheet(page, 'en');
-		await sheetChip(page, 'en', 'winter').click();
-		await expectUrl(page, '/en/?tab=popular&f=winter');
-		await page.keyboard.press('Escape');
-		await expectFiltersSheetClosed(page, 'en');
-		await expectDishes(page, ['cocido'], 'winter');
-		await expectFiltersButton(page, 'en', 1);
-	});
+	test(
+		'closing after a chip press: the list behind shows the new filters',
+		{ tag: MOCK_DATA_TAG },
+		async ({ page }) => {
+			await openPopular(page, 'en');
+			await openFiltersSheet(page, 'en');
+			await sheetChip(page, 'en', 'winter').click();
+			await expectUrl(page, '/en/?tab=popular&f=winter');
+			await page.keyboard.press('Escape');
+			await expectFiltersSheetClosed(page, 'en');
+			await expectDishes(page, ['cocido'], 'winter');
+			await expectFiltersButton(page, 'en', 1);
+		}
+	);
 });
 
 test.describe('Filters sheet (mobile): keyboard and layout', () => {
@@ -548,42 +553,52 @@ test.describe('dish sheet (mobile): opening', () => {
 		await expectNoVariationStandsOut(rows, 'dish sheet rows');
 	});
 
-	test('the card link keeps the filters and opens the sheet over the filtered list', async ({
-		page
-	}) => {
-		await openPopular(page, 'en', '&f=vegetarian');
-		await tapCard(page, 'gazpacho');
-		expect(pathAndQuery(page)).toBe('/en/?tab=popular&f=vegetarian&dish=gazpacho');
-		await expectSheetPeek(page, 'Cold soups');
-		await expectDishes(page, VEGETARIAN_DISHES, 'behind the sheet');
-	});
+	test(
+		'the card link keeps the filters and opens the sheet over the filtered list',
+		{ tag: MOCK_DATA_TAG },
+		async ({ page }) => {
+			await openPopular(page, 'en', '&f=vegetarian');
+			await tapCard(page, 'gazpacho');
+			expect(pathAndQuery(page)).toBe('/en/?tab=popular&f=vegetarian&dish=gazpacho');
+			await expectSheetPeek(page, 'Cold soups');
+			await expectDishes(page, VEGETARIAN_DISHES, 'behind the sheet');
+		}
+	);
 
 	// FE-11: only a card that opens a sheet keeps focus (reset "false"); a
 	// one-variation dish's card opens its recipe, another page, so it keeps
 	// Kit's default focus reset (WCAG 2.4.3).
-	test('the cards that open a sheet opt out of focus reset (data-sveltekit-reset="false")', async ({
-		page
-	}) => {
-		await openPopular(page, 'en');
-		const resets = await page
-			.locator('[data-testid="dish-card"]')
-			.evaluateAll((cards) =>
-				cards.map((c) => c.closest('[data-sveltekit-reset]')?.getAttribute('data-sveltekit-reset'))
-			);
-		const want = DISH_KEYS.map((key) => (key === 'arrozblanco' ? undefined : 'false'));
-		expect(resets).toEqual(want);
-	});
+	test(
+		'the cards that open a sheet opt out of focus reset (data-sveltekit-reset="false")',
+		{ tag: MOCK_DATA_TAG },
+		async ({ page }) => {
+			await openPopular(page, 'en');
+			const resets = await page
+				.locator('[data-testid="dish-card"]')
+				.evaluateAll((cards) =>
+					cards.map((c) =>
+						c.closest('[data-sveltekit-reset]')?.getAttribute('data-sveltekit-reset')
+					)
+				);
+			const want = DISH_KEYS.map((key) => (key === 'arrozblanco' ? undefined : 'false'));
+			expect(resets).toEqual(want);
+		}
+	);
 
 	test('a deep link opens the sheet in peek', { tag: '@layout' }, async ({ page }) => {
 		await openPopular(page, 'ru', '&dish=tortilla');
 		await expectSheetPeek(page, TORTILLA_SHEET.ru.name);
 	});
 
-	test('an unknown dish key opens nothing: the list, no error page', async ({ page }) => {
-		await openPopular(page, 'en', '&dish=bogus');
-		await expectSheetHidden(page);
-		await expectDishes(page, DISH_KEYS, 'unknown dish');
-	});
+	test(
+		'an unknown dish key opens nothing: the list, no error page',
+		{ tag: MOCK_DATA_TAG },
+		async ({ page }) => {
+			await openPopular(page, 'en', '&dish=bogus');
+			await expectSheetHidden(page);
+			await expectDishes(page, DISH_KEYS, 'unknown dish');
+		}
+	);
 
 	test('the handle toggles peek ↔ expanded; the URL and history stay', async ({ page }) => {
 		await openPopular(page, 'en', '&dish=tortilla');
@@ -737,7 +752,7 @@ test.describe('dish sheet (mobile): closing', () => {
 	});
 });
 
-test.describe('dish sheet (mobile): Back from the Variations page', () => {
+test.describe('dish sheet (mobile): Back from the Variations page', { tag: MOCK_DATA_TAG }, () => {
 	test.beforeEach(({ page }) => skipOnDesktop(page));
 
 	for (const lang of LOCALES) {

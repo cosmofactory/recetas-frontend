@@ -1,6 +1,7 @@
 import { expect, test, type APIRequestContext, type TestInfo } from '../testutil/e2e-test';
 import { getRaw, LOCALES, PAGES, type Locale } from '../testutil/e2e';
 import { PUBLIC_ORIGIN } from '../testutil/e2e-origin';
+import { ON_MOCK_DATA } from '../testutil/e2e-target';
 import { decodeAmp, startTags } from '../testutil/html';
 import { breadcrumbItems, jsonLdDocuments, onlyNodeOfType } from '../testutil/json-ld';
 import { MOCK_SITEMAP_URL_COUNT, parseSitemap, SITEMAP_PATH } from '../testutil/sitemap';
@@ -18,6 +19,8 @@ import { MOCK_SITEMAP_URL_COUNT, parseSitemap, SITEMAP_PATH } from '../testutil/
 
 const PROJECT = 'chromium-desktop-1280';
 const SITEMAP_CRAWL_TIMEOUT_MS = 120_000;
+// Requests in flight at once while crawling: a deployment lists hundreds.
+const CRAWL_CONCURRENCY = 8;
 const RECIPE_PATH = '/dishes/tortilla/gal';
 const VARIATIONS_PATH = '/dishes/tortilla';
 const TORTILLA_VARIATION_COUNT = 13;
@@ -48,6 +51,19 @@ function onlyCanonical(head: string, url: string): string {
 
 const recipeName = (lang: Locale) => PAGES.find((p) => p.name === 'recipe')!.text[lang];
 
+// Every page × 3 locales, never none. The mock bundle pins the exact count;
+// a deployment's content has its own.
+function expectEntryCount(count: number) {
+	expect(count, 'got an empty sitemap').toBeGreaterThan(0);
+	expect(count % LOCALES.length, `got ${count} URLs, want each page in every locale`).toBe(0);
+	if (ON_MOCK_DATA) expect(count).toBe(MOCK_SITEMAP_URL_COUNT);
+}
+
+async function expectSelfCanonical(request: APIRequestContext, loc: string) {
+	const path = loc.slice(PUBLIC_ORIGIN.length);
+	expect(onlyCanonical(await fetchHead(request, path), path), path).toBe(loc);
+}
+
 test.describe('/sitemap.xml', () => {
 	test('is served as XML with every page × 3 locales on PUBLIC_ORIGIN', async ({
 		request
@@ -57,7 +73,7 @@ test.describe('/sitemap.xml', () => {
 		expect(res.status(), `got ${res.status()}, want 200`).toBe(200);
 		expect(res.headers()['content-type'] ?? '').toMatch(/^application\/xml\b/);
 		const { entries } = parseSitemap(await res.text());
-		expect(entries.length).toBe(MOCK_SITEMAP_URL_COUNT);
+		expectEntryCount(entries.length);
 		for (const { loc } of entries) expect(loc.startsWith(`${PUBLIC_ORIGIN}/`), loc).toBe(true);
 	});
 
@@ -67,10 +83,10 @@ test.describe('/sitemap.xml', () => {
 		onlyInProject(testInfo);
 		test.setTimeout(SITEMAP_CRAWL_TIMEOUT_MS);
 		const { entries } = parseSitemap(await (await getRaw(request, SITEMAP_PATH)).text());
-		expect(entries.length, 'got an empty sitemap').toBe(MOCK_SITEMAP_URL_COUNT);
-		for (const { loc } of entries) {
-			const path = loc.slice(PUBLIC_ORIGIN.length);
-			expect(onlyCanonical(await fetchHead(request, path), path), path).toBe(loc);
+		expectEntryCount(entries.length);
+		for (let i = 0; i < entries.length; i += CRAWL_CONCURRENCY) {
+			const batch = entries.slice(i, i + CRAWL_CONCURRENCY);
+			await Promise.all(batch.map(({ loc }) => expectSelfCanonical(request, loc)));
 		}
 	});
 });

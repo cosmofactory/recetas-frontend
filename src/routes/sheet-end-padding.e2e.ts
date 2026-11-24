@@ -2,7 +2,9 @@ import { expect, test, type Locator, type Page } from '../testutil/e2e-test';
 import { gotoHydrated, isDesktopPage } from '../testutil/home-e2e';
 import { HANDLE_LABELS, TORTILLA_SHEET } from '../testutil/popular-copy';
 import { dishSheet, seeAllLink } from '../testutil/popular-e2e';
+import { ON_MOCK_DATA } from '../testutil/e2e-target';
 import {
+	expectCountMatchesRows,
 	expectSheetExpanded,
 	expectSheetHidden,
 	expectSheetPeek,
@@ -57,10 +59,17 @@ async function expandSheet(sheet: Locator, lang: keyof typeof HANDLE_LABELS) {
 	await sheet.getByRole('button', { name: HANDLE_LABELS[lang], exact: true }).click();
 }
 
+// The mock bundle pins Catalonia's rows; any other content lists as many
+// rows as its count says.
+async function expectEveryRow(sheet: Locator, rows: Locator) {
+	if (!ON_MOCK_DATA) return expectCountMatchesRows(sheet);
+	await expect(rows, 'want every Catalonia row in the sheet').toHaveCount(CATALONIA.rowCount);
+}
+
 async function expectRegionEndsOnScreen(page: Page) {
 	const sheet = regionSheet(page);
 	const rows = sheet.locator(REGION_ROWS);
-	await expect(rows, 'want every Catalonia row in the sheet').toHaveCount(CATALONIA.rowCount);
+	await expectEveryRow(sheet, rows);
 	await expectScrolledToEnd(sheet);
 	await expectFullyOnScreen(page, rows.last(), 'the last region row');
 }

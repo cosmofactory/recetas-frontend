@@ -23,3 +23,13 @@ export const EXTERNAL_BASE_URL = externalBaseUrl();
 export function skipAgainstDeployment(why: string) {
 	test.skip(EXTERNAL_BASE_URL !== undefined, `needs the local E2E server: ${why}`);
 }
+
+// Tags a test (or a describe) whose assertions read the mock bundle's
+// content (src/lib/server/mock/content.bundle.json: its dishes, counts,
+// names, Spanish variations). A deployment serves its own content bundle,
+// so playwright.config.ts leaves these out (grepInvert) when E2E_BASE_URL is
+// set; on the local mock run, the PR gate, they run as before.
+export const MOCK_DATA_TAG = '@mock-data';
+
+// True on the local run, which serves the mock bundle (DATA_SOURCE=mock).
+export const ON_MOCK_DATA = EXTERNAL_BASE_URL === undefined;

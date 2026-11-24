@@ -4,6 +4,7 @@ import { HOME_COPY, pathAndQuery, tokenValue, visibleMap } from './home-e2e';
 import { expectMapSelection } from './map-dim-e2e';
 import mapGrid from '../lib/map/map-grid.json' with { type: 'json' };
 import { mapRegions, REGION_COUNT } from './map-regions-e2e';
+import { REGION_DETAILS_TEST_ID } from './region-ids';
 
 // Shared fixtures for the FE-4 PR 3 region sheet / panel Playwright specs
 // (home-region*.e2e.ts, home-head.e2e.ts). Content is the vendored mock
@@ -127,6 +128,28 @@ export function regionPanel(page: Page, name: string): Locator {
 
 export function regionLink(page: Page, key: string, lang = 'en'): Locator {
 	return visibleMap(page).locator(`a[href="/${lang}/regions/${key}"]`);
+}
+
+// The parts of a region's details (in the sheet or the panel), found by
+// their place in RegionDetails rather than by text, so they work with any
+// content bundle (the nightly run against demo has the real one).
+export function regionDetailsParts(container: Locator) {
+	const details = container.getByTestId(REGION_DETAILS_TEST_ID);
+	return {
+		count: details.locator('.title-row .count'),
+		description: details.locator('p.description'),
+		chips: details.locator('.chips li'),
+		rows: details.locator('.rows a')
+	};
+}
+
+// The "N variations" count is the number of rows listed, whatever the data.
+export async function expectCountMatchesRows(container: Locator) {
+	const { count, rows } = regionDetailsParts(container);
+	await expect(count, 'want the count to start with a number').toHaveText(/^\d+\D/);
+	const shown = parseInt(await count.innerText(), 10);
+	expect(shown, 'got a region with no variations').toBeGreaterThan(0);
+	await expect(rows, `want ${shown} rows, as the count says`).toHaveCount(shown);
 }
 
 export function rowLinks(container: Locator, lang: string, region: RegionCopy): Locator[] {

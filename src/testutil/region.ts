@@ -21,7 +21,7 @@ export type RegionDetailsProps = {
 	mediaBaseUrl: string | undefined;
 };
 
-export const REGION_DETAILS_TEST_ID = 'region-details';
+export { REGION_DETAILS_TEST_ID } from './region-ids';
 
 export function dishesIn(lang: Lang): Dish[] {
 	return buildView(bundle, lang).dishes;

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '../testutil/e2e-test';
+import { MOCK_DATA_TAG } from '../testutil/e2e-target';
 import { LOCALES } from '../testutil/e2e';
 import {
 	boxOf,
@@ -66,24 +67,30 @@ async function expectUrl(page: Page, want: string) {
 
 test.describe('Popular (mobile): the unfiltered list', () => {
 	for (const lang of LOCALES) {
-		test(`${lang}: every dish in dish order, "${POPULAR_COPY[lang].dishes[9]}", nothing active`, async ({
-			page
-		}) => {
-			skipOnDesktop(page);
-			await openPopular(page, lang);
-			await expectDishes(page, DISH_KEYS, 'unfiltered');
-			await expect(resultCount(page)).toHaveText(POPULAR_COPY[lang].dishes[9]);
-			await expectFiltersButton(page, lang, 0);
-			expect(await pressedChips(page, lang, QUICK_IDS)).toEqual([]);
-			await expect(noMatch(page)).toHaveCount(0);
-		});
+		test(
+			`${lang}: every dish in dish order, "${POPULAR_COPY[lang].dishes[9]}", nothing active`,
+			{ tag: MOCK_DATA_TAG },
+			async ({ page }) => {
+				skipOnDesktop(page);
+				await openPopular(page, lang);
+				await expectDishes(page, DISH_KEYS, 'unfiltered');
+				await expect(resultCount(page)).toHaveText(POPULAR_COPY[lang].dishes[9]);
+				await expectFiltersButton(page, lang, 0);
+				expect(await pressedChips(page, lang, QUICK_IDS)).toEqual([]);
+				await expect(noMatch(page)).toHaveCount(0);
+			}
+		);
 
-		test(`${lang}: the cards show the localized dish names`, async ({ page }) => {
-			skipOnDesktop(page);
-			await openPopular(page, lang);
-			const names = DISH_KEYS.map((key) => DISH_NAMES[lang][key]);
-			await expect(dishCards(page).locator('h3')).toHaveText(names);
-		});
+		test(
+			`${lang}: the cards show the localized dish names`,
+			{ tag: MOCK_DATA_TAG },
+			async ({ page }) => {
+				skipOnDesktop(page);
+				await openPopular(page, lang);
+				const names = DISH_KEYS.map((key) => DISH_NAMES[lang][key]);
+				await expect(dishCards(page).locator('h3')).toHaveText(names);
+			}
+		);
 	}
 
 	test('no sort control on the tab', async ({ page }) => {
@@ -105,7 +112,7 @@ test.describe('Popular (mobile): the unfiltered list', () => {
 	});
 });
 
-test.describe('Popular (mobile): quick chips drive the URL', () => {
+test.describe('Popular (mobile): quick chips drive the URL', { tag: MOCK_DATA_TAG }, () => {
 	for (const lang of LOCALES) {
 		test(`${lang}: Vegetarian on writes f=vegetarian and filters the list, no reload`, async ({
 			page
@@ -165,7 +172,7 @@ test.describe('Popular (mobile): quick chips drive the URL', () => {
 	});
 });
 
-test.describe('Popular (mobile): the URL restores the state', () => {
+test.describe('Popular (mobile): the URL restores the state', { tag: MOCK_DATA_TAG }, () => {
 	test('a reload shows the same dishes and pressed chips', async ({ page }) => {
 		skipOnDesktop(page);
 		await openPopular(page, 'en', '&f=quick&f=desserts');
@@ -205,7 +212,7 @@ test.describe('Popular (mobile): the URL restores the state', () => {
 	}
 });
 
-test.describe('Popular (mobile): nothing matches', () => {
+test.describe('Popular (mobile): nothing matches', { tag: MOCK_DATA_TAG }, () => {
 	for (const lang of LOCALES) {
 		const copy = POPULAR_COPY[lang];
 		test(`${lang}: "${copy.noMatch}" and "${copy.clearAll}" restores the full list`, async ({

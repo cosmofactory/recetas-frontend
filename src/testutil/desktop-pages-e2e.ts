@@ -94,9 +94,10 @@ export function columnOf(grid: GridInfo, box: Box): number {
 	return grid.tracks.length;
 }
 
-// The visible photo placeholder inside `container` (no MEDIA_BASE_URL in E2E).
+// The visible photo box inside `container`: the striped placeholder on the
+// mock run (no MEDIA_BASE_URL), the <picture> on a deployment with photos.
 export const visiblePhoto = (container: Locator): Locator =>
-	container.locator('.placeholder').filter({ visible: true }).first();
+	container.locator('picture, .placeholder').filter({ visible: true }).first();
 
 export async function photoHeight(container: Locator, what: string): Promise<number> {
 	return (await boxOf(visiblePhoto(container), what)).height;

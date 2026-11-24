@@ -59,9 +59,21 @@ export async function settleSheet(page: Page) {
 
 const below = (point: Point, dy: number): Point => ({ x: point.x, y: point.y + dy });
 
+// `target`'s centre, where a drag starts. A press off the screen reaches
+// nothing, so the sheet would just stay where it is: fail on that instead
+// (a peek sheet shows less of its list on a short phone or with taller rows).
+async function dragStart(page: Page, target: Locator): Promise<Point> {
+	const from = centre(await boxOf(target, 'drag start'));
+	const height = page.viewportSize()?.height ?? 0;
+	expect(from.y, `got the drag start at y ${from.y}, below the ${height}px screen`).toBeLessThan(
+		height
+	);
+	return from;
+}
+
 // Drags from `target`'s centre by `dy` (positive: down) and releases.
 export async function dragBy(page: Page, target: Locator, dy: number, how: DragHow = {}) {
-	const from = centre(await boxOf(target, 'drag start'));
+	const from = await dragStart(page, target);
 	if (how.input === 'mouse') return mouseDrag(page, from, below(from, dy), how.pace);
 	const drag = await TouchDrag.start(page, from);
 	await drag.moveTo(below(from, dy), how.pace);
@@ -70,7 +82,7 @@ export async function dragBy(page: Page, target: Locator, dy: number, how: DragH
 
 // A finger held down after travelling `dy` from `target`'s centre; end() it.
 export async function holdDrag(page: Page, target: Locator, dy: number): Promise<TouchDrag> {
-	const from = centre(await boxOf(target, 'drag start'));
+	const from = await dragStart(page, target);
 	const drag = await TouchDrag.start(page, from);
 	await drag.moveTo(below(from, dy));
 	// Chromium delivers the last touchmove with the next animation frame.

@@ -1,6 +1,7 @@
 import { expect, test, type APIRequestContext, type TestInfo } from '../testutil/e2e-test';
 import { getRaw, LOCALES, type Locale } from '../testutil/e2e';
 import { PUBLIC_ORIGIN } from '../testutil/e2e-origin';
+import { ON_MOCK_DATA } from '../testutil/e2e-target';
 import { metaContents, startTags } from '../testutil/html';
 
 // FE-8 PR 1 (stage FE-8 -> SEO: meta tags; the canonical/hreflang audit),
@@ -18,7 +19,9 @@ import { metaContents, startTags } from '../testutil/html';
 // - og:image: an absolute URL; the mock catalog has no photos and the e2e
 //   server no MEDIA_BASE_URL, so here it is the static fallback
 //   <PUBLIC_ORIGIN>/og-default.png, which the server must serve (the hero
-//   case is in og-image.spec.ts and the page SSR specs);
+//   case is in og-image.spec.ts and the page SSR specs). A deployment with
+//   photos (the nightly run against demo) may show the page's own hero
+//   instead: one of the URLs its above-the-fold <img> lists;
 // - twitter:card `summary_large_image`.
 // Canonical audit: query-state URLs (?f, ?dish, any other param) get a
 // canonical without the query, except the allow-listed ?tab=popular on the
@@ -55,17 +58,32 @@ const decode = (text: string) => text.replace(/&(amp|quot|#39|#x27|lt|gt);/g, (e
 
 type Head = {
 	html: string;
+	// Every URL the page's hero (its one fetchpriority="high" <img>) lists.
+	heroImages: string[];
 	titles: string[];
 	canonicals: string[];
 	alternates: { hreflang: string; href: string }[];
 	meta: (key: string) => string[];
 };
 
+function heroImagesIn(page: string): string[] {
+	const heroes = startTags(page).filter(
+		(t) => t.name === 'img' && t.attrs.fetchpriority === 'high'
+	);
+	return heroes.flatMap((img) => [
+		decode(img.attrs.src ?? ''),
+		...decode(img.attrs.srcset ?? '')
+			.split(',')
+			.map((candidate) => candidate.trim().split(/\s+/)[0])
+	]);
+}
+
 function parseHead(page: string): Head {
 	const html = /<head\b[^>]*>([\s\S]*?)<\/head>/.exec(page)?.[1] ?? '';
 	const links = startTags(html).filter((t) => t.name === 'link');
 	return {
 		html,
+		heroImages: heroImagesIn(page),
 		titles: [...html.matchAll(/<title\b[^>]*>([\s\S]*?)<\/title>/g)].map((m) => decode(m[1])),
 		canonicals: links.filter((l) => l.attrs.rel === 'canonical').map((l) => decode(l.attrs.href)),
 		alternates: links
@@ -99,8 +117,19 @@ function expectSharedTags(head: Head, locale: Locale, type: 'website' | 'article
 	expect(only(head, 'og:locale')).toBe(OG_LOCALE[locale]);
 	const others = LOCALES.filter((l) => l !== locale).map((l) => OG_LOCALE[l]);
 	expect(head.meta('og:locale:alternate').sort(), 'want the other two locales').toEqual(others);
-	expect(only(head, 'og:image')).toBe(FALLBACK_IMAGE);
+	expectOgImage(head);
 	expect(only(head, 'twitter:card')).toBe('summary_large_image');
+}
+
+// The fallback; with photos (a deployment, never the mock run), the page's
+// own hero may stand in for it.
+function expectOgImage(head: Head) {
+	const image = only(head, 'og:image');
+	if (image === FALLBACK_IMAGE) return;
+	expect(ON_MOCK_DATA, `got og:image ${image}, want ${FALLBACK_IMAGE} (no photos)`).toBe(false);
+	expect(head.heroImages, `got og:image ${image}, want the fallback or this page's hero`).toContain(
+		image
+	);
 }
 
 // The canonical (once), og:url = canonical, and the four alternates, all on
