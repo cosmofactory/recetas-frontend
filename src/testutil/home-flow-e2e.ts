@@ -42,7 +42,11 @@ export async function seeAllFromSheet(page: Page, lang: VariationsLocale, dishKe
 // sheet open, then its Variations page. Returns the home URL and offset.
 export async function leaveScrolledHome(page: Page): Promise<HomeState> {
 	await gotoHydrated(page, HOME_WITH_FILTERS);
-	const { scrollTop } = await scrollListToEnd(page);
+	await scrollListToEnd(page);
+	// The click below would scroll a partly hidden card into view first, so
+	// reveal it now and record the offset the home is really left at.
+	await dishCard(page, LOWEST_DISH).scrollIntoViewIfNeeded();
+	const { scrollTop } = await listScroller(page);
 	expect(scrollTop, 'want the Popular list scrolled before leaving').toBeGreaterThan(0);
 	await seeAllFromSheet(page, 'en', LOWEST_DISH);
 	return { url: `${HOME_WITH_FILTERS}&dish=${LOWEST_DISH}`, scrollTop };
