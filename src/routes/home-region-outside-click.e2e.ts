@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '../testutil/e2e-test';
+import { expect, test, type Locator, type Page } from '../testutil/e2e-test';
 import {
 	desktopSearchField,
 	desktopSearchInput,
@@ -31,6 +31,7 @@ import {
 	GALICIA_EN,
 	historyLength,
 	recipeUrl,
+	regionDetailsParts,
 	regionLink,
 	regionPanel,
 	regionSheet,
@@ -147,16 +148,19 @@ test.describe('desktop: clicks that keep the selected region', () => {
 		await expectStillSelected(page, GAL, entries);
 	});
 
-	const panelTexts = [
-		{ name: 'the region description', text: GALICIA_EN.description },
-		{ name: 'a regional dish chip (a plain label)', text: GALICIA_EN.chips[0] },
-		{ name: 'the variation count', text: GALICIA_EN.count }
+	const panelTexts: { name: string; part: (panel: Locator) => Locator }[] = [
+		{ name: 'the region description', part: (panel) => regionDetailsParts(panel).description },
+		{
+			name: 'a regional dish chip (a plain label)',
+			part: (panel) => regionDetailsParts(panel).chips.first()
+		},
+		{ name: 'the variation count', part: (panel) => regionDetailsParts(panel).count }
 	];
 	for (const item of panelTexts) {
 		test(`a click on ${item.name} in the panel`, async ({ page }) => {
 			await selectGalicia(page);
 			const entries = await historyLength(page);
-			await galiciaPanel(page).getByText(item.text, { exact: true }).click();
+			await item.part(galiciaPanel(page)).click();
 			await expectStillSelected(page, GAL, entries);
 		});
 	}

@@ -1,5 +1,13 @@
 import { expect, test, type Page } from '../testutil/e2e-test';
-import { getRaw, htmlLang, LOCALES, localePath, PAGES, type Locale } from '../testutil/e2e';
+import {
+	getRaw,
+	htmlLang,
+	LOCALES,
+	localePath,
+	pageTags,
+	PAGES,
+	type Locale
+} from '../testutil/e2e';
 import { PUBLIC_ORIGIN } from '../testutil/e2e-origin';
 import { skipAgainstDeployment } from '../testutil/e2e-target';
 import { bindShortWords } from '#lib/i18n/typography.ts';
@@ -48,7 +56,7 @@ test.describe('pages render server-side', () => {
 	for (const p of PAGES) {
 		for (const locale of LOCALES) {
 			const url = localePath(locale, p.path);
-			test(`${url} renders server-side in ${locale}`, async ({ request }) => {
+			test(`${url} renders server-side in ${locale}`, { tag: pageTags(p) }, async ({ request }) => {
 				const res = await getRaw(request, url);
 				expect(res.status(), `got status ${res.status()}, want 200`).toBe(200);
 				const html = await res.text();
@@ -69,13 +77,20 @@ test.describe('pages render server-side', () => {
 test.describe('the URL wins over cookie and Accept-Language', () => {
 	for (const p of PAGES) {
 		const url = localePath('ru', p.path);
-		test(`${url} stays Russian with lang=es and Accept-Language es`, async ({ request }) => {
-			const res = await getRaw(request, url, { cookie: 'lang=es', 'accept-language': 'es-ES,es' });
-			expect(res.status(), `got status ${res.status()}, want 200 (no redirect)`).toBe(200);
-			const html = await res.text();
-			expect(htmlLang(html), 'got the wrong <html lang>, want ru').toBe('ru');
-			expect(html, `got no Russian "${p.text.ru}"`).toContain(p.text.ru);
-		});
+		test(
+			`${url} stays Russian with lang=es and Accept-Language es`,
+			{ tag: pageTags(p) },
+			async ({ request }) => {
+				const res = await getRaw(request, url, {
+					cookie: 'lang=es',
+					'accept-language': 'es-ES,es'
+				});
+				expect(res.status(), `got status ${res.status()}, want 200 (no redirect)`).toBe(200);
+				const html = await res.text();
+				expect(htmlLang(html), 'got the wrong <html lang>, want ru').toBe('ru');
+				expect(html, `got no Russian "${p.text.ru}"`).toContain(p.text.ru);
+			}
+		);
 	}
 
 	test(
@@ -97,23 +112,27 @@ test.describe('head tags (server-rendered)', () => {
 	for (const p of PAGES) {
 		for (const locale of LOCALES) {
 			const url = localePath(locale, p.path);
-			test(`${url} has a canonical URL and en/es/ru + x-default alternates`, async ({ page }) => {
-				await page.goto(url);
-				const head = await readHeadLinks(page);
-				expect(head.canonical.length, `got canonicals ${JSON.stringify(head.canonical)}`).toBe(1);
-				expectHeadUrl(head.canonical[0], url, 'canonical');
-				const langs = head.alternates.map((a) => a.hreflang).sort();
-				expect(langs, `got hreflangs ${JSON.stringify(langs)}`).toEqual([
-					'en',
-					'es',
-					'ru',
-					'x-default'
-				]);
-				for (const a of head.alternates) {
-					const target = a.hreflang === 'x-default' ? 'en' : a.hreflang;
-					expectHeadUrl(a.href, localePath(target, p.path), `hreflang=${a.hreflang}`);
+			test(
+				`${url} has a canonical URL and en/es/ru + x-default alternates`,
+				{ tag: pageTags(p) },
+				async ({ page }) => {
+					await page.goto(url);
+					const head = await readHeadLinks(page);
+					expect(head.canonical.length, `got canonicals ${JSON.stringify(head.canonical)}`).toBe(1);
+					expectHeadUrl(head.canonical[0], url, 'canonical');
+					const langs = head.alternates.map((a) => a.hreflang).sort();
+					expect(langs, `got hreflangs ${JSON.stringify(langs)}`).toEqual([
+						'en',
+						'es',
+						'ru',
+						'x-default'
+					]);
+					for (const a of head.alternates) {
+						const target = a.hreflang === 'x-default' ? 'en' : a.hreflang;
+						expectHeadUrl(a.href, localePath(target, p.path), `hreflang=${a.hreflang}`);
+					}
 				}
-			});
+			);
 		}
 	}
 });

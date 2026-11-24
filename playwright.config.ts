@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 import { APP_ENV } from './src/testutil/e2e-app-env';
 import { PUBLIC_ORIGIN } from './src/testutil/e2e-origin';
-import { EXTERNAL_BASE_URL } from './src/testutil/e2e-target';
+import { EXTERNAL_BASE_URL, MOCK_DATA_TAG } from './src/testutil/e2e-target';
 
 const PORT = 4173;
 const LOCAL_BASE_URL = `http://127.0.0.1:${PORT}`;
@@ -39,6 +39,9 @@ export default defineConfig({
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 1 : 0,
 	reporter: process.env.CI ? [['github'], ['list']] : 'list',
+	// A deployment serves its own content, not the mock bundle: tests tagged
+	// MOCK_DATA_TAG assert the mock bundle's data, so they don't run there.
+	grepInvert: EXTERNAL_BASE_URL ? new RegExp(MOCK_DATA_TAG) : undefined,
 	// E2E_BASE_URL (e.g. the nightly run against demo) targets a deployment
 	// and starts no server; specs that need the local one skip themselves
 	// (skipAgainstDeployment in src/testutil/e2e-target.ts).

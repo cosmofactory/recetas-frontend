@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page, type TestInfo } from '../testutil/e2e-test';
+import { MOCK_DATA_TAG } from '../testutil/e2e-target';
 import { LOCALES } from '../testutil/e2e';
 import { expectNoVariationStandsOut } from '../testutil/equal-variations-e2e';
 import {
@@ -224,40 +225,53 @@ test.describe('Filters sheet (mobile): opening', () => {
 test.describe('Filters sheet (mobile): chips drive the URL', () => {
 	test.beforeEach(({ page }) => skipOnDesktop(page));
 
-	test('a sheet chip writes f=, keeps the sheet open and focus on the chip, replaces the entry', async ({
-		page
-	}) => {
-		await openPopular(page, 'en');
-		await markDocument(page);
-		const entries = await historyLength(page);
-		await openFiltersSheet(page, 'en');
-		await sheetChip(page, 'en', 'seafood').click();
-		await expectUrl(page, '/en/?tab=popular&f=seafood');
-		await expect(sheetChip(page, 'en', 'seafood')).toHaveAttribute('aria-pressed', 'true');
-		await expectFiltersSheetOpen(page, 'en');
-		await expect(sheetChip(page, 'en', 'seafood')).toBeFocused();
-		await expectDishes(page, ['paella'], 'seafood');
-		await expectFiltersButton(page, 'en', 1);
-		expect(await historyLength(page), 'want the entry replaced').toBe(entries);
-		await expectSameDocument(page, 'after a sheet chip press');
-	});
+	test(
+		'a sheet chip writes f=, keeps the sheet open and focus on the chip, replaces the entry',
+		{ tag: MOCK_DATA_TAG },
+		async ({ page }) => {
+			await openPopular(page, 'en');
+			await markDocument(page);
+			const entries = await historyLength(page);
+			await openFiltersSheet(page, 'en');
+			await sheetChip(page, 'en', 'seafood').click();
+			await expectUrl(page, '/en/?tab=popular&f=seafood');
+			await expect(sheetChip(page, 'en', 'seafood')).toHaveAttribute('aria-pressed', 'true');
+			await expectFiltersSheetOpen(page, 'en');
+			await expect(sheetChip(page, 'en', 'seafood')).toBeFocused();
+			await expectDishes(page, ['paella'], 'seafood');
+			await expectFiltersButton(page, 'en', 1);
+			expect(await historyLength(page), 'want the entry replaced').toBe(entries);
+			await expectSameDocument(page, 'after a sheet chip press');
+		}
+	);
 
-	test('OR within a group, AND across groups, canonical URL', async ({ page }) => {
-		await openPopular(page, 'en');
-		await openFiltersSheet(page, 'en');
-		await sheetChip(page, 'en', 'seafood').click();
-		await expectUrl(page, '/en/?tab=popular&f=seafood');
-		await sheetChip(page, 'en', 'vegetarian').click();
-		await expectUrl(page, '/en/?tab=popular&f=vegetarian&f=seafood');
-		const vegOrSeafood = ['tortilla', 'paella', 'gazpacho', 'arrozleche', 'allioli', 'arrozblanco'];
-		await expectDishes(page, vegOrSeafood, 'veg OR seafood');
-		await sheetChip(page, 'en', 'mains').click();
-		await expectUrl(page, '/en/?tab=popular&f=vegetarian&f=seafood&f=mains');
-		await expectDishes(page, ['paella', 'arrozblanco'], '(veg OR seafood) AND mains');
-		await expectFiltersButton(page, 'en', 3);
-	});
+	test(
+		'OR within a group, AND across groups, canonical URL',
+		{ tag: MOCK_DATA_TAG },
+		async ({ page }) => {
+			await openPopular(page, 'en');
+			await openFiltersSheet(page, 'en');
+			await sheetChip(page, 'en', 'seafood').click();
+			await expectUrl(page, '/en/?tab=popular&f=seafood');
+			await sheetChip(page, 'en', 'vegetarian').click();
+			await expectUrl(page, '/en/?tab=popular&f=vegetarian&f=seafood');
+			const vegOrSeafood = [
+				'tortilla',
+				'paella',
+				'gazpacho',
+				'arrozleche',
+				'allioli',
+				'arrozblanco'
+			];
+			await expectDishes(page, vegOrSeafood, 'veg OR seafood');
+			await sheetChip(page, 'en', 'mains').click();
+			await expectUrl(page, '/en/?tab=popular&f=vegetarian&f=seafood&f=mains');
+			await expectDishes(page, ['paella', 'arrozblanco'], '(veg OR seafood) AND mains');
+			await expectFiltersButton(page, 'en', 3);
+		}
+	);
 
-	test('a pressed sheet chip toggles off again', async ({ page }) => {
+	test('a pressed sheet chip toggles off again', { tag: MOCK_DATA_TAG }, async ({ page }) => {
 		await openPopular(page, 'en', '&f=easter');
 		await openFiltersSheet(page, 'en');
 		await sheetChip(page, 'en', 'easter').click();
@@ -277,20 +291,22 @@ test.describe('Filters sheet (mobile): chips drive the URL', () => {
 		expect(await sheetPressedIds(page, 'es', FILTER_IDS)).toEqual(['vegetarian']);
 	});
 
-	test('sheet → quick chips: Quick and Summer pressed in the sheet press the bar chips', async ({
-		page
-	}) => {
-		await openPopular(page, 'ru');
-		await openFiltersSheet(page, 'ru');
-		await sheetChip(page, 'ru', 'summer').click();
-		await expectUrl(page, '/ru/?tab=popular&f=summer');
-		await sheetChip(page, 'ru', 'quick').click();
-		await expectUrl(page, '/ru/?tab=popular&f=quick&f=summer');
-		await showResults(page, 'ru').click();
-		await expectFiltersSheetClosed(page, 'ru');
-		expect(await pressedChips(page, 'ru', QUICK_IDS)).toEqual(['quick', 'summer']);
-		await expectDishes(page, ['gazpacho'], 'quick AND summer');
-	});
+	test(
+		'sheet → quick chips: Quick and Summer pressed in the sheet press the bar chips',
+		{ tag: MOCK_DATA_TAG },
+		async ({ page }) => {
+			await openPopular(page, 'ru');
+			await openFiltersSheet(page, 'ru');
+			await sheetChip(page, 'ru', 'summer').click();
+			await expectUrl(page, '/ru/?tab=popular&f=summer');
+			await sheetChip(page, 'ru', 'quick').click();
+			await expectUrl(page, '/ru/?tab=popular&f=quick&f=summer');
+			await showResults(page, 'ru').click();
+			await expectFiltersSheetClosed(page, 'ru');
+			expect(await pressedChips(page, 'ru', QUICK_IDS)).toEqual(['quick', 'summer']);
+			await expectDishes(page, ['gazpacho'], 'quick AND summer');
+		}
+	);
 
 	test('a sheet-only filter turned off in the sheet clears the bar count', async ({ page }) => {
 		await openPopular(page, 'en', '&f=pork');
@@ -303,18 +319,22 @@ test.describe('Filters sheet (mobile): chips drive the URL', () => {
 
 	for (const lang of LOCALES) {
 		const clearAll = POPULAR_COPY[lang].clearAll;
-		test(`${lang}: "${clearAll}" empties the filters, the sheet stays open`, async ({ page }) => {
-			await openPopular(page, lang, '&f=vegetarian&f=summer');
-			const entries = await historyLength(page);
-			await openFiltersSheet(page, lang);
-			await clearAllInSheet(page, lang).click();
-			await expectUrl(page, `/${lang}/?tab=popular`);
-			expect(await sheetPressedIds(page, lang, FILTER_IDS)).toEqual([]);
-			await expectFiltersSheetOpen(page, lang);
-			await expect.poll(() => focusIsIn(filtersSheet(page, lang))).toBe(true);
-			await expectDishes(page, DISH_KEYS, 'after Clear all');
-			expect(await historyLength(page), 'want the entry replaced').toBe(entries);
-		});
+		test(
+			`${lang}: "${clearAll}" empties the filters, the sheet stays open`,
+			{ tag: MOCK_DATA_TAG },
+			async ({ page }) => {
+				await openPopular(page, lang, '&f=vegetarian&f=summer');
+				const entries = await historyLength(page);
+				await openFiltersSheet(page, lang);
+				await clearAllInSheet(page, lang).click();
+				await expectUrl(page, `/${lang}/?tab=popular`);
+				expect(await sheetPressedIds(page, lang, FILTER_IDS)).toEqual([]);
+				await expectFiltersSheetOpen(page, lang);
+				await expect.poll(() => focusIsIn(filtersSheet(page, lang))).toBe(true);
+				await expectDishes(page, DISH_KEYS, 'after Clear all');
+				expect(await historyLength(page), 'want the entry replaced').toBe(entries);
+			}
+		);
 	}
 });
 
@@ -357,16 +377,20 @@ test.describe('Filters sheet (mobile): closing', () => {
 		}
 	);
 
-	test('closing after a chip press: the list behind shows the new filters', async ({ page }) => {
-		await openPopular(page, 'en');
-		await openFiltersSheet(page, 'en');
-		await sheetChip(page, 'en', 'winter').click();
-		await expectUrl(page, '/en/?tab=popular&f=winter');
-		await page.keyboard.press('Escape');
-		await expectFiltersSheetClosed(page, 'en');
-		await expectDishes(page, ['cocido'], 'winter');
-		await expectFiltersButton(page, 'en', 1);
-	});
+	test(
+		'closing after a chip press: the list behind shows the new filters',
+		{ tag: MOCK_DATA_TAG },
+		async ({ page }) => {
+			await openPopular(page, 'en');
+			await openFiltersSheet(page, 'en');
+			await sheetChip(page, 'en', 'winter').click();
+			await expectUrl(page, '/en/?tab=popular&f=winter');
+			await page.keyboard.press('Escape');
+			await expectFiltersSheetClosed(page, 'en');
+			await expectDishes(page, ['cocido'], 'winter');
+			await expectFiltersButton(page, 'en', 1);
+		}
+	);
 });
 
 test.describe('Filters sheet (mobile): keyboard and layout', () => {
@@ -548,42 +572,52 @@ test.describe('dish sheet (mobile): opening', () => {
 		await expectNoVariationStandsOut(rows, 'dish sheet rows');
 	});
 
-	test('the card link keeps the filters and opens the sheet over the filtered list', async ({
-		page
-	}) => {
-		await openPopular(page, 'en', '&f=vegetarian');
-		await tapCard(page, 'gazpacho');
-		expect(pathAndQuery(page)).toBe('/en/?tab=popular&f=vegetarian&dish=gazpacho');
-		await expectSheetPeek(page, 'Cold soups');
-		await expectDishes(page, VEGETARIAN_DISHES, 'behind the sheet');
-	});
+	test(
+		'the card link keeps the filters and opens the sheet over the filtered list',
+		{ tag: MOCK_DATA_TAG },
+		async ({ page }) => {
+			await openPopular(page, 'en', '&f=vegetarian');
+			await tapCard(page, 'gazpacho');
+			expect(pathAndQuery(page)).toBe('/en/?tab=popular&f=vegetarian&dish=gazpacho');
+			await expectSheetPeek(page, 'Cold soups');
+			await expectDishes(page, VEGETARIAN_DISHES, 'behind the sheet');
+		}
+	);
 
 	// FE-11: only a card that opens a sheet keeps focus (reset "false"); a
 	// one-variation dish's card opens its recipe, another page, so it keeps
 	// Kit's default focus reset (WCAG 2.4.3).
-	test('the cards that open a sheet opt out of focus reset (data-sveltekit-reset="false")', async ({
-		page
-	}) => {
-		await openPopular(page, 'en');
-		const resets = await page
-			.locator('[data-testid="dish-card"]')
-			.evaluateAll((cards) =>
-				cards.map((c) => c.closest('[data-sveltekit-reset]')?.getAttribute('data-sveltekit-reset'))
-			);
-		const want = DISH_KEYS.map((key) => (key === 'arrozblanco' ? undefined : 'false'));
-		expect(resets).toEqual(want);
-	});
+	test(
+		'the cards that open a sheet opt out of focus reset (data-sveltekit-reset="false")',
+		{ tag: MOCK_DATA_TAG },
+		async ({ page }) => {
+			await openPopular(page, 'en');
+			const resets = await page
+				.locator('[data-testid="dish-card"]')
+				.evaluateAll((cards) =>
+					cards.map((c) =>
+						c.closest('[data-sveltekit-reset]')?.getAttribute('data-sveltekit-reset')
+					)
+				);
+			const want = DISH_KEYS.map((key) => (key === 'arrozblanco' ? undefined : 'false'));
+			expect(resets).toEqual(want);
+		}
+	);
 
 	test('a deep link opens the sheet in peek', { tag: '@layout' }, async ({ page }) => {
 		await openPopular(page, 'ru', '&dish=tortilla');
 		await expectSheetPeek(page, TORTILLA_SHEET.ru.name);
 	});
 
-	test('an unknown dish key opens nothing: the list, no error page', async ({ page }) => {
-		await openPopular(page, 'en', '&dish=bogus');
-		await expectSheetHidden(page);
-		await expectDishes(page, DISH_KEYS, 'unknown dish');
-	});
+	test(
+		'an unknown dish key opens nothing: the list, no error page',
+		{ tag: MOCK_DATA_TAG },
+		async ({ page }) => {
+			await openPopular(page, 'en', '&dish=bogus');
+			await expectSheetHidden(page);
+			await expectDishes(page, DISH_KEYS, 'unknown dish');
+		}
+	);
 
 	test('the handle toggles peek ↔ expanded; the URL and history stay', async ({ page }) => {
 		await openPopular(page, 'en', '&dish=tortilla');
@@ -737,7 +771,7 @@ test.describe('dish sheet (mobile): closing', () => {
 	});
 });
 
-test.describe('dish sheet (mobile): Back from the Variations page', () => {
+test.describe('dish sheet (mobile): Back from the Variations page', { tag: MOCK_DATA_TAG }, () => {
 	test.beforeEach(({ page }) => skipOnDesktop(page));
 
 	for (const lang of LOCALES) {

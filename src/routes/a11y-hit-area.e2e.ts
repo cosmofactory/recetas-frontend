@@ -3,6 +3,7 @@ import {
 	enterState,
 	gotoServerRender,
 	LOCALES,
+	mockDataTag,
 	NO_JS_STATES,
 	skipUnlessLayout,
 	stateTitle,
@@ -39,7 +40,7 @@ test.describe(`hit areas ${page44} on every route and overlay state`, () => {
 	for (const state of UI_STATES) {
 		for (const lang of LOCALES) {
 			const title = stateTitle(state, lang);
-			const tag = lang === 'en' ? ['@layout'] : [];
+			const tag = [...(lang === 'en' ? ['@layout'] : []), ...mockDataTag(state)];
 			test(`${title}: every target is ${page44}`, { tag }, async ({ page }) => {
 				skipUnlessLayout(page, state.layouts);
 				await enterState(page, state, lang);
@@ -54,7 +55,7 @@ test.describe(`hit areas ${page44} in the server render without JavaScript`, () 
 	for (const state of NO_JS_STATES) {
 		for (const lang of LOCALES) {
 			const title = `${stateTitle(state, lang)} (no JavaScript)`;
-			test(`${title}: every target is ${page44}`, async ({ page }) => {
+			test(`${title}: every target is ${page44}`, { tag: mockDataTag(state) }, async ({ page }) => {
 				await gotoServerRender(page, state, lang);
 				const found = await undersizedTargets(page);
 				expect(found, `got small hit areas on ${title}:\n${describeUndersized(found)}`).toEqual([]);

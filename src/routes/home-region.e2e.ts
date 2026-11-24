@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page, type TestInfo } from '../testutil/e2e-test';
 import { ABOUT_COPY } from '../testutil/about-copy';
+import { ON_MOCK_DATA } from '../testutil/e2e-target';
 import { LOCALES, type Locale } from '../testutil/e2e';
 import {
 	expectSameDocument,
@@ -17,6 +18,7 @@ import {
 	clickRegionCell,
 	emptyRegionPanel,
 	expectCleared,
+	expectCountMatchesRows,
 	expectEmptyPanel,
 	expectSheetExpanded,
 	expectSheetHidden,
@@ -28,6 +30,7 @@ import {
 	recipeUrl,
 	recordedSheet,
 	recordSheet,
+	regionDetailsParts,
 	regionLink,
 	regionPanel,
 	regionSheet,
@@ -97,8 +100,11 @@ function skipUnlessDesktop(page: Page) {
 	test.skip(!isDesktopPage(page), 'desktop region panel (≥ 860px)');
 }
 
+// Any content: the count matches the rows. The mock bundle: its exact copy.
 async function expectSheetShows(page: Page, lang: string, region: RegionCopy) {
 	const sheet = regionSheet(page);
+	await expectCountMatchesRows(sheet);
+	if (!ON_MOCK_DATA) return;
 	await expect(sheet.getByText(region.description, { exact: true })).toHaveCount(1);
 	await expect(sheet.getByText(region.count, { exact: true })).toHaveCount(1);
 	for (const link of rowLinks(sheet, lang, region)) await expect(link).toHaveCount(1);
@@ -330,8 +336,7 @@ test.describe('mobile region sheet without JavaScript', () => {
 			await page.goto('/ru/regions/gal');
 			await expectSheetPeek(page, GALICIA_RU.name);
 			await expectSheetShows(page, 'ru', GALICIA_RU);
-			const first = regionSheet(page).getByText(GALICIA_RU.description, { exact: true });
-			await expect(first).toBeInViewport();
+			await expect(regionDetailsParts(regionSheet(page)).description).toBeInViewport();
 		}
 	);
 
@@ -448,7 +453,9 @@ test.describe('desktop region panel without JavaScript', () => {
 		await page.goto('/ru/regions/gal');
 		const panel = regionPanel(page, GALICIA_RU.name);
 		await expect(panel).toBeVisible();
-		await expect(panel.getByText(GALICIA_RU.count, { exact: true })).toBeVisible();
+		await expect(regionDetailsParts(panel).count).toBeVisible();
+		await expectCountMatchesRows(panel);
+		if (ON_MOCK_DATA) await expect(regionDetailsParts(panel).count).toHaveText(GALICIA_RU.count);
 	});
 });
 

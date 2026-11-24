@@ -61,6 +61,15 @@ const CARD_PHOTO_PX = 130;
 const MOBILE_ONLY = 'the mobile Variations layout (< 860px)';
 const skipMobileOnly = ({ page }: { page: Page }) => skipOnDesktop(page, MOBILE_ONLY);
 
+// Browser Back from a Recipe page. The URL changes before the Variations
+// page renders, and the Recipe page has a back link too (to history.back()),
+// so wait for the Variations cards before using the page.
+async function backToVariations(page: Page, path: string) {
+	await page.goBack();
+	await expectUrl(page, path);
+	await expect(variationCards(page).first()).toBeVisible();
+}
+
 async function cardHrefs(page: Page): Promise<string[]> {
 	return variationCards(page).evaluateAll((cards) =>
 		cards.map((c) => c.getAttribute('href') ?? '')
@@ -221,8 +230,7 @@ test.describe('Variations page: back button', () => {
 		const home = await leaveScrolledHome(page);
 		await variationCards(page).first().click();
 		await page.waitForURL((url) => /^\/en\/dishes\/arrozleche\/[a-z]+$/.test(url.pathname));
-		await page.goBack();
-		await expectUrl(page, `/en/dishes/${LOWEST_DISH}`);
+		await backToVariations(page, `/en/dishes/${LOWEST_DISH}`);
 		await backLink(page, 'en').click();
 		await expectHomeRestored(page, home);
 	});
@@ -231,8 +239,7 @@ test.describe('Variations page: back button', () => {
 		await gotoHydrated(page, '/en/dishes/tortilla');
 		await variationCards(page).first().click();
 		await expectUrl(page, recipePath('en', 'tortilla', 'gal'));
-		await page.goBack();
-		await expectUrl(page, '/en/dishes/tortilla');
+		await backToVariations(page, '/en/dishes/tortilla');
 		await backLink(page, 'en').click();
 		await expectUrl(page, backFallback('en', 'tortilla'));
 	});

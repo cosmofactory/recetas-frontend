@@ -2,6 +2,7 @@ import { test } from '../testutil/e2e-test';
 import {
 	BOTH,
 	crossBrowserTag,
+	mockDataTag,
 	enterState,
 	gotoServerRender,
 	LOCALES,
@@ -28,7 +29,7 @@ test.describe('axe: every route and overlay state', () => {
 	for (const state of UI_STATES) {
 		for (const lang of LOCALES) {
 			const title = stateTitle(state, lang);
-			const tag = crossBrowserTag(state, lang);
+			const tag = [...crossBrowserTag(state, lang), ...mockDataTag(state)];
 			test(`${title} has no violations`, { tag }, async ({ page }) => {
 				skipUnlessLayout(page, state.layouts);
 				await enterState(page, state, lang);
@@ -44,7 +45,7 @@ test.describe('axe: the server render without JavaScript', () => {
 	for (const state of NO_JS_STATES) {
 		for (const lang of LOCALES) {
 			const title = `${stateTitle(state, lang)} (no JavaScript)`;
-			test(`${title} has no violations`, async ({ page }) => {
+			test(`${title} has no violations`, { tag: mockDataTag(state) }, async ({ page }) => {
 				await gotoServerRender(page, state, lang);
 				await expectNoViolations(page, title);
 			});

@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { focusDesktopSearch, typeInDesktopSearch, searchDropdown } from './desktop-search-e2e';
 import { LOCALES, type Locale } from './e2e';
+import { MOCK_DATA_TAG } from './e2e-target';
 import { isDesktopPage } from './home-e2e';
 import { openMenu } from './language-menu-e2e';
 import { filterSidebar, openFiltersSheet } from './popular-e2e';
@@ -37,6 +38,8 @@ export type UiState = {
 	enter?: (page: Page, lang: Locale) => Promise<void>;
 	// In the small subset that runs on WebKit and Firefox (stack.md F4).
 	crossBrowser?: boolean;
+	// The page exists in the mock bundle only (MOCK_DATA_TAG).
+	mockData?: boolean;
 };
 
 export const layoutOf = (page: Page): Layout => (isDesktopPage(page) ? 'desktop' : 'mobile');
@@ -179,16 +182,23 @@ export const UI_STATES: UiState[] = [
 	{ name: 'Variations', path: '/dishes/tortilla', layouts: BOTH },
 	{ name: 'Recipe', path: '/dishes/tortilla/gal', layouts: BOTH, crossBrowser: true },
 	// FE-11: Spanish (Spain-wide) variations and the Basics filter.
-	{ name: 'Variations, Spanish variations', path: '/dishes/allioli', layouts: BOTH },
+	{
+		name: 'Variations, Spanish variations',
+		path: '/dishes/allioli',
+		layouts: BOTH,
+		mockData: true
+	},
 	{
 		name: 'Recipe, Spanish variation',
 		path: '/dishes/allioli/esp/allioli-de-morter',
-		layouts: BOTH
+		layouts: BOTH,
+		mockData: true
 	},
 	{
 		name: 'Recipe, a dish with one variation',
 		path: '/dishes/arrozblanco/esp/arroz-blanco-con-tomate',
-		layouts: BOTH
+		layouts: BOTH,
+		mockData: true
 	},
 	{
 		name: 'Popular, Basics filter',
@@ -270,3 +280,5 @@ export const stateTitle = (state: UiState, lang: Locale) => `/${lang}${state.pat
 
 export const crossBrowserTag = (state: UiState, lang: Locale): string[] =>
 	state.crossBrowser && lang === 'en' ? ['@cross-browser'] : [];
+
+export const mockDataTag = (state: UiState): string[] => (state.mockData ? [MOCK_DATA_TAG] : []);

@@ -1,4 +1,5 @@
 import { expect, type APIRequestContext, type APIResponse } from '@playwright/test';
+import { MOCK_DATA_TAG } from './e2e-target';
 
 // Shared fixtures for the FE-1 i18n/routing Playwright tests.
 
@@ -17,6 +18,8 @@ export type PageFixture = {
 	path: string;
 	text: Record<Locale, string>;
 	h1: boolean;
+	// The page exists in the mock bundle only (MOCK_DATA_TAG).
+	mockData?: boolean;
 };
 
 export const PAGES: PageFixture[] = [
@@ -59,9 +62,13 @@ export const PAGES: PageFixture[] = [
 		name: 'Spanish recipe',
 		path: '/dishes/allioli/esp/allioli-de-morter',
 		text: { en: 'Allioli de morter', es: 'Allioli de morter', ru: 'Альиоли · Allioli de morter' },
-		h1: true
+		h1: true,
+		mockData: true
 	}
 ];
+
+// The tags of a test on `page`: MOCK_DATA_TAG when only the mock bundle has it.
+export const pageTags = (page: PageFixture): string[] => (page.mockData ? [MOCK_DATA_TAG] : []);
 
 // "/" -> "/ru/", "/dishes/tortilla" -> "/ru/dishes/tortilla".
 export function localePath(locale: string, path: string): string {

@@ -1,10 +1,12 @@
 name: Nightly Demo E2E
 
 # INF-2: the full Playwright matrix against the deployed demo, behind Caddy
-# and on the real Go API (seeded from content.design.json, the same data as
-# the mock bundle). No build and no local server: with E2E_BASE_URL set,
-# playwright.config.ts starts nothing, and specs that need the local server
-# call skipAgainstDeployment. Demo is public, so no secrets.
+# and on the real Go API, which serves recetas-infra's real content bundle
+# (content/demo/bundle.json, with photos), not the mock bundle. No build and
+# no local server: with E2E_BASE_URL set, playwright.config.ts starts
+# nothing and leaves out the tests tagged @mock-data (they assert the mock
+# bundle's content); specs that need the local server call
+# skipAgainstDeployment. Demo is public, so no secrets.
 on:
   # 04:43 UTC, off-peak in Spain and after CI's own nightly full matrix (03:17).
   schedule:
@@ -26,7 +28,7 @@ jobs:
     name: Demo E2E Shard ${{ matrix.shard }}/${{ strategy.job-total }}
     runs-on: ubuntu-latest
     # Every test goes over the network to demo, so allow more than CI's 30.
-    timeout-minutes: 45
+    timeout-minutes: 60
     # Does nothing until demo exists (the same variable as Deploy Demo).
     if: vars.DEPLOY_ENABLED == 'true'
     strategy:

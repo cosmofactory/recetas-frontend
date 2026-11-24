@@ -284,6 +284,9 @@ async function recipeFlow(page: Page) {
 	await expect(stepRows(page).first()).toHaveAttribute('aria-pressed', 'true');
 	await page.goBack();
 	await page.waitForURL((url) => url.pathname === '/en/dishes/tortilla');
+	// The URL changes before the Variations page has rendered; WebKit aborts
+	// a page.goto started while that navigation is still under way.
+	await expect(variationCards(page).first()).toBeVisible();
 }
 
 async function languageSwitch(page: Page) {
