@@ -48,7 +48,8 @@ import { historyLength } from '../testutil/region-e2e';
 // navigation to toggleFilterHref (same document); "Clear all" goes to
 // /:lang/?tab=popular. Card hrefs are /:lang/?tab=popular[&f=…]&dish=<key>.
 
-const VEGETARIAN_DISHES = ['tortilla', 'gazpacho', 'arrozleche'];
+// FE-11: Allioli and Arroz blanco con tomate are vegetarian too.
+const VEGETARIAN_DISHES = ['tortilla', 'gazpacho', 'arrozleche', 'allioli', 'arrozblanco'];
 
 async function openPopular(page: Page, lang: PopularLocale, query = '') {
 	await gotoHydrated(page, `/${lang}/?tab=popular${query}`);
@@ -65,13 +66,13 @@ async function expectUrl(page: Page, want: string) {
 
 test.describe('Popular (mobile): the unfiltered list', () => {
 	for (const lang of LOCALES) {
-		test(`${lang}: every dish in dish order, "${POPULAR_COPY[lang].dishes[7]}", nothing active`, async ({
+		test(`${lang}: every dish in dish order, "${POPULAR_COPY[lang].dishes[9]}", nothing active`, async ({
 			page
 		}) => {
 			skipOnDesktop(page);
 			await openPopular(page, lang);
 			await expectDishes(page, DISH_KEYS, 'unfiltered');
-			await expect(resultCount(page)).toHaveText(POPULAR_COPY[lang].dishes[7]);
+			await expect(resultCount(page)).toHaveText(POPULAR_COPY[lang].dishes[9]);
 			await expectFiltersButton(page, lang, 0);
 			expect(await pressedChips(page, lang, QUICK_IDS)).toEqual([]);
 			await expect(noMatch(page)).toHaveCount(0);
@@ -115,7 +116,7 @@ test.describe('Popular (mobile): quick chips drive the URL', () => {
 			await press(page, lang, 'vegetarian');
 			await expectUrl(page, `/${lang}/?tab=popular&f=vegetarian`);
 			await expectDishes(page, VEGETARIAN_DISHES, 'vegetarian');
-			await expect(resultCount(page)).toHaveText(POPULAR_COPY[lang].dishes[3]);
+			await expect(resultCount(page)).toHaveText(POPULAR_COPY[lang].dishes[5]);
 			await expect(quickChip(page, lang, 'vegetarian')).toHaveAttribute('aria-pressed', 'true');
 			await expectFiltersButton(page, lang, 1);
 			await expectSameDocument(page, 'after a chip press');
@@ -183,7 +184,7 @@ test.describe('Popular (mobile): the URL restores the state', () => {
 		await page.reload({ waitUntil: 'networkidle' });
 		await expectDishes(
 			page,
-			['tortilla', 'gazpacho', 'croquetas', 'torrijas'],
+			['tortilla', 'gazpacho', 'croquetas', 'torrijas', 'allioli', 'arrozblanco'],
 			'quick after reload'
 		);
 		await expect(quickChip(page, 'ru', 'quick')).toHaveAttribute('aria-pressed', 'true');
@@ -195,8 +196,9 @@ test.describe('Popular (mobile): the URL restores the state', () => {
 		}) => {
 			skipOnDesktop(page);
 			await openPopular(page, lang, '&f=vegetarian&f=quick');
-			await expectDishes(page, ['tortilla', 'gazpacho'], `${lang} vegetarian AND quick`);
-			const names = ['tortilla', 'gazpacho'].map((key) => DISH_NAMES[lang][key as 'tortilla']);
+			const want = ['tortilla', 'gazpacho', 'allioli', 'arrozblanco'] as const;
+			await expectDishes(page, want, `${lang} vegetarian AND quick`);
+			const names = want.map((key) => DISH_NAMES[lang][key]);
 			await expect(dishCards(page).locator('h3')).toHaveText(names);
 			expect(await pressedChips(page, lang, QUICK_IDS)).toEqual(['vegetarian', 'quick']);
 		});

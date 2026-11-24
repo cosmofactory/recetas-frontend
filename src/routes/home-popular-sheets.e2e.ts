@@ -114,7 +114,8 @@ import {
 //   keyboard (peek isn't modal); the Filters sheet opens above it, and
 //   Escape closes the topmost layer first (escape-layers.ts).
 
-const VEGETARIAN_DISHES = ['tortilla', 'gazpacho', 'arrozleche'];
+// FE-11: Allioli and Arroz blanco con tomate are vegetarian too.
+const VEGETARIAN_DISHES = ['tortilla', 'gazpacho', 'arrozleche', 'allioli', 'arrozblanco'];
 const TORTILLA_EN = TORTILLA_SHEET.en;
 // Enough Tabs to go round the whole Filters sheet: header, 12 chips, button.
 const FILTERS_SHEET_TABS = FILTER_IDS.length + 4;
@@ -248,10 +249,11 @@ test.describe('Filters sheet (mobile): chips drive the URL', () => {
 		await expectUrl(page, '/en/?tab=popular&f=seafood');
 		await sheetChip(page, 'en', 'vegetarian').click();
 		await expectUrl(page, '/en/?tab=popular&f=vegetarian&f=seafood');
-		await expectDishes(page, ['tortilla', 'paella', 'gazpacho', 'arrozleche'], 'veg OR seafood');
+		const vegOrSeafood = ['tortilla', 'paella', 'gazpacho', 'arrozleche', 'allioli', 'arrozblanco'];
+		await expectDishes(page, vegOrSeafood, 'veg OR seafood');
 		await sheetChip(page, 'en', 'mains').click();
 		await expectUrl(page, '/en/?tab=popular&f=vegetarian&f=seafood&f=mains');
-		await expectDishes(page, ['paella'], '(veg OR seafood) AND mains');
+		await expectDishes(page, ['paella', 'arrozblanco'], '(veg OR seafood) AND mains');
 		await expectFiltersButton(page, 'en', 3);
 	});
 
@@ -556,14 +558,20 @@ test.describe('dish sheet (mobile): opening', () => {
 		await expectDishes(page, VEGETARIAN_DISHES, 'behind the sheet');
 	});
 
-	test('the cards opt out of focus reset (data-sveltekit-reset="false")', async ({ page }) => {
+	// FE-11: only a card that opens a sheet keeps focus (reset "false"); a
+	// one-variation dish's card opens its recipe, another page, so it keeps
+	// Kit's default focus reset (WCAG 2.4.3).
+	test('the cards that open a sheet opt out of focus reset (data-sveltekit-reset="false")', async ({
+		page
+	}) => {
 		await openPopular(page, 'en');
 		const resets = await page
 			.locator('[data-testid="dish-card"]')
 			.evaluateAll((cards) =>
 				cards.map((c) => c.closest('[data-sveltekit-reset]')?.getAttribute('data-sveltekit-reset'))
 			);
-		expect(resets).toEqual(DISH_KEYS.map(() => 'false'));
+		const want = DISH_KEYS.map((key) => (key === 'arrozblanco' ? undefined : 'false'));
+		expect(resets).toEqual(want);
 	});
 
 	test('a deep link opens the sheet in peek', { tag: '@layout' }, async ({ page }) => {

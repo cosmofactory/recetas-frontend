@@ -7,6 +7,7 @@ import {
 	navigation,
 	RECIPE_ROUTE_ID,
 	REGION_ROUTE_ID,
+	SPAIN_WIDE_RECIPE_ROUTE_ID,
 	type NavigationSpec,
 	type FakeNavigation
 } from '../../testutil/navigation';
@@ -44,12 +45,30 @@ const POPULAR = '/en/?tab=popular';
 const REGION = '/en/regions/gal';
 const DISH = '/en/dishes/tortilla';
 const RECIPE = '/en/dishes/tortilla/gal';
+// FE-11: a Spanish variation's Recipe page has a recipe's depth (2).
+const SPANISH_RECIPE = '/en/dishes/allioli/esp/allioli-de-morter';
+const ONE_VARIATION_RECIPE = '/en/dishes/arrozblanco/esp/arroz-blanco-con-tomate';
 
 type Case = NavigationSpec & { name: string; want: Direction };
 
 const cases: Case[] = [
 	// Down the stack.
 	{ name: 'home → variations', from: HOME, to: DISH, want: 'push' },
+	// FE-11: the Spanish Recipe route is a recipe, depth 2.
+	{
+		name: 'variations → Spanish recipe',
+		from: '/en/dishes/allioli',
+		to: SPANISH_RECIPE,
+		want: 'push'
+	},
+	{
+		name: 'Popular → a one-variation dish’s recipe (its card)',
+		from: POPULAR,
+		to: ONE_VARIATION_RECIPE,
+		want: 'push'
+	},
+	{ name: 'Spanish recipe → Popular (back)', from: ONE_VARIATION_RECIPE, to: POPULAR, want: 'pop' },
+	{ name: 'Spanish recipe → regional recipe', from: SPANISH_RECIPE, to: RECIPE, want: 'none' },
 	{ name: 'Popular tab → variations', from: POPULAR, to: DISH, want: 'push' },
 	{ name: 'variations → recipe', from: DISH, to: RECIPE, want: 'push' },
 	{ name: 'home → recipe (a search result)', from: HOME, to: RECIPE, want: 'push' },
@@ -233,7 +252,13 @@ describe('PagePush wiring in the root layout', () => {
 // URL into the (home) route group (one layout keeps the header and map
 // mounted), which changes their ids to /[lang=lang]/(home)….
 describe('route ids the depth table is tested with', () => {
-	for (const id of [HOME_ROUTE_ID, REGION_ROUTE_ID, DISH_ROUTE_ID, RECIPE_ROUTE_ID]) {
+	for (const id of [
+		HOME_ROUTE_ID,
+		REGION_ROUTE_ID,
+		DISH_ROUTE_ID,
+		RECIPE_ROUTE_ID,
+		SPAIN_WIDE_RECIPE_ROUTE_ID
+	]) {
 		it(`${id} is a page in src/routes`, () => {
 			const file = `src/routes${id}/+page.svelte`;
 			expect(existsSync(repoFile(file)), `got no ${file}, want the route's page`).toBe(true);

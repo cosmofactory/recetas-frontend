@@ -25,7 +25,10 @@ export type BundleRegion = {
 };
 
 export type BundleVariation = {
+	// A region key, or "esp" for a Spanish variation (BE-9 D-ESP-6).
 	regionKey: string;
+	// Required exactly when regionKey is "esp".
+	variationSlug?: string;
 	recipeKey: string;
 	name: Localized;
 	description: Localized;

@@ -43,6 +43,10 @@ import {
 //   network), so the structure is checked element by element against
 //   sitemap 0.9's tUrl sequence (testutil/sitemap.ts, testutil/xml.ts).
 // - Backend down: 503, like every page (orHttpError).
+// - FE-11 (both READMEs -> "Spanish (Spain-wide) variations"): a Spanish
+//   variation's Recipe page is /:lang/dishes/:dishKey/esp/:variationSlug, and
+//   a dish with exactly one variation in total has no Variations page (its
+//   URL 301s to the recipe), so that dish URL is left out.
 
 const ROUTE = 'src/routes/sitemap.xml/+server.ts';
 const ORIGIN = 'https://asadorov.es';
@@ -101,13 +105,21 @@ async function statusOf(spec: SitemapSpec): Promise<number> {
 	}
 }
 
+type Variation = Dish['variations'][number];
+
+const recipeSuffix = (v: Variation) =>
+	v.regionKey === 'esp' ? `esp/${v.variationSlug}` : v.regionKey;
+
 function pagePaths(dishes: Dish[], regionKeys: string[]): string[] {
+	const withVariationsPage = dishes.filter((dish) => dish.variations.length > 1);
 	return [
 		'/',
 		'/?tab=popular',
 		...regionKeys.map((key) => `/regions/${key}`),
-		...dishes.map((dish) => `/dishes/${dish.key}`),
-		...dishes.flatMap((dish) => dish.variations.map((v) => `/dishes/${dish.key}/${v.regionKey}`))
+		...withVariationsPage.map((dish) => `/dishes/${dish.key}`),
+		...dishes.flatMap((dish) =>
+			dish.variations.map((v) => `/dishes/${dish.key}/${recipeSuffix(v)}`)
+		)
 	];
 }
 
@@ -157,7 +169,7 @@ describe('GET /sitemap.xml: the document', () => {
 });
 
 describe('GET /sitemap.xml: the URLs', () => {
-	it(`lists (2 + regions + dishes + variations) × 3 = ${MOCK_SITEMAP_URL_COUNT} URLs`, async () => {
+	it(`lists (2 + regions + Variations pages + variations) × 3 = ${MOCK_SITEMAP_URL_COUNT} URLs`, async () => {
 		const { entries } = parseSitemap((await sitemap()).body);
 		expect(entries.length, `got ${entries.length} <url>`).toBe(MOCK_SITEMAP_URL_COUNT);
 		expect((await expectedLocs()).length, 'the fixture count drifted').toBe(MOCK_SITEMAP_URL_COUNT);
@@ -187,6 +199,39 @@ describe('GET /sitemap.xml: the URLs', () => {
 		for (const path of ['/ru/regions/gal', '/ru/dishes/paella', '/ru/dishes/cocido/ast']) {
 			expect(locs, `want ${ORIGIN}${path}`).toContain(`${ORIGIN}${path}`);
 		}
+	});
+});
+
+describe('GET /sitemap.xml: Spanish variations and one-variation dishes (FE-11)', () => {
+	it('includes every Spanish recipe URL in every locale', async () => {
+		const locs = parseSitemap((await sitemap()).body).entries.map((e) => e.loc);
+		const paths = [
+			'/dishes/allioli/esp/allioli-de-morter',
+			'/dishes/allioli/esp/allioli-de-codony',
+			'/dishes/arrozblanco/esp/arroz-blanco-con-tomate'
+		];
+		for (const lang of locales) {
+			for (const path of paths) {
+				expect(locs, `want ${ORIGIN}/${lang}${path}`).toContain(`${ORIGIN}/${lang}${path}`);
+			}
+		}
+	});
+
+	it('keeps the Variations page of a dish with two Spanish variations', async () => {
+		const locs = parseSitemap((await sitemap()).body).entries.map((e) => e.loc);
+		expect(locs).toContain(`${ORIGIN}/es/dishes/allioli`);
+	});
+
+	it('leaves out the redirected dish URL of a one-variation dish', async () => {
+		const locs = parseSitemap((await sitemap()).body).entries.map((e) => e.loc);
+		const redirected = locs.filter((loc) => /\/dishes\/arrozblanco$/.test(loc));
+		expect(redirected, `got ${JSON.stringify(redirected)}`).toEqual([]);
+	});
+
+	it('never lists an esp URL without its slug, nor a region esp', async () => {
+		const locs = parseSitemap((await sitemap()).body).entries.map((e) => e.loc);
+		const bad = locs.filter((loc) => /\/esp$|\/regions\/esp\b/.test(loc));
+		expect(bad, `got ${JSON.stringify(bad)}`).toEqual([]);
 	});
 });
 
@@ -232,7 +277,7 @@ function oddKeySource(): CatalogSource {
 	const dish: Dish = {
 		...tortilla,
 		key: 'a&b',
-		variations: tortilla.variations.slice(0, 1).map((v) => ({ ...v, regionKey: 'x<y"z' }))
+		variations: ['x<y"z', 'q&r'].map((regionKey) => ({ ...tortilla.variations[0], regionKey }))
 	};
 	return {
 		...mockSource(),
@@ -245,7 +290,7 @@ describe('GET /sitemap.xml: escaping', () => {
 	it('stays well-formed XML when a key holds &, < or "', async () => {
 		const { body } = await sitemap({ source: oddKeySource() });
 		const { entries } = parseSitemap(body);
-		expect(entries.length, 'want home, Popular, the dish and its variation × 3').toBe(4 * 3);
+		expect(entries.length, 'want home, Popular, the dish and its 2 variations × 3').toBe(5 * 3);
 	});
 
 	it('the raw document has no unescaped & anywhere', async () => {

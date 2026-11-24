@@ -52,7 +52,10 @@ const DISH_KEYS = [
 	'gazpacho',
 	'croquetas',
 	'torrijas',
-	'arrozleche'
+	'arrozleche',
+	// FE-11: the design's Spanish (Spain-wide) samples, unscored, so last.
+	'allioli',
+	'arrozblanco'
 ];
 const LANGS: Lang[] = ['en', 'es', 'ru'];
 
@@ -69,6 +72,31 @@ const notFoundError = () => loadExport<ErrorClass>('src/lib/server/api-errors.ts
 async function regionOrder(source: CatalogSource): Promise<string[]> {
 	return (await source.listRegions('en')).map((r) => r.key);
 }
+
+type Variation = Dish['variations'][number];
+
+// D-ESP-3: a Spanish (Spain-wide) variation has the reserved region key.
+const SPAIN_WIDE = 'esp';
+const isSpainWide = (v: Pick<Variation, 'regionKey'>) => v.regionKey === SPAIN_WIDE;
+
+// A variation's recipe the way a loader asks for it: by region, or by slug
+// for a Spanish variation (getSpainWideRecipe, BE-9).
+function recipeOf(source: CatalogSource, lang: Lang, dishKey: string, v: Variation) {
+	if (!isSpainWide(v)) return source.getRecipe(lang, { dishKey, regionKey: v.regionKey });
+	return spainWideRecipe(source, lang, { dishKey, variationSlug: v.variationSlug ?? '' });
+}
+
+type SpainWideRef = { dishKey: string; variationSlug: string };
+
+// A missing method fails as an assertion, not a TypeError.
+function spainWideRecipe(source: CatalogSource, lang: Lang, ref: SpainWideRef) {
+	const method = source.getSpainWideRecipe;
+	expect(method, 'the CatalogSource must have getSpainWideRecipe (BE-9)').toBeTypeOf('function');
+	return source.getSpainWideRecipe(lang, ref);
+}
+
+const refName = (dishKey: string, v: Variation) =>
+	`${dishKey}/${isSpainWide(v) ? `esp/${v.variationSlug}` : v.regionKey}`;
 
 // The keys of an API body, recursively; values and array lengths are ignored.
 function shapeOf(value: unknown): unknown {
@@ -148,7 +176,7 @@ describe('mock listDishes and getDish', () => {
 		});
 	}
 
-	it('lists the dishes in dish order with order 1..7', async () => {
+	it('lists the dishes in dish order with order 1..9', async () => {
 		const dishes = await (await mockSource()).listDishes('en');
 		expect(dishes.map((d) => d.key)).toEqual(DISH_KEYS);
 		expect(dishes.map((d) => d.order)).toEqual(DISH_KEYS.map((_, i) => i + 1));
@@ -173,6 +201,7 @@ describe('mock listDishes and getDish', () => {
 		expect(got).toEqual(['cat', 'ara', 'val', 'mur', 'and', 'bal', 'can']);
 	});
 
+	// D-ESP-4: regional variations in region order, then Spanish ones.
 	for (const key of DISH_KEYS) {
 		it(`orders ${key} variations by region order in the list and in getDish`, async () => {
 			const source = await mockSource();
@@ -181,7 +210,10 @@ describe('mock listDishes and getDish', () => {
 			const single = await source.getDish('ru', key);
 			for (const dish of [listed, single]) {
 				const got = dish?.variations.map((v) => v.regionKey) ?? [];
-				const want = [...got].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+				const regional = got.filter((k) => k !== SPAIN_WIDE);
+				const spanish = got.filter((k) => k === SPAIN_WIDE);
+				regional.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+				const want = [...regional, ...spanish];
 				expect(got, `got ${got.join(',')}, want ${want.join(',')}`).toEqual(want);
 			}
 		});
@@ -193,6 +225,7 @@ describe('mock listDishes and getDish', () => {
 		expect(valencia).toStrictEqual<Dish['variations'][number]>({
 			regionKey: 'val',
 			regionName: 'Валенсия',
+			variationSlug: null,
 			regionRank: 2,
 			recipeKey: 'paella-val',
 			name: 'Paella valenciana',
@@ -282,17 +315,18 @@ describe('mock getRecipe', () => {
 		expect(recipe.steps[0]).toBe('Замочите фасоль на ночь в холодной воде.');
 	});
 
-	it('has a recipe for every variation of every dish', async () => {
+	it('has a recipe for every variation of every dish, Spanish ones included', async () => {
 		const source = await mockSource();
 		const refs = (await source.listDishes('es')).flatMap((d) =>
-			d.variations.map((v) => ({ dishKey: d.key, regionKey: v.regionKey, recipeKey: v.recipeKey }))
+			d.variations.map((v) => ({ dishKey: d.key, variation: v }))
 		);
-		expect(refs).toHaveLength(54);
-		for (const ref of refs) {
-			const recipe = await source.getRecipe('es', ref);
-			expect(recipe.recipeKey, `got ${recipe.recipeKey} for ${ref.dishKey}/${ref.regionKey}`).toBe(
-				ref.recipeKey
-			);
+		expect(refs).toHaveLength(57);
+		for (const { dishKey, variation } of refs) {
+			const recipe = await recipeOf(source, 'es', dishKey, variation);
+			expect(
+				recipe.recipeKey,
+				`got ${recipe.recipeKey} for ${refName(dishKey, variation)}, want ${variation.recipeKey}`
+			).toBe(variation.recipeKey);
 		}
 	});
 });
@@ -346,17 +380,144 @@ describe('mock getRecipe tips (FE-10)', () => {
 		it(`${lang}: maps a missing tips field to [] for every recipe`, async () => {
 			const source = await mockSource();
 			const refs = (await source.listDishes(lang)).flatMap((d) =>
-				d.variations.map((v) => ({ dishKey: d.key, regionKey: v.regionKey }))
+				d.variations.map((v) => ({ dishKey: d.key, variation: v }))
 			);
-			for (const ref of refs) {
-				const { tips } = await source.getRecipe(lang, ref);
-				expect(
-					tips,
-					`got ${JSON.stringify(tips)} for ${ref.dishKey}/${ref.regionKey}, want []`
-				).toEqual([]);
+			for (const { dishKey, variation } of refs) {
+				const { tips } = await recipeOf(source, lang, dishKey, variation);
+				const name = refName(dishKey, variation);
+				expect(tips, `got ${JSON.stringify(tips)} for ${name}, want []`).toEqual([]);
 			}
 		});
 	}
+});
+
+// FE-11 (BE-9, D-ESP-1..6): the design bundle's Spanish (Spain-wide) samples.
+// The bundle sends regionKey "esp" with a variationSlug; the API body has
+// regionName null, regionRank null (in no region's list) and the slug, and a
+// regional variation has variationSlug null. Allioli (course basics) has two
+// Spanish variations, Arroz blanco con tomate one.
+const MORTER: Variation = {
+	regionKey: 'esp',
+	regionName: null,
+	variationSlug: 'allioli-de-morter',
+	regionRank: null,
+	recipeKey: 'allioli-esp-allioli-de-morter',
+	name: 'Allioli de morter',
+	nameEs: 'Allioli de morter',
+	description: 'Garlic and oil only, pounded by hand',
+	photos: NO_PHOTOS
+};
+
+const ALLIOLI_SLUGS = ['allioli-de-morter', 'allioli-de-codony'];
+const CODONY: SpainWideRef = { dishKey: 'allioli', variationSlug: 'allioli-de-codony' };
+
+describe('mock Spain-wide variations (FE-11)', () => {
+	it('serves a Spanish variation summary with null region fields and its slug', async () => {
+		const dish = await (await mockSource()).getDish('en', 'allioli');
+		expect(dish.variations[0]).toStrictEqual<Variation>(MORTER);
+	});
+
+	it('keeps the bundle order of two Spanish variations (allioli)', async () => {
+		const dish = await (await mockSource()).getDish('es', 'allioli');
+		const got = dish.variations.map((v) => v.variationSlug);
+		expect(got, `got ${JSON.stringify(got)}`).toEqual(ALLIOLI_SLUGS);
+	});
+
+	for (const lang of LANGS) {
+		it(`${lang}: every regional variation has variationSlug null`, async () => {
+			const dishes = await (await mockSource()).listDishes(lang);
+			const regional = dishes.flatMap((d) => d.variations).filter((v) => !isSpainWide(v));
+			const slugged = regional.filter((v) => v.variationSlug !== null).map((v) => v.recipeKey);
+			expect(slugged, `got slugs on ${JSON.stringify(slugged)}`).toEqual([]);
+		});
+	}
+
+	it('maps course "basics" (allioli) and keeps arroz blanco a main', async () => {
+		const source = await mockSource();
+		expect((await source.getDish('en', 'allioli')).course).toBe('basics');
+		expect((await source.getDish('en', 'arrozblanco')).course).toBe('mains');
+	});
+
+	it('gives arroz blanco exactly one variation, a Spanish one', async () => {
+		const dish = await (await mockSource()).getDish('ru', 'arrozblanco');
+		const got = dish.variations.map((v) => [v.regionKey, v.variationSlug]);
+		expect(got).toEqual([['esp', 'arroz-blanco-con-tomate']]);
+	});
+
+	it('getSpainWideRecipe finds the recipe by dish and slug (en)', async () => {
+		const recipe = await spainWideRecipe(await mockSource(), 'en', CODONY);
+		expect(recipe).toMatchObject<Partial<Recipe>>({
+			dishKey: 'allioli',
+			dishName: 'Allioli',
+			regionKey: 'esp',
+			regionName: null,
+			variationSlug: 'allioli-de-codony',
+			recipeKey: 'allioli-esp-allioli-de-codony',
+			name: 'Allioli de codony',
+			timeMinutes: 60,
+			baseServings: 6,
+			tips: []
+		});
+		expect(recipe.ingredients[0]).toEqual({ quantity: 300, unit: 'g', name: 'Quince' });
+	});
+
+	it('getSpainWideRecipe localizes the recipe (ru)', async () => {
+		const recipe = await spainWideRecipe(await mockSource(), 'ru', CODONY);
+		expect(recipe.dishName).toBe('Альиоли');
+		expect(recipe.regionName).toBeNull();
+		expect(recipe.ingredients[0].name).toBe('Айва');
+	});
+
+	it('no region lists a Spanish variation, and none is keyed esp', async () => {
+		const source = await mockSource();
+		const regions = await source.listRegions('en');
+		expect(regions.map((r) => r.key)).not.toContain(SPAIN_WIDE);
+		for (const { key } of regions) {
+			const listed = (await source.getRegion('en', key)).variations.filter(isSpainWide);
+			expect(
+				listed.map((v) => v.recipeKey),
+				`got Spanish variations in ${key}`
+			).toEqual([]);
+		}
+	});
+});
+
+// D-ESP-4/5 on a crafted bundle: allioli's two Spanish variations moved to
+// another dish, one before and one after its regional ones, optionally scored.
+function withAllioliVariations(dishKey: string, score?: number): typeof bundle {
+	const allioli = bundle.dishes.find((d) => d.key === 'allioli')!;
+	const [morter, codony] = allioli.variations.map((v) => ({ ...v, score }));
+	const dishes = bundle.dishes
+		.filter((d) => d !== allioli)
+		.map((d) => (d.key === dishKey ? { ...d, variations: [codony, ...d.variations, morter] } : d));
+	return { ...bundle, dishes } as typeof bundle;
+}
+
+const ranks = (dish: Dish) => dish.variations.map((v) => [v.recipeKey, v.regionRank]);
+
+describe('mock Spain-wide order and ranking (FE-11, D-ESP-4/5)', () => {
+	it('a dish lists its regional variations first, then Spanish ones in bundle order', async () => {
+		const source = await mockSource(withAllioliVariations('tortilla'));
+		const dish = await source.getDish('en', 'tortilla');
+		const tail = dish.variations.slice(-2).map((v) => v.variationSlug);
+		const early = dish.variations.slice(0, -2).filter(isSpainWide);
+		expect(early.length, 'got a Spanish variation before a regional one').toBe(0);
+		expect(tail).toEqual(['allioli-de-codony', 'allioli-de-morter']);
+	});
+
+	it("a Spanish variation's score counts in its dish's display order", async () => {
+		const source = await mockSource(withAllioliVariations('arrozleche', 5));
+		const got = (await source.listDishes('en')).map((d) => d.key);
+		expect(got[0], `got ${got.join(',')}, want arrozleche first (scores 5 + 5)`).toBe('arrozleche');
+	});
+
+	it('a scored Spanish variation has no regionRank and moves no regional rank', async () => {
+		const plain = await (await mockSource()).getDish('en', 'tortilla');
+		const source = await mockSource(withAllioliVariations('tortilla', 5));
+		const scored = ranks(await source.getDish('en', 'tortilla'));
+		expect(scored.slice(0, -2)).toEqual(ranks(plain));
+		expect(scored.slice(-2).map(([, rank]) => rank)).toEqual([null, null]);
+	});
 });
 
 describe('mock unknown keys', () => {
@@ -374,6 +535,25 @@ describe('mock unknown keys', () => {
 		{
 			name: 'getRecipe of a region the dish is not cooked in',
 			call: (s) => s.getRecipe('es', { dishKey: 'paella', regionKey: 'gal' })
+		},
+		// FE-11: esp is not a region (the API's getRecipe answers 404 too).
+		{
+			name: 'getRecipe of a Spanish dish by region key esp',
+			call: (s) => s.getRecipe('en', { dishKey: 'allioli', regionKey: 'esp' })
+		},
+		{ name: 'getRegion esp', call: (s) => s.getRegion('en', 'esp') },
+		{
+			name: 'getSpainWideRecipe of an unknown slug',
+			call: (s) => spainWideRecipe(s, 'en', { dishKey: 'allioli', variationSlug: 'nope' })
+		},
+		{
+			name: "getSpainWideRecipe of another dish's slug",
+			call: (s) =>
+				spainWideRecipe(s, 'en', { dishKey: 'arrozblanco', variationSlug: 'allioli-de-morter' })
+		},
+		{
+			name: 'getSpainWideRecipe of an unknown dish',
+			call: (s) => spainWideRecipe(s, 'en', { dishKey: 'nope', variationSlug: 'allioli-de-morter' })
 		}
 	];
 	for (const miss of misses) {
@@ -410,6 +590,9 @@ describe('mock contract', () => {
 		>();
 		expectTypeOf<CatalogSource['getDish']>().returns.resolves.toEqualTypeOf<Schemas['Dish']>();
 		expectTypeOf<CatalogSource['getRecipe']>().returns.resolves.toEqualTypeOf<Schemas['Recipe']>();
+		expectTypeOf<CatalogSource['getSpainWideRecipe']>().returns.resolves.toEqualTypeOf<
+			Schemas['Recipe']
+		>();
 		expect(await mockSource()).toBeDefined();
 	});
 });

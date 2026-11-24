@@ -52,6 +52,14 @@ export const PAGES: PageFixture[] = [
 			ru: 'Тортилья · По-бетансосски, жидкая внутри'
 		},
 		h1: true
+	},
+	{
+		// FE-11: a Spanish (Spain-wide) variation's Recipe page,
+		// /:lang/dishes/:dishKey/esp/:variationSlug.
+		name: 'Spanish recipe',
+		path: '/dishes/allioli/esp/allioli-de-morter',
+		text: { en: 'Allioli de morter', es: 'Allioli de morter', ru: 'Альиоли · Allioli de morter' },
+		h1: true
 	}
 ];
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	allioliMorterRecipe,
 	galicia,
 	galiciaDetail,
 	tortilla,
@@ -37,6 +38,14 @@ const BASE_URL = 'http://backend:8080';
 const TIMEOUT_MS = 20;
 const LIST_TTL_MS = 60_000;
 const ETAG = 'W/"7-en"';
+
+// FE-11: a missing method fails as an assertion, not a TypeError.
+function getSpainWideRecipe(s: CatalogSource) {
+	expect(s.getSpainWideRecipe, 'want getSpainWideRecipe on the CatalogSource').toBeTypeOf(
+		'function'
+	);
+	return s.getSpainWideRecipe('es', { dishKey: 'allioli', variationSlug: 'allioli-de-morter' });
+}
 
 const errorClass = (name: string) => loadExport<ErrorClass>('src/lib/server/api-errors.ts', name);
 
@@ -96,6 +105,14 @@ const detailEndpoints: Endpoint[] = [
 		path: '/v1/dishes/tortilla/variations/gal/recipe',
 		lang: 'en',
 		body: tortillaGalRecipe
+	},
+	// FE-11 (BE-9 getSpainWideRecipe): a Spanish variation's recipe by slug.
+	{
+		name: 'getSpainWideRecipe',
+		call: getSpainWideRecipe,
+		path: '/v1/dishes/allioli/variations/esp/allioli-de-morter/recipe',
+		lang: 'es',
+		body: allioliMorterRecipe
 	}
 ];
 

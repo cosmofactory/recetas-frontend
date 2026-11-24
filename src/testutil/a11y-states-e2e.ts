@@ -178,6 +178,24 @@ export const UI_STATES: UiState[] = [
 	},
 	{ name: 'Variations', path: '/dishes/tortilla', layouts: BOTH },
 	{ name: 'Recipe', path: '/dishes/tortilla/gal', layouts: BOTH, crossBrowser: true },
+	// FE-11: Spanish (Spain-wide) variations and the Basics filter.
+	{ name: 'Variations, Spanish variations', path: '/dishes/allioli', layouts: BOTH },
+	{
+		name: 'Recipe, Spanish variation',
+		path: '/dishes/allioli/esp/allioli-de-morter',
+		layouts: BOTH
+	},
+	{
+		name: 'Recipe, a dish with one variation',
+		path: '/dishes/arrozblanco/esp/arroz-blanco-con-tomate',
+		layouts: BOTH
+	},
+	{
+		name: 'Popular, Basics filter',
+		path: '/?tab=popular&f=basics',
+		layouts: BOTH,
+		enter: popularShown
+	},
 	{
 		name: '404 page',
 		path: '/dishes/nope',

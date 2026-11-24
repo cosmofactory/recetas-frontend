@@ -19,7 +19,8 @@ const FILTER_TABLE = {
 	course: {
 		tapas: (dish) => dish.course === 'tapas',
 		mains: (dish) => dish.course === 'mains',
-		desserts: (dish) => dish.course === 'desserts'
+		desserts: (dish) => dish.course === 'desserts',
+		basics: (dish) => dish.course === 'basics'
 	},
 	effort: {
 		quick: (dish) => dish.flags.quick,

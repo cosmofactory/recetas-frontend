@@ -3,6 +3,7 @@ import {
 	CACHE_CONTROL_HEADER,
 	NO_STORE,
 	PAGE_CACHE_CONTROL,
+	REDIRECT_CACHE_CONTROL,
 	withCacheControl
 } from './cache-control';
 
@@ -37,5 +38,23 @@ describe('withCacheControl', () => {
 
 	it('a redirect is left alone', () => {
 		expect(policyOf(response(302, { location: '/en/' }))).toBeNull();
+	});
+
+	// FE-11: a one-variation dish's /dishes/:dishKey answers 301; browsers
+	// would cache it forever, so it gets a bounded freshness.
+	for (const status of [301, 308]) {
+		it(`a ${status} gets the bounded redirect policy`, () => {
+			const res = response(status, { location: '/en/dishes/arrozblanco/esp/x' });
+			expect(policyOf(res)).toBe(REDIRECT_CACHE_CONTROL);
+			expect(REDIRECT_CACHE_CONTROL).toMatch(/max-age=\d+/);
+		});
+	}
+
+	it('a 301 keeps a policy its route set', () => {
+		expect(policyOf(response(301, { [CACHE_CONTROL_HEADER]: NO_STORE }))).toBe(NO_STORE);
+	});
+
+	it('a 304 is left alone', () => {
+		expect(policyOf(new Response(null, { status: 304 }))).toBeNull();
 	});
 });

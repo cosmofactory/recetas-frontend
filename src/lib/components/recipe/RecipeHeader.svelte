@@ -3,6 +3,8 @@
 	import type { Snippet } from 'svelte';
 	import type { components } from '#lib/api/schema.d.ts';
 	import Photo from '#lib/components/Photo.svelte';
+	import { variationPlace } from '#lib/content/variation-place.ts';
+	import { getLocale } from '#lib/paraglide/runtime.js';
 	import { DISH_HERO_SIZES } from '#lib/media.ts';
 
 	// title: the <h1>, naming the dish (FE-9 D-FE9-6); strip: the Time /
@@ -32,7 +34,9 @@
 		/>
 	</div>
 	<div class="text">
-		<span class="eyebrow" data-testid="recipe-eyebrow">{typeset(recipe.regionName)}</span>
+		<span class="eyebrow" data-testid="recipe-eyebrow"
+			>{typeset(variationPlace(recipe, getLocale()))}</span
+		>
 		<h1 class="name">{typeset(title)}</h1>
 		<p class="description">{typeset(recipe.description)}</p>
 		{@render strip()}

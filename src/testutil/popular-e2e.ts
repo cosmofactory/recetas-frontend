@@ -48,13 +48,15 @@ export const resultCount = (page: Page): Locator =>
 
 export const noMatch = (page: Page): Locator => popularPanel(page).getByTestId(TEST_IDS.noMatch);
 
-// A card's dish key, from either of its hrefs (FE-5 PR 3): the mobile dish
-// sheet URL (?dish=<key>) or the desktop Variations page (/:lang/dishes/<key>).
+// A card's dish key, from any of its hrefs (FE-5 PR 3): the mobile dish
+// sheet URL (?dish=<key>), the desktop Variations page (/:lang/dishes/<key>)
+// or, for a dish with one variation (FE-11), its Recipe page
+// (/:lang/dishes/<key>/…).
 function dishKeyOf(href: string): string {
 	const url = new URL(href, 'http://x');
 	const fromSheet = url.searchParams.get('dish');
 	if (fromSheet) return fromSheet;
-	return /^\/[a-z]{2}\/dishes\/([^/]+)$/.exec(url.pathname)?.[1] ?? `(no dish in ${href})`;
+	return /^\/[a-z]{2}\/dishes\/([^/]+)(\/|$)/.exec(url.pathname)?.[1] ?? `(no dish in ${href})`;
 }
 
 // The dish keys the list shows, read from each card's link.
@@ -206,16 +208,17 @@ export const dishSheet = regionSheet;
 export function dishCard(page: Page, key: string): Locator {
 	const card = `[data-testid="${TEST_IDS.dishCard}"]`;
 	return popularPanel(page).locator(
-		`${card}[href$="dish=${key}"], ${card}[href$="/dishes/${key}"]`
+		`${card}[href$="dish=${key}"], ${card}[href$="/dishes/${key}"], ${card}[href*="/dishes/${key}/"]`
 	);
 }
 
-// The dish sheet's variation rows (links into a recipe), in DOM order.
+// The dish sheet's variation rows (links into a recipe, regional or
+// /esp/:variationSlug), in DOM order.
 export async function sheetRowHrefs(page: Page): Promise<string[]> {
 	const hrefs = await dishSheet(page)
 		.locator('a[href]')
 		.evaluateAll((links) => links.map((a) => a.getAttribute('href') ?? ''));
-	return hrefs.filter((href) => /\/dishes\/[^/]+\/[^/]+$/.test(href));
+	return hrefs.filter((href) => /\/dishes\/[^/]+\/(esp\/)?[^/]+$/.test(href));
 }
 
 export function seeAllLink(page: Page, lang: PopularLocale): Locator {

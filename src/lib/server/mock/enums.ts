@@ -8,7 +8,7 @@ type Course = Schemas['Course'];
 type Season = Schemas['Season'];
 type Unit = Schemas['Unit'];
 
-const COURSES: readonly Course[] = ['tapas', 'mains', 'desserts'];
+const COURSES: readonly Course[] = ['tapas', 'mains', 'desserts', 'basics'];
 const SEASONS: readonly Season[] = ['summer', 'winter', 'easter', 'all'];
 const UNITS: readonly Unit[] = ['g', 'ml', 'tsp', null];
 

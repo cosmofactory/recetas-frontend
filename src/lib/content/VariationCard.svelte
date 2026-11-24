@@ -4,6 +4,8 @@
 	import Photo from '#lib/components/Photo.svelte';
 	import { VARIATION_CARD_SIZES } from '#lib/media.ts';
 	import { m } from '#lib/paraglide/messages.js';
+	import { getLocale } from '#lib/paraglide/runtime.js';
+	import { variationPlace } from './variation-place.ts';
 
 	type Props = {
 		variation: components['schemas']['VariationSummary'];
@@ -26,7 +28,7 @@
 		radius="0"
 	/>
 	<div class="body">
-		<span class="region">{typeset(variation.regionName)}</span>
+		<span class="region">{typeset(variationPlace(variation, getLocale()))}</span>
 		<h2 class="name">{typeset(variation.name)}</h2>
 		<span class="description">{typeset(variation.description)}</span>
 		<span class="view-recipe">{typeset(m.variationsPage_viewRecipe())}</span>

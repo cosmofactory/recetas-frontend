@@ -61,9 +61,10 @@ const HERO = 'dishes/tortilla/gal/hero-1a2b';
 const FALLBACK_IMAGE = `${ORIGIN}/og-default.png`;
 
 const COURSE_LABELS: Record<RecipeLocale, Record<Course, string>> = {
-	en: { tapas: 'Tapas', mains: 'Mains', desserts: 'Desserts' },
-	es: { tapas: 'Tapas', mains: 'Principales', desserts: 'Postres' },
-	ru: { tapas: 'Тапас', mains: 'Основные', desserts: 'Десерты' }
+	// FE-11: course basics, filterLabels.Basics.
+	en: { tapas: 'Tapas', mains: 'Mains', desserts: 'Desserts', basics: 'Basics' },
+	es: { tapas: 'Tapas', mains: 'Principales', desserts: 'Postres', basics: 'Básicos' },
+	ru: { tapas: 'Тапас', mains: 'Основные', desserts: 'Десерты', basics: 'Базовые' }
 };
 
 type BuildSpec = Partial<RecipeJsonLdInput> & { lang: RecipeLocale; hero?: string | null };
@@ -164,7 +165,7 @@ describe('recipeJsonLd: per locale', () => {
 			expect((await build({ lang })).recipeCuisine).toBe('Spanish');
 		});
 
-		for (const course of ['tapas', 'mains', 'desserts'] as const) {
+		for (const course of ['tapas', 'mains', 'desserts', 'basics'] as const) {
 			const want = COURSE_LABELS[lang][course];
 			it(`${lang}: course ${course} -> recipeCategory "${want}"`, async () => {
 				expect((await build({ lang, course })).recipeCategory).toBe(want);

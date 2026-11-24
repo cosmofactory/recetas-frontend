@@ -19,6 +19,10 @@ import { loadExport } from '../../testutil/load-export';
 //   when every group has nothing picked or one picked test passes. The
 //   README and the prototype agree on the groups, their order and the
 //   tests; nothing to adjust.
+// - FE-11 (both READMEs -> "Spanish (Spain-wide) variations"): Course is
+//   Tapas · Mains · Desserts · Basics (strings.json filterLabels.Basics);
+//   the id is `basics`, matching course 'basics' (stocks and sauces), last
+//   in the course group.
 // - D-FE5-1 (owner, 2026-10-21): locale-independent ASCII ids; repeated `f`
 //   params; unknown ids dropped silently; a stable serialized order.
 //
@@ -41,7 +45,7 @@ const MODULE = 'src/lib/popular/filters.ts';
 
 const WANT_GROUPS: FilterGroup[] = [
 	{ key: 'diet', ids: ['vegetarian', 'seafood', 'pork'] },
-	{ key: 'course', ids: ['tapas', 'mains', 'desserts'] },
+	{ key: 'course', ids: ['tapas', 'mains', 'desserts', 'basics'] },
 	{ key: 'effort', ids: ['quick', 'slow-cooked'] },
 	{ key: 'season', ids: ['summer', 'winter', 'easter', 'all-year'] }
 ];
@@ -53,7 +57,9 @@ const ALL_DISH_KEYS = [
 	'gazpacho',
 	'croquetas',
 	'torrijas',
-	'arrozleche'
+	'arrozleche',
+	'allioli',
+	'arrozblanco'
 ];
 
 const loadFilterDishes = () => loadExport<FilterDishes>(MODULE, 'filterDishes');
@@ -95,23 +101,26 @@ describe('filter ids and groups', () => {
 //   croquetas  pork, quick, tapas, all
 //   torrijas   (no diet flag), quick, desserts, easter
 //   arrozleche vegetarian, slow-cooked, desserts, all
+//   allioli    vegetarian, quick, basics, all (FE-11)
+//   arrozblanco vegetarian, quick, mains, all (FE-11)
 type Case = { name: string; ids: string[]; want: string[] };
 
 const SINGLE_FILTER: Case[] = [
 	{
 		name: 'vegetarian → flags.vegetarian',
 		ids: ['vegetarian'],
-		want: ['tortilla', 'gazpacho', 'arrozleche']
+		want: ['tortilla', 'gazpacho', 'arrozleche', 'allioli', 'arrozblanco']
 	},
 	{ name: 'seafood → flags.seafood', ids: ['seafood'], want: ['paella'] },
 	{ name: 'pork ("With pork") → flags.pork', ids: ['pork'], want: ['cocido', 'croquetas'] },
 	{ name: 'tapas → course tapas', ids: ['tapas'], want: ['tortilla', 'gazpacho', 'croquetas'] },
-	{ name: 'mains → course mains', ids: ['mains'], want: ['paella', 'cocido'] },
+	{ name: 'mains → course mains', ids: ['mains'], want: ['paella', 'cocido', 'arrozblanco'] },
 	{ name: 'desserts → course desserts', ids: ['desserts'], want: ['torrijas', 'arrozleche'] },
+	{ name: 'basics → course basics (FE-11)', ids: ['basics'], want: ['allioli'] },
 	{
 		name: 'quick → flags.quick',
 		ids: ['quick'],
-		want: ['tortilla', 'gazpacho', 'croquetas', 'torrijas']
+		want: ['tortilla', 'gazpacho', 'croquetas', 'torrijas', 'allioli', 'arrozblanco']
 	},
 	{
 		name: 'slow-cooked → flags.slowCooked',
@@ -124,7 +133,7 @@ const SINGLE_FILTER: Case[] = [
 	{
 		name: "all-year matches season 'all' only, not every season",
 		ids: ['all-year'],
-		want: ['tortilla', 'paella', 'croquetas', 'arrozleche']
+		want: ['tortilla', 'paella', 'croquetas', 'arrozleche', 'allioli', 'arrozblanco']
 	}
 ];
 
@@ -132,7 +141,7 @@ const SAME_GROUP: Case[] = [
 	{
 		name: 'diet: vegetarian OR seafood',
 		ids: ['vegetarian', 'seafood'],
-		want: ['tortilla', 'paella', 'gazpacho', 'arrozleche']
+		want: ['tortilla', 'paella', 'gazpacho', 'arrozleche', 'allioli', 'arrozblanco']
 	},
 	{
 		name: 'diet: seafood OR pork',
@@ -142,7 +151,7 @@ const SAME_GROUP: Case[] = [
 	{
 		name: 'diet: vegetarian OR pork',
 		ids: ['vegetarian', 'pork'],
-		want: ['tortilla', 'cocido', 'gazpacho', 'croquetas', 'arrozleche']
+		want: ['tortilla', 'cocido', 'gazpacho', 'croquetas', 'arrozleche', 'allioli', 'arrozblanco']
 	},
 	{
 		name: 'course: tapas OR desserts',
@@ -152,7 +161,12 @@ const SAME_GROUP: Case[] = [
 	{
 		name: 'course: mains OR desserts',
 		ids: ['mains', 'desserts'],
-		want: ['paella', 'cocido', 'torrijas', 'arrozleche']
+		want: ['paella', 'cocido', 'torrijas', 'arrozleche', 'arrozblanco']
+	},
+	{
+		name: 'course: basics OR mains (FE-11)',
+		ids: ['basics', 'mains'],
+		want: ['paella', 'cocido', 'allioli', 'arrozblanco']
 	},
 	{
 		name: 'effort: quick OR slow-cooked is every dish',
@@ -163,7 +177,7 @@ const SAME_GROUP: Case[] = [
 	{
 		name: 'season: easter OR all-year',
 		ids: ['easter', 'all-year'],
-		want: ['tortilla', 'paella', 'croquetas', 'torrijas', 'arrozleche']
+		want: ['tortilla', 'paella', 'croquetas', 'torrijas', 'arrozleche', 'allioli', 'arrozblanco']
 	},
 	{
 		name: 'season: three of four',
@@ -171,14 +185,29 @@ const SAME_GROUP: Case[] = [
 		want: ['cocido', 'gazpacho', 'torrijas']
 	},
 	{
-		name: 'course: all three is every dish',
-		ids: ['tapas', 'mains', 'desserts'],
+		name: 'course: all four is every dish',
+		ids: ['tapas', 'mains', 'desserts', 'basics'],
 		want: ALL_DISH_KEYS
+	},
+	{
+		name: 'course: tapas, mains and desserts leave out the basics (FE-11)',
+		ids: ['tapas', 'mains', 'desserts'],
+		want: ALL_DISH_KEYS.filter((key) => key !== 'allioli')
 	}
 ];
 
 const ACROSS_GROUPS: Case[] = [
-	{ name: 'vegetarian AND quick', ids: ['vegetarian', 'quick'], want: ['tortilla', 'gazpacho'] },
+	{
+		name: 'vegetarian AND quick',
+		ids: ['vegetarian', 'quick'],
+		want: ['tortilla', 'gazpacho', 'allioli', 'arrozblanco']
+	},
+	{ name: 'vegetarian AND mains (FE-11)', ids: ['vegetarian', 'mains'], want: ['arrozblanco'] },
+	{
+		name: 'basics AND vegetarian AND quick (FE-11)',
+		ids: ['basics', 'vegetarian', 'quick'],
+		want: ['allioli']
+	},
 	{ name: 'vegetarian AND summer', ids: ['vegetarian', 'summer'], want: ['gazpacho'] },
 	{ name: 'pork AND mains', ids: ['pork', 'mains'], want: ['cocido'] },
 	{ name: 'quick AND desserts', ids: ['quick', 'desserts'], want: ['torrijas'] },
@@ -199,20 +228,21 @@ const ACROSS_GROUPS: Case[] = [
 	},
 	{
 		name: 'every course and every season is every dish',
-		ids: ['tapas', 'mains', 'desserts', 'summer', 'winter', 'easter', 'all-year'],
+		ids: ['tapas', 'mains', 'desserts', 'basics', 'summer', 'winter', 'easter', 'all-year'],
 		want: ALL_DISH_KEYS
 	},
 	{
-		name: 'all twelve filters: every dish with a diet flag (torrijas has none)',
+		name: 'all thirteen filters: every dish with a diet flag (torrijas has none)',
 		ids: ALL_IDS,
-		want: ['tortilla', 'paella', 'cocido', 'gazpacho', 'croquetas', 'arrozleche']
+		want: ALL_DISH_KEYS.filter((key) => key !== 'torrijas')
 	}
 ];
 
 const NO_MATCH: Case[] = [
 	{ name: 'desserts AND summer (both quick chips)', ids: ['desserts', 'summer'], want: [] },
 	{ name: 'seafood AND tapas', ids: ['seafood', 'tapas'], want: [] },
-	{ name: 'vegetarian AND mains', ids: ['vegetarian', 'mains'], want: [] },
+	{ name: 'seafood AND basics (FE-11)', ids: ['seafood', 'basics'], want: [] },
+	{ name: 'basics AND summer (FE-11)', ids: ['basics', 'summer'], want: [] },
 	{ name: 'pork AND quick AND winter', ids: ['pork', 'quick', 'winter'], want: [] }
 ];
 
@@ -246,11 +276,14 @@ describe('filterDishes: combinations that match nothing', () => runCases(NO_MATC
 
 describe('filterDishes: input handling', () => {
 	it('the order of the active ids does not matter', async () => {
-		await expectKeys(['quick', 'vegetarian'], ['tortilla', 'gazpacho']);
+		await expectKeys(['quick', 'vegetarian'], ['tortilla', 'gazpacho', 'allioli', 'arrozblanco']);
 	});
 
 	it('a repeated id counts once', async () => {
-		await expectKeys(['vegetarian', 'vegetarian'], ['tortilla', 'gazpacho', 'arrozleche']);
+		await expectKeys(
+			['vegetarian', 'vegetarian'],
+			['tortilla', 'gazpacho', 'arrozleche', 'allioli', 'arrozblanco']
+		);
 	});
 
 	it('an unknown id is ignored', async () => {
@@ -259,12 +292,14 @@ describe('filterDishes: input handling', () => {
 	});
 
 	it('filters by flags and enums, never by translated text (ru gives the same dishes)', async () => {
-		await expectKeys(['vegetarian', 'quick'], ['tortilla', 'gazpacho'], dishesIn('ru'));
+		const want = ['tortilla', 'gazpacho', 'allioli', 'arrozblanco'];
+		await expectKeys(['vegetarian', 'quick'], want, dishesIn('ru'));
 	});
 
 	it('keeps the filtered dishes in the order given', async () => {
 		const reversed = [...dishesIn('en')].reverse();
-		await expectKeys(['vegetarian'], ['arrozleche', 'gazpacho', 'tortilla'], reversed);
+		const want = ['arrozblanco', 'allioli', 'arrozleche', 'gazpacho', 'tortilla'];
+		await expectKeys(['vegetarian'], want, reversed);
 	});
 
 	it('returns the same dish objects and leaves the input untouched', async () => {
@@ -300,7 +335,8 @@ describe('filterDishes: one field per filter (synthetic dishes)', () => {
 		dishWith('both-diets', { seafood: true, pork: true }),
 		dishWith('quick-and-slow', { quick: true, slowCooked: true }),
 		dishWith('all-season', { season: 'all' }),
-		dishWith('tapas-dish', { course: 'tapas' })
+		dishWith('tapas-dish', { course: 'tapas' }),
+		dishWith('basics-dish', { course: 'basics' })
 	];
 	const cases: Case[] = [
 		{ name: 'a dish with no flag never matches a diet filter', ids: ['vegetarian'], want: [] },
@@ -319,9 +355,10 @@ describe('filterDishes: one field per filter (synthetic dishes)', () => {
 		{
 			name: 'winter matches only season winter',
 			ids: ['winter'],
-			want: ['plain', 'both-diets', 'quick-and-slow', 'tapas-dish']
+			want: ['plain', 'both-diets', 'quick-and-slow', 'tapas-dish', 'basics-dish']
 		},
-		{ name: 'course reads only course', ids: ['tapas'], want: ['tapas-dish'] }
+		{ name: 'course reads only course', ids: ['tapas'], want: ['tapas-dish'] },
+		{ name: "basics matches course 'basics' only (FE-11)", ids: ['basics'], want: ['basics-dish'] }
 	];
 	for (const tc of cases) {
 		it(tc.name, async () => {
@@ -330,7 +367,7 @@ describe('filterDishes: one field per filter (synthetic dishes)', () => {
 	}
 });
 
-// Every one of the 4096 subsets of the twelve ids, checked against the two
+// Every one of the 8192 subsets of the thirteen ids, checked against the two
 // laws OR-within / AND-across imply, without re-implementing the filter.
 function subsetsOf<T>(items: readonly T[]): T[][] {
 	return Array.from({ length: 2 ** items.length }, (_, mask) =>

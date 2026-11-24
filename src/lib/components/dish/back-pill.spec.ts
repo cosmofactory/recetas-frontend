@@ -111,3 +111,80 @@ describe('recipeBackPill names the page its href goes to', () => {
 		});
 	}
 });
+
+// FE-11 (both READMEs -> "Spanish (Spain-wide) variations"): a dish with
+// exactly one variation in total has no Variations page (it 301s to the
+// recipe), so on a direct load "the recipe's back pill returns to Popular":
+// "‹ Popular" to /:lang/?tab=popular. Contract assumed: the layout's
+// `dishes` list given as the catalog carries each dish's `variations`
+// (it is the full Dish list), which tells a one-variation dish.
+type Variation = { regionKey: string; variationSlug: string | null };
+type DishEntry = Named & { variations: Variation[] };
+
+const ARROZ_BLANCO_RECIPE: RecipeNames = {
+	dishKey: 'arrozblanco',
+	dishName: 'Arroz blanco con tomate',
+	regionName: 'Spanish'
+};
+const ALLIOLI_RECIPE: RecipeNames = {
+	dishKey: 'allioli',
+	dishName: 'Allioli',
+	regionName: 'Spanish'
+};
+
+const SPANISH_DISHES: DishEntry[] = [
+	{
+		key: 'arrozblanco',
+		name: 'Arroz blanco con tomate',
+		variations: [{ regionKey: 'esp', variationSlug: 'arroz-blanco-con-tomate' }]
+	},
+	{
+		key: 'allioli',
+		name: 'Allioli',
+		variations: [
+			{ regionKey: 'esp', variationSlug: 'allioli-de-morter' },
+			{ regionKey: 'esp', variationSlug: 'allioli-de-codony' }
+		]
+	}
+];
+const SPANISH_CATALOG = { dishes: SPANISH_DISHES, regions: CATALOG.regions };
+
+type SpanishCase = { what: string; recipe: RecipeNames; lang: string; want: BackPillLink };
+
+const SPANISH_CASES: SpanishCase[] = [
+	{
+		what: 'a one-variation dish on a direct load reads Popular, to Popular',
+		recipe: ARROZ_BLANCO_RECIPE,
+		lang: 'en',
+		want: { label: 'Popular', href: '/en/?tab=popular' }
+	},
+	{
+		what: 'a one-variation dish on a direct load keeps the page language (es)',
+		recipe: ARROZ_BLANCO_RECIPE,
+		lang: 'es',
+		want: { label: 'Popular', href: '/es/?tab=popular' }
+	},
+	{
+		what: 'a two-variation Spanish dish on a direct load names the dish',
+		recipe: ALLIOLI_RECIPE,
+		lang: 'en',
+		want: { label: 'Allioli', href: '/en/dishes/allioli' }
+	}
+];
+
+describe('recipeBackPill for a dish with one variation (FE-11)', () => {
+	for (const { what, recipe, lang, want } of SPANISH_CASES) {
+		it(what, async () => {
+			const recipeBackPill = await loadRecipeBackPill();
+			const got = recipeBackPill(null, recipe, lang, SPANISH_CATALOG);
+			expect(got, `got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`).toEqual(want);
+		});
+	}
+
+	it('from Popular it still goes back to that Popular URL', async () => {
+		const recipeBackPill = await loadRecipeBackPill();
+		const origin: BackOrigin = { href: '/en/?tab=popular&f=mains', from: 'home', tab: 'popular' };
+		const got = recipeBackPill(origin, ARROZ_BLANCO_RECIPE, 'en', SPANISH_CATALOG);
+		expect(got).toEqual({ label: 'Popular', href: '/en/?tab=popular&f=mains' });
+	});
+});

@@ -138,3 +138,35 @@ describe('regionVariations: order and edge cases', () => {
 		expect(JSON.stringify(dishes), 'got the input list mutated').toBe(before);
 	});
 });
+
+// FE-11 (both READMEs -> "Spanish (Spain-wide) variations"): Spanish
+// variations (regionKey "esp", regionRank null) are in no region's list and
+// in no region's count, and "esp" is not a region.
+describe('regionVariations: Spanish variations (FE-11)', () => {
+	it('lists no row for the esp key (esp is not a region)', async () => {
+		const regionVariations = await load();
+		const got = regionVariations('esp', dishesIn('en')).map((row) => row.recipeKey);
+		expect(got, `got ${JSON.stringify(got)}, want none`).toEqual([]);
+	});
+
+	it('no region list holds a Spanish variation', async () => {
+		const regionVariations = await load();
+		const regionKeys = buildView(bundle, 'en').regions.map((r) => r.key);
+		const spanish = regionKeys.flatMap((key) =>
+			regionVariations(key, dishesIn('en')).filter((row) => row.regionKey === 'esp')
+		);
+		expect(spanish.map((row) => row.recipeKey)).toEqual([]);
+	});
+
+	it('a dish with Spanish and regional variations still lists its regional one', async () => {
+		const regionVariations = await load();
+		const dishes = dishesIn('en');
+		const [spanish] = dishByKey(dishes, 'allioli').variations;
+		const mixed = dishes.map((d) =>
+			d.key === 'tortilla' ? { ...d, variations: [spanish, ...d.variations] } : d
+		);
+		const got = regionVariations('gal', mixed).map((row) => row.recipeKey);
+		expect(got[0], `got ${JSON.stringify(got)}`).toBe('tortilla-gal');
+		expect(got.length).toBe(4);
+	});
+});

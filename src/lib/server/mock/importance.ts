@@ -1,9 +1,12 @@
+import { isSpainWide } from '#lib/content/spain-wide.ts';
 import type { BundleDish } from './bundle.ts';
 
 // The backend's display order (stack.md X15), for the mock source: dishes by
 // the sum of their variations' importance scores, then bundle position; each
 // region's variations by score, then dish display order. Scores carry 3
 // decimals, so they are summed as integer thousandths to keep exact ties exact.
+// A Spanish (esp) variation counts in its dish's score but is in no region's
+// list, so it has no rank (BE-9 D-ESP-5).
 
 const SCORE_SCALE = 1000;
 
@@ -22,6 +25,7 @@ export function byDisplayOrder(dishes: readonly BundleDish[]): BundleDish[] {
 export function regionRanks(dishes: readonly BundleDish[]): Map<string, number> {
 	const ranked = dishes
 		.flatMap((dish) => dish.variations)
+		.filter((v) => !isSpainWide(v))
 		.toSorted((a, b) => thousandths(b.score) - thousandths(a.score));
 	const next = new Map<string, number>();
 	return new Map(

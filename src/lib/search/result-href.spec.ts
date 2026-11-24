@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { loadExport } from '../../testutil/load-export';
-import { show, type SearchEntry } from '../../testutil/search';
+import { indexEntries, mockCatalog, show, type SearchEntry } from '../../testutil/search';
 
 // FE-7: where a picked search result goes, one rule for both layouts.
 //
@@ -123,4 +123,83 @@ describe('searchResultHref', () => {
 			`searchResultHref(${show(entry.group)}, ${lang}, ${layout}): got ${show(got)}, want ${show(want)}`
 		).toBe(want);
 	});
+});
+
+// FE-11 (both READMEs -> "Spanish (Spain-wide) variations"): a Spanish
+// variation's recipe is /:lang/dishes/:dishKey/esp/:variationSlug, and a dish
+// with exactly one variation in total has no Variations page, so its search
+// results (the dish and its variation) open the recipe on both layouts.
+// Checked through buildIndex's entries, so which fields carry the slug and
+// the single-variation target is the index's business.
+const ARROZ_BLANCO = '/en/dishes/arrozblanco/esp/arroz-blanco-con-tomate';
+
+type IndexCase = { why: string; match: Partial<SearchEntry>; layout: Layout; want: string };
+
+const INDEX_CASES: IndexCase[] = [
+	{
+		why: 'a one-variation dish opens its recipe (mobile)',
+		match: { group: 'dish', dishKey: 'arrozblanco' },
+		layout: 'mobile',
+		want: ARROZ_BLANCO
+	},
+	{
+		why: 'a one-variation dish opens its recipe (desktop)',
+		match: { group: 'dish', dishKey: 'arrozblanco' },
+		layout: 'desktop',
+		want: ARROZ_BLANCO
+	},
+	{
+		why: "a one-variation dish's variation opens its recipe on mobile too",
+		match: { group: 'variation', dishKey: 'arrozblanco' },
+		layout: 'mobile',
+		want: ARROZ_BLANCO
+	},
+	{
+		why: "a one-variation dish's variation opens its recipe (desktop)",
+		match: { group: 'variation', dishKey: 'arrozblanco' },
+		layout: 'desktop',
+		want: ARROZ_BLANCO
+	},
+	{
+		why: 'a Spanish variation of a two-variation dish opens its recipe on desktop',
+		match: { group: 'variation', title: 'Allioli de codony' },
+		layout: 'desktop',
+		want: '/en/dishes/allioli/esp/allioli-de-codony'
+	},
+	{
+		why: 'a Spanish variation of a two-variation dish opens its dish on mobile',
+		match: { group: 'variation', title: 'Allioli de morter' },
+		layout: 'mobile',
+		want: '/en/dishes/allioli'
+	},
+	{
+		why: 'a two-variation Spanish dish opens its Variations page',
+		match: { group: 'dish', dishKey: 'allioli' },
+		layout: 'desktop',
+		want: '/en/dishes/allioli'
+	},
+	{
+		why: 'a regional variation from the index still opens its recipe (desktop)',
+		match: { group: 'variation', dishKey: 'tortilla', regionKey: 'gal' },
+		layout: 'desktop',
+		want: '/en/dishes/tortilla/gal'
+	}
+];
+
+async function indexEntry(match: Partial<SearchEntry>): Promise<SearchEntry> {
+	const entries = await indexEntries(mockCatalog('en'), 'en');
+	const keys = Object.entries(match) as [keyof SearchEntry, unknown][];
+	const found = entries.find((entry) => keys.every(([key, value]) => entry[key] === value));
+	expect(found, `no index entry ${show(match)}`).toBeDefined();
+	return found!;
+}
+
+describe('searchResultHref on the index entries (FE-11)', () => {
+	for (const { why, match, layout, want } of INDEX_CASES) {
+		it(why, async () => {
+			const searchResultHref = await loadHref();
+			const got = searchResultHref(await indexEntry(match), 'en', layout);
+			expect(got, `${show(match)} ${layout}: got ${show(got)}, want ${show(want)}`).toBe(want);
+		});
+	}
 });

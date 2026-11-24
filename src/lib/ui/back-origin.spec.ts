@@ -43,6 +43,20 @@ const cases: {
 		spec: { from: '/en/dishes/tortilla/gal', to: '/en/dishes/tortilla' },
 		want: null
 	},
+	// FE-11: a one-variation dish's Popular card opens its Spanish recipe.
+	{
+		name: 'filtered Popular → a Spanish recipe (one-variation dish)',
+		spec: {
+			from: '/en/?tab=popular&f=mains',
+			to: '/en/dishes/arrozblanco/esp/arroz-blanco-con-tomate'
+		},
+		want: { href: '/en/?tab=popular&f=mains', from: 'home', tab: 'popular' }
+	},
+	{
+		name: 'Variations → a Spanish recipe',
+		spec: { from: '/en/dishes/allioli', to: '/en/dishes/allioli/esp/allioli-de-codony' },
+		want: { href: '/en/dishes/allioli', from: 'variations', tab: 'popular' }
+	},
 	{
 		name: 'one recipe → another',
 		spec: { from: '/en/dishes/paella/val', to: '/en/dishes/tortilla/gal' },

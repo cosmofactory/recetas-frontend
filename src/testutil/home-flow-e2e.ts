@@ -12,7 +12,9 @@ import { waitForPagePushEnd } from './variations-e2e';
 export type DishKey = (typeof DISH_KEYS)[number];
 
 export const HOME_WITH_FILTERS = '/en/?tab=popular&f=tapas&f=mains&f=desserts';
-// The last dish the filters keep, so the list must scroll to reach it.
+// A dish at the end of what the filters keep, so the list must scroll to
+// reach it. FE-11: Arroz blanco (mains) now follows it, but it has one
+// variation and so no dish sheet; Arroz con leche is the lowest with one.
 export const LOWEST_DISH = 'arrozleche' satisfies DishKey;
 const SCROLL_TOLERANCE_PX = 1;
 

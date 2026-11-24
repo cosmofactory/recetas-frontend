@@ -41,6 +41,7 @@ import {
 	sidebarPressedIds,
 	skipOnMobile
 } from '../testutil/popular-e2e';
+import { ARROZ_BLANCO_RECIPE_PATH } from '../testutil/spain-wide';
 import { historyLength } from '../testutil/region-e2e';
 
 // FE-5 PR 3, desktop Popular (≥ 860px) end to end: the sticky filter sidebar
@@ -121,7 +122,8 @@ const DIMMED_OPACITY = '0.4';
 // A shorter window, so a sticky sidebar has room to stick at every width.
 const SHORT_VIEWPORT_HEIGHT_PX = 600;
 const LIFT = 'matrix(1, 0, 0, 1, 0, -2)';
-const VEGETARIAN_DISHES = ['tortilla', 'gazpacho', 'arrozleche'];
+// FE-11: Allioli and Arroz blanco con tomate are vegetarian too.
+const VEGETARIAN_DISHES = ['tortilla', 'gazpacho', 'arrozleche', 'allioli', 'arrozblanco'];
 
 // Every test here but the resize and no-JS ones starts on desktop, so a
 // missing sidebar fails fast and by name instead of timing out a locator.
@@ -237,7 +239,7 @@ test.describe('Popular (desktop): the grid', () => {
 		page
 	}) => {
 		await openPopular(page, 'en');
-		await expect(resultCount(page)).toHaveText(POPULAR_COPY.en.dishes[7]);
+		await expect(resultCount(page)).toHaveText(POPULAR_COPY.en.dishes[9]);
 		const got = await computedStyle(resultCount(page), [
 			'font-size',
 			'font-weight',
@@ -260,7 +262,7 @@ test.describe('Popular (desktop): the grid', () => {
 			await expectDishes(page, DISH_KEYS, `${lang} unfiltered`);
 			const names = DISH_KEYS.map((key) => DISH_NAMES[lang][key]);
 			await expect(dishCards(page).locator('h3')).toHaveText(names);
-			await expect(resultCount(page)).toHaveText(POPULAR_COPY[lang].dishes[7]);
+			await expect(resultCount(page)).toHaveText(POPULAR_COPY[lang].dishes[9]);
 		});
 	}
 });
@@ -544,7 +546,7 @@ test.describe('Popular (desktop): sidebar chips drive the URL', () => {
 				await sidebarChip(page, lang, 'vegetarian').click();
 				await expectUrl(page, `/${lang}/?tab=popular&f=vegetarian`);
 				await expectDishes(page, VEGETARIAN_DISHES, 'vegetarian');
-				await expect(resultCount(page)).toHaveText(POPULAR_COPY[lang].dishes[3]);
+				await expect(resultCount(page)).toHaveText(POPULAR_COPY[lang].dishes[5]);
 				await expect(sidebarChip(page, lang, 'vegetarian')).toHaveAttribute('aria-pressed', 'true');
 				await expect(sidebarChip(page, lang, 'vegetarian')).toBeFocused();
 				expect(await historyLength(page), 'want the entry replaced').toBe(before);
@@ -560,12 +562,16 @@ test.describe('Popular (desktop): sidebar chips drive the URL', () => {
 		await expectUrl(page, '/en/?tab=popular&f=tapas&f=mains');
 		await expectDishes(
 			page,
-			['tortilla', 'paella', 'cocido', 'gazpacho', 'croquetas'],
+			['tortilla', 'paella', 'cocido', 'gazpacho', 'croquetas', 'arrozblanco'],
 			'tapas OR mains'
 		);
 		await sidebarChip(page, 'en', 'quick').click();
 		await expectUrl(page, '/en/?tab=popular&f=tapas&f=mains&f=quick');
-		await expectDishes(page, ['tortilla', 'gazpacho', 'croquetas'], '(tapas OR mains) AND quick');
+		await expectDishes(
+			page,
+			['tortilla', 'gazpacho', 'croquetas', 'arrozblanco'],
+			'(tapas OR mains) AND quick'
+		);
 	});
 
 	test('a pressed chip toggles off again', async ({ page }) => {
@@ -682,7 +688,10 @@ test.describe('Popular (desktop): cards open the Variations page', () => {
 			page
 		}) => {
 			await openPopular(page, lang, '&f=vegetarian');
-			const want = VEGETARIAN_DISHES.map((key) => `/${lang}/dishes/${key}`);
+			// FE-11: Arroz blanco has one variation, so its card opens its recipe.
+			const want = VEGETARIAN_DISHES.map((key) =>
+				key === 'arrozblanco' ? ARROZ_BLANCO_RECIPE_PATH(lang) : `/${lang}/dishes/${key}`
+			);
 			await expect.poll(() => cardHrefs(page)).toEqual(want);
 		});
 	}
@@ -770,7 +779,12 @@ test.describe('Popular: resizing across 860px with filters', () => {
 		await expectUrl(page, '/en/?tab=popular&f=vegetarian&f=quick');
 		await expect
 			.poll(() => cardHrefs(page))
-			.toEqual(['/en/dishes/tortilla', '/en/dishes/gazpacho']);
+			.toEqual([
+				'/en/dishes/tortilla',
+				'/en/dishes/gazpacho',
+				'/en/dishes/allioli',
+				ARROZ_BLANCO_RECIPE_PATH('en')
+			]);
 		await page.setViewportSize(MOBILE);
 		await expectFiltersButton(page, 'en', 2);
 		expect(await pressedChips(page, 'en', ['vegetarian', 'quick'])).toEqual([
@@ -780,7 +794,12 @@ test.describe('Popular: resizing across 860px with filters', () => {
 		const sheetHref = (key: string) => `/en/?tab=popular&f=vegetarian&f=quick&dish=${key}`;
 		await expect
 			.poll(() => cardHrefs(page))
-			.toEqual([sheetHref('tortilla'), sheetHref('gazpacho')]);
+			.toEqual([
+				sheetHref('tortilla'),
+				sheetHref('gazpacho'),
+				sheetHref('allioli'),
+				ARROZ_BLANCO_RECIPE_PATH('en')
+			]);
 		await quickChip(page, 'en', 'summer').click();
 		await expectUrl(page, '/en/?tab=popular&f=vegetarian&f=quick&f=summer');
 		await page.setViewportSize(DESKTOP);

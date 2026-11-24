@@ -31,6 +31,7 @@ function variation(
 ) {
 	return {
 		recipeKey: `${fields.regionKey}-r`,
+		variationSlug: null,
 		regionRank: 1,
 		nameEs: fields.name,
 		description: '',

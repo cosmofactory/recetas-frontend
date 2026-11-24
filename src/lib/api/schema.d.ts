@@ -11,7 +11,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** All regions, in map/region order. */
+        /** All regions, in map/region order. Never `esp`. */
         get: operations["listRegions"];
         put?: never;
         post?: never;
@@ -83,8 +83,29 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The recipe of one variation (one dish in one region). */
+        /**
+         * The recipe of one variation (one dish in one region).
+         * @description `esp` is not a region: `regionKey = esp` is a 404, like any unknown
+         *     region. Spanish variations are served by `getSpainWideRecipe`.
+         */
         get: operations["getRecipe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/dishes/{dishKey}/variations/esp/{variationSlug}/recipe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The recipe of one Spanish (Spain-wide) variation of a dish. */
+        get: operations["getSpainWideRecipe"];
         put?: never;
         post?: never;
         delete?: never;
@@ -139,7 +160,7 @@ export interface components {
         /** @example tortilla */
         Slug: string;
         /** @enum {string} */
-        Course: "tapas" | "mains" | "desserts";
+        Course: "tapas" | "mains" | "desserts" | "basics";
         /** @enum {string} */
         Season: "summer" | "winter" | "easter" | "all";
         /**
@@ -205,14 +226,17 @@ export interface components {
             course: components["schemas"]["Course"];
             season: components["schemas"]["Season"];
             photos: components["schemas"]["Photos"];
-            /** @description One per region the dish is cooked in, ordered by region order. All equal. */
+            /** @description One per region the dish is cooked in, ordered by region order, then its Spanish (`esp`) variations in bundle order. All equal. */
             variations: components["schemas"]["VariationSummary"][];
         };
         VariationSummary: {
             regionKey: components["schemas"]["Slug"];
-            regionName: string;
-            /** @description Position in its region's list: importance score, then dish display order (stack.md X15). Region lists sort by it. */
-            regionRank: number;
+            /** @description The region's name; `null` exactly when `regionKey` is `esp` (the frontend shows its Spanish term). */
+            regionName: string | null;
+            /** @description Set exactly when `regionKey` is `esp`; identifies the Spanish variation within its dish (`getSpainWideRecipe`). `null` for a regional variation. */
+            variationSlug: string | null;
+            /** @description Position in its region's list: importance score, then dish display order (stack.md X15). Region lists sort by it. `null` exactly when `regionKey` is `esp`: Spanish variations are in no region's list. */
+            regionRank: number | null;
             recipeKey: components["schemas"]["Slug"];
             name: string;
             nameEs: string;
@@ -234,7 +258,10 @@ export interface components {
             dishKey: components["schemas"]["Slug"];
             dishName: string;
             regionKey: components["schemas"]["Slug"];
-            regionName: string;
+            /** @description The region's name; `null` exactly when `regionKey` is `esp`. */
+            regionName: string | null;
+            /** @description Set exactly when `regionKey` is `esp`; `null` for a regional variation. */
+            variationSlug: string | null;
             recipeKey: components["schemas"]["Slug"];
             /** @description The variation name. */
             name: string;
@@ -311,6 +338,8 @@ export interface components {
         Lang: components["schemas"]["Locale"];
         RegionKey: components["schemas"]["Slug"];
         DishKey: components["schemas"]["Slug"];
+        /** @description A Spanish variation's slug, unique within its dish. */
+        VariationSlug: components["schemas"]["Slug"];
     };
     requestBodies: never;
     headers: {
@@ -337,7 +366,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description All 14 regions. */
+            /** @description All regions. */
             200: {
                 headers: {
                     ETag: components["headers"]["ETag"];
@@ -453,6 +482,39 @@ export interface operations {
             path: {
                 dishKey: components["parameters"]["DishKey"];
                 regionKey: components["parameters"]["RegionKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The recipe. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Recipe"];
+                };
+            };
+            304: components["responses"]["NotModified"];
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["Internal"];
+        };
+    };
+    getSpainWideRecipe: {
+        parameters: {
+            query?: {
+                /** @description Locale of the human-readable fields. An unknown value is a 400. */
+                lang?: components["parameters"]["Lang"];
+            };
+            header?: never;
+            path: {
+                dishKey: components["parameters"]["DishKey"];
+                /** @description A Spanish variation's slug, unique within its dish. */
+                variationSlug: components["parameters"]["VariationSlug"];
             };
             cookie?: never;
         };

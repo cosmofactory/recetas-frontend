@@ -55,3 +55,29 @@ describe('regionRanks', () => {
 		});
 	});
 });
+
+// FE-11 (D-ESP-5): a Spanish (esp) variation's score counts in its dish's
+// score, but it is in no region's list, so it shifts no regional rank.
+describe('Spanish variations (esp)', () => {
+	it('count in the dish score', () => {
+		const dishes = [
+			dish('a', [variation('a-gal', 'gal', 3)]),
+			dish('b', [variation('b-gal', 'gal', 1), variation('b-esp-x', 'esp', 4)])
+		];
+		expect(keys(byDisplayOrder(dishes))).toEqual(['b', 'a']);
+	});
+
+	it('leave every regional rank as if they were not there', () => {
+		const regional = [
+			dish('a', [variation('a-gal', 'gal', 1)]),
+			dish('b', [variation('b-gal', 'gal', 2)])
+		];
+		const withSpanish = [
+			dish('a', [variation('a-gal', 'gal', 1), variation('a-esp-x', 'esp', 9)]),
+			dish('b', [variation('b-gal', 'gal', 2), variation('b-esp-y', 'esp', 9)])
+		];
+		const ranked = regionRanks(withSpanish);
+		const regionalOnly = Object.fromEntries([...ranked].filter(([key]) => !key.includes('-esp-')));
+		expect(regionalOnly).toEqual(Object.fromEntries(regionRanks(regional)));
+	});
+});

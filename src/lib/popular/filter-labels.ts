@@ -14,6 +14,7 @@ const FILTER_LABELS: Record<FilterId, LabelMessage> = {
 	tapas: m.home_filterLabels_tapas,
 	mains: m.home_filterLabels_mains,
 	desserts: m.home_filterLabels_desserts,
+	basics: m.home_filterLabels_basics,
 	quick: m.home_filterLabels_quick,
 	'slow-cooked': m.home_filterLabels_slowCooked,
 	summer: m.home_filterLabels_summer,

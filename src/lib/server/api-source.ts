@@ -39,6 +39,13 @@ export function createApiSource(options: ApiSourceOptions): CatalogSource {
 	return {
 		listRegions: (lang) => regions.get(lang),
 		listDishes: (lang) => dishes.get(lang),
+		...detailCalls(client)
+	};
+}
+
+// The detail calls skip the list cache: each is one API request.
+function detailCalls(client: Client): Omit<CatalogSource, 'listRegions' | 'listDishes'> {
+	return {
 		getRegion: async (lang, regionKey) =>
 			withValidTileColor(
 				await one(
@@ -52,6 +59,12 @@ export function createApiSource(options: ApiSourceOptions): CatalogSource {
 		getRecipe: (lang, path) =>
 			one(
 				client.GET('/v1/dishes/{dishKey}/variations/{regionKey}/recipe', {
+					params: { path, query: { lang } }
+				})
+			),
+		getSpainWideRecipe: (lang, path) =>
+			one(
+				client.GET('/v1/dishes/{dishKey}/variations/esp/{variationSlug}/recipe', {
 					params: { path, query: { lang } }
 				})
 			)

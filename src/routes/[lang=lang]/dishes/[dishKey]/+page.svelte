@@ -11,7 +11,7 @@
 	import VariationCard from '#lib/content/VariationCard.svelte';
 	import { headLinks } from '#lib/i18n/head-links.ts';
 	import { localeFromPath } from '#lib/i18n/locales.ts';
-	import { recipeHref } from '#lib/i18n/localized-href.ts';
+	import { variationRecipeHref } from '#lib/i18n/localized-href.ts';
 	import { m } from '#lib/paraglide/messages.js';
 	import { popularDishHref } from '#lib/popular/filters.ts';
 	import { variationsPageJsonLd } from '#lib/seo/dish-pages-json-ld.ts';
@@ -68,13 +68,13 @@
 		<BackPill label={pill.label} href={pill.href} onclick={back} />
 	</div>
 	<VariationsHeader {dish} mediaBaseUrl={data.mediaBaseUrl} />
-	<!-- All variations are equal, in the API's region order. -->
+	<!-- All variations are equal, in the API's order: regional, then Spanish. -->
 	<ul class="cards" role="list">
-		{#each dish.variations as variation (variation.regionKey)}
+		{#each dish.variations as variation (variation.recipeKey)}
 			<li>
 				<VariationCard
 					{variation}
-					href={recipeHref(dish.key, variation.regionKey, lang)}
+					href={variationRecipeHref(dish.key, variation, lang)}
 					mediaBaseUrl={data.mediaBaseUrl}
 				/>
 			</li>
