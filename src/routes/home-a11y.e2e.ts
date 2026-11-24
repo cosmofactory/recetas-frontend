@@ -1,4 +1,5 @@
 import { expect, test, type Page, type TestInfo } from '../testutil/e2e-test';
+import { servedDishName } from '../testutil/served-content-e2e';
 import { expectNoViolations, loadAxe, summary, WCAG_AA_TAGS } from '../testutil/axe-e2e';
 import { gotoHydrated } from '../testutil/home-e2e';
 import { nothingFor, type SearchLocale } from '../testutil/search-copy';
@@ -154,15 +155,18 @@ test.describe('axe: WCAG 2.2 AA with the Popular sheets open', () => {
 // FE-7 PR 2 review: the mobile search overlay open, with results (the
 // listbox, its groups and options) and with nothing found (the empty state).
 test.describe('axe: WCAG 2.2 AA with the search overlay open', () => {
-	const scans: { lang: SearchLocale; query: string; finds?: string; tag: string[] }[] = [
-		{ lang: 'en', query: 'tortilla', finds: 'Tortilla de patatas', tag: ['@cross-browser'] },
-		{ lang: 'ru', query: 'paella', finds: 'Блюда из риса', tag: [] },
+	// `findsDish`: the key of a dish the query finds (its name is read from
+	// the server under test).
+	const scans: { lang: SearchLocale; query: string; findsDish?: string; tag: string[] }[] = [
+		{ lang: 'en', query: 'tortilla', findsDish: 'tortilla', tag: ['@cross-browser'] },
+		{ lang: 'ru', query: 'paella', findsDish: 'paella', tag: [] },
 		{ lang: 'en', query: 'zzzz', tag: ['@cross-browser'] }
 	];
-	for (const { lang, query, finds, tag } of scans) {
-		const what = `/${lang}/ searching "${query}" (${finds ? 'results' : 'no results'})`;
+	for (const { lang, query, findsDish, tag } of scans) {
+		const what = `/${lang}/ searching "${query}" (${findsDish ? 'results' : 'no results'})`;
 		test(`${what} has no violations`, { tag }, async ({ page }, testInfo) => {
 			onlyOnMobile(testInfo);
+			const finds = findsDish && (await servedDishName(page, lang, findsDish));
 			await gotoHydrated(page, `/${lang}/`);
 			await searchFor(page, lang, query);
 			const shown = finds

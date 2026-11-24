@@ -28,7 +28,7 @@ import {
 import { expectUrl, HOME_WITH_FILTERS } from '../testutil/home-flow-e2e';
 import { startTags } from '../testutil/html';
 import { isOnTop, languageButton } from '../testutil/language-menu-e2e';
-import { DISH_NAMES } from '../testutil/popular-copy';
+import { servedDishName } from '../testutil/served-content-e2e';
 import { skipOnMobile } from '../testutil/popular-e2e';
 import { BETANZOS } from '../testutil/recipe-copy';
 import { historyLength, regionPanel } from '../testutil/region-e2e';
@@ -271,7 +271,6 @@ test.describe('desktop search in every locale', () => {
 	}
 
 	const FINDS: { lang: SearchLocale; query: string; group: 0 | 1 | 2; title: string }[] = [
-		{ lang: 'ru', query: 'paella', group: DISHES, title: DISH_NAMES.ru.paella },
 		{ lang: 'ru', query: 'андалусия', group: REGIONS, title: 'Андалусия' },
 		{ lang: 'es', query: 'andalucia', group: REGIONS, title: 'Andalucía' },
 		{ lang: 'en', query: 'betanzos', group: VARIATIONS, title: BETANZOS.en.name }
@@ -284,6 +283,14 @@ test.describe('desktop search in every locale', () => {
 			await expect(dropdownOption(dropdownGroup(page, lang, group), title)).toBeVisible();
 		});
 	}
+
+	// The Spanish name matches in every locale (search semantics).
+	test('ru: "paella" finds the paella dish by its Spanish name', async ({ page }) => {
+		const title = await servedDishName(page, 'ru', 'paella');
+		await gotoHydrated(page, '/ru/');
+		await typeInDesktopSearch(page, 'ru', 'paella');
+		await expect(dropdownOption(dropdownGroup(page, 'ru', DISHES), title)).toBeVisible();
+	});
 });
 
 test.describe('desktop search: closing', () => {
@@ -422,7 +429,8 @@ test.describe('desktop search: selecting', () => {
 		await typeInDesktopSearch(page, 'en', 'betanzos');
 		await pick(page, 'en', VARIATIONS, BETANZOS.en.name);
 		await expectUrl(page, '/en/dishes/tortilla/gal');
-		await expectPillWithHref(page, DISH_NAMES.en.paella, '/en/dishes/paella');
+		const paella = await servedDishName(page, 'en', 'paella');
+		await expectPillWithHref(page, paella, '/en/dishes/paella');
 		await clickPill(page);
 		await expectUrl(page, '/en/dishes/paella');
 	});
@@ -447,10 +455,10 @@ test.describe('desktop search: selecting', () => {
 		await expect(regionPanel(page, 'Andalucía')).toBeVisible();
 	});
 
-	test('ru: "paella" picks the rice dish', async ({ page }) => {
+	test('ru: "paella" picks the paella dish', async ({ page }) => {
 		await gotoHydrated(page, '/ru/');
 		await typeInDesktopSearch(page, 'ru', 'paella');
-		await pick(page, 'ru', DISHES, DISH_NAMES.ru.paella);
+		await pick(page, 'ru', DISHES, await servedDishName(page, 'ru', 'paella'));
 		await expectUrl(page, '/ru/dishes/paella');
 	});
 });

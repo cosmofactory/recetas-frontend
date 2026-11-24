@@ -288,7 +288,9 @@ async function expectCardTracks(page: Page, want: Geometry) {
 		expectPx(box.x, want.resultsX + column * (track + CARD_GAP_PX), `card ${i} x`);
 	}
 	if (boxes.length > count) {
-		expectPx(boxes[count].y - boxes[0].bottom, CARD_GAP_PX, 'row gap');
+		// A row is as tall as its tallest card; a card doesn't stretch to it.
+		const firstRowBottom = Math.max(...boxes.slice(0, count).map((box) => box.bottom));
+		expectPx(boxes[count].y - firstRowBottom, CARD_GAP_PX, 'row gap');
 	}
 }
 
