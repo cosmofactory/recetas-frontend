@@ -70,12 +70,13 @@ function heroImagesIn(page: string): string[] {
 	const heroes = startTags(page).filter(
 		(t) => t.name === 'img' && t.attrs.fetchpriority === 'high'
 	);
-	return heroes.flatMap((img) => [
+	const urls = heroes.flatMap((img) => [
 		decode(img.attrs.src ?? ''),
 		...decode(img.attrs.srcset ?? '')
 			.split(',')
 			.map((candidate) => candidate.trim().split(/\s+/)[0])
 	]);
+	return urls.filter((url) => url !== '');
 }
 
 function parseHead(page: string): Head {

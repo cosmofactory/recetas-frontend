@@ -36,9 +36,9 @@ import { backLink, variationCards } from '../testutil/variations-e2e';
 // "Allioli shows two Spanish cards after regional ones (none here); Arroz
 // blanco opens its recipe from Popular and search; the Basics filter; mobile
 // and desktop, under the existing a11y checks" (the a11y checks run over the
-// FE-11 states added to a11y-states-e2e.ts UI_STATES). Every test reads the
-// mock bundle's Spanish variations (MOCK_DATA_TAG): a deployment's content
-// may have none.
+// FE-11 states added to a11y-states-e2e.ts UI_STATES). Every test but "the
+// map links no esp region" reads the mock bundle's Spanish variations
+// (MOCK_DATA_TAG): a deployment's content may have none.
 
 const MOVED_PERMANENTLY = 301;
 const NOT_FOUND = 404;
@@ -218,19 +218,19 @@ test.describe('the Basics filter', { tag: MOCK_DATA_TAG }, () => {
 	});
 });
 
-test.describe(
-	'the map and region lists leave Spanish variations out',
-	{ tag: MOCK_DATA_TAG },
-	() => {
-		test('the map links no esp region', async ({ page }) => {
-			await gotoHydrated(page, '/en/');
-			await expect(page.locator('a[href="/en/regions/esp"]')).toHaveCount(0);
-		});
+test.describe('the map and region lists leave Spanish variations out', () => {
+	test('the map links no esp region', async ({ page }) => {
+		await gotoHydrated(page, '/en/');
+		await expect(page.locator('a[href="/en/regions/esp"]')).toHaveCount(0);
+	});
 
-		test("a region's list has no Spanish variation (Catalonia)", async ({ page }) => {
+	test(
+		"a region's list has no Spanish variation (Catalonia)",
+		{ tag: MOCK_DATA_TAG },
+		async ({ page }) => {
 			await gotoHydrated(page, '/en/regions/cat');
 			const allioli = page.locator('a[href*="/dishes/allioli/"], a[href*="/dishes/arrozblanco/"]');
 			await expect(allioli).toHaveCount(0);
-		});
-	}
-);
+		}
+	);
+});

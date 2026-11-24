@@ -537,12 +537,12 @@ async function expectChipMetrics(page: Page, eyebrow: Locator) {
 	expectPx(second.x - (first.x + first.width), CHIP_GAP_PX, 'chip gap');
 }
 
-test.describe('Popular (desktop): sidebar chips drive the URL', { tag: MOCK_DATA_TAG }, () => {
+test.describe('Popular (desktop): sidebar chips drive the URL', () => {
 	test.beforeEach(({ page }) => skipOnMobile(page));
 
 	for (const lang of LOCALES) {
 		// One locale per engine: focus and history don't change with the language.
-		const tag = lang === 'en' ? ['@cross-browser'] : [];
+		const tag = [...(lang === 'en' ? ['@cross-browser'] : []), MOCK_DATA_TAG];
 		test(
 			`${lang}: Vegetarian writes f=vegetarian, replaces the entry, keeps focus, no reload`,
 			{ tag },
@@ -562,26 +562,30 @@ test.describe('Popular (desktop): sidebar chips drive the URL', { tag: MOCK_DATA
 		);
 	}
 
-	test('OR within a group, AND across groups: Tapas + Mains, then Quick', async ({ page }) => {
-		await openPopular(page, 'en');
-		await sidebarChip(page, 'en', 'mains').click();
-		await sidebarChip(page, 'en', 'tapas').click();
-		await expectUrl(page, '/en/?tab=popular&f=tapas&f=mains');
-		await expectDishes(
-			page,
-			['tortilla', 'paella', 'cocido', 'gazpacho', 'croquetas', 'arrozblanco'],
-			'tapas OR mains'
-		);
-		await sidebarChip(page, 'en', 'quick').click();
-		await expectUrl(page, '/en/?tab=popular&f=tapas&f=mains&f=quick');
-		await expectDishes(
-			page,
-			['tortilla', 'gazpacho', 'croquetas', 'arrozblanco'],
-			'(tapas OR mains) AND quick'
-		);
-	});
+	test(
+		'OR within a group, AND across groups: Tapas + Mains, then Quick',
+		{ tag: MOCK_DATA_TAG },
+		async ({ page }) => {
+			await openPopular(page, 'en');
+			await sidebarChip(page, 'en', 'mains').click();
+			await sidebarChip(page, 'en', 'tapas').click();
+			await expectUrl(page, '/en/?tab=popular&f=tapas&f=mains');
+			await expectDishes(
+				page,
+				['tortilla', 'paella', 'cocido', 'gazpacho', 'croquetas', 'arrozblanco'],
+				'tapas OR mains'
+			);
+			await sidebarChip(page, 'en', 'quick').click();
+			await expectUrl(page, '/en/?tab=popular&f=tapas&f=mains&f=quick');
+			await expectDishes(
+				page,
+				['tortilla', 'gazpacho', 'croquetas', 'arrozblanco'],
+				'(tapas OR mains) AND quick'
+			);
+		}
+	);
 
-	test('a pressed chip toggles off again', async ({ page }) => {
+	test('a pressed chip toggles off again', { tag: MOCK_DATA_TAG }, async ({ page }) => {
 		await openPopular(page, 'en', '&f=seafood');
 		await sidebarChip(page, 'en', 'seafood').click();
 		await expectUrl(page, '/en/?tab=popular');

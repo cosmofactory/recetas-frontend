@@ -143,7 +143,9 @@ export function regionDetailsParts(container: Locator) {
 	};
 }
 
-// The "N variations" count is the number of rows listed, whatever the data.
+// The count reads "<number> <word>" and its number equals the rows listed:
+// catches the count and the list rendered out of sync, or a count that lost
+// its number. It doesn't check the plural word or the rows' content.
 export async function expectCountMatchesRows(container: Locator) {
 	const { count, rows } = regionDetailsParts(container);
 	await expect(count, 'want the count to start with a number').toHaveText(/^\d+\D/);

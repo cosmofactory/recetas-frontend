@@ -222,43 +222,56 @@ test.describe('Filters sheet (mobile): opening', () => {
 	});
 });
 
-test.describe('Filters sheet (mobile): chips drive the URL', { tag: MOCK_DATA_TAG }, () => {
+test.describe('Filters sheet (mobile): chips drive the URL', () => {
 	test.beforeEach(({ page }) => skipOnDesktop(page));
 
-	test('a sheet chip writes f=, keeps the sheet open and focus on the chip, replaces the entry', async ({
-		page
-	}) => {
-		await openPopular(page, 'en');
-		await markDocument(page);
-		const entries = await historyLength(page);
-		await openFiltersSheet(page, 'en');
-		await sheetChip(page, 'en', 'seafood').click();
-		await expectUrl(page, '/en/?tab=popular&f=seafood');
-		await expect(sheetChip(page, 'en', 'seafood')).toHaveAttribute('aria-pressed', 'true');
-		await expectFiltersSheetOpen(page, 'en');
-		await expect(sheetChip(page, 'en', 'seafood')).toBeFocused();
-		await expectDishes(page, ['paella'], 'seafood');
-		await expectFiltersButton(page, 'en', 1);
-		expect(await historyLength(page), 'want the entry replaced').toBe(entries);
-		await expectSameDocument(page, 'after a sheet chip press');
-	});
+	test(
+		'a sheet chip writes f=, keeps the sheet open and focus on the chip, replaces the entry',
+		{ tag: MOCK_DATA_TAG },
+		async ({ page }) => {
+			await openPopular(page, 'en');
+			await markDocument(page);
+			const entries = await historyLength(page);
+			await openFiltersSheet(page, 'en');
+			await sheetChip(page, 'en', 'seafood').click();
+			await expectUrl(page, '/en/?tab=popular&f=seafood');
+			await expect(sheetChip(page, 'en', 'seafood')).toHaveAttribute('aria-pressed', 'true');
+			await expectFiltersSheetOpen(page, 'en');
+			await expect(sheetChip(page, 'en', 'seafood')).toBeFocused();
+			await expectDishes(page, ['paella'], 'seafood');
+			await expectFiltersButton(page, 'en', 1);
+			expect(await historyLength(page), 'want the entry replaced').toBe(entries);
+			await expectSameDocument(page, 'after a sheet chip press');
+		}
+	);
 
-	test('OR within a group, AND across groups, canonical URL', async ({ page }) => {
-		await openPopular(page, 'en');
-		await openFiltersSheet(page, 'en');
-		await sheetChip(page, 'en', 'seafood').click();
-		await expectUrl(page, '/en/?tab=popular&f=seafood');
-		await sheetChip(page, 'en', 'vegetarian').click();
-		await expectUrl(page, '/en/?tab=popular&f=vegetarian&f=seafood');
-		const vegOrSeafood = ['tortilla', 'paella', 'gazpacho', 'arrozleche', 'allioli', 'arrozblanco'];
-		await expectDishes(page, vegOrSeafood, 'veg OR seafood');
-		await sheetChip(page, 'en', 'mains').click();
-		await expectUrl(page, '/en/?tab=popular&f=vegetarian&f=seafood&f=mains');
-		await expectDishes(page, ['paella', 'arrozblanco'], '(veg OR seafood) AND mains');
-		await expectFiltersButton(page, 'en', 3);
-	});
+	test(
+		'OR within a group, AND across groups, canonical URL',
+		{ tag: MOCK_DATA_TAG },
+		async ({ page }) => {
+			await openPopular(page, 'en');
+			await openFiltersSheet(page, 'en');
+			await sheetChip(page, 'en', 'seafood').click();
+			await expectUrl(page, '/en/?tab=popular&f=seafood');
+			await sheetChip(page, 'en', 'vegetarian').click();
+			await expectUrl(page, '/en/?tab=popular&f=vegetarian&f=seafood');
+			const vegOrSeafood = [
+				'tortilla',
+				'paella',
+				'gazpacho',
+				'arrozleche',
+				'allioli',
+				'arrozblanco'
+			];
+			await expectDishes(page, vegOrSeafood, 'veg OR seafood');
+			await sheetChip(page, 'en', 'mains').click();
+			await expectUrl(page, '/en/?tab=popular&f=vegetarian&f=seafood&f=mains');
+			await expectDishes(page, ['paella', 'arrozblanco'], '(veg OR seafood) AND mains');
+			await expectFiltersButton(page, 'en', 3);
+		}
+	);
 
-	test('a pressed sheet chip toggles off again', async ({ page }) => {
+	test('a pressed sheet chip toggles off again', { tag: MOCK_DATA_TAG }, async ({ page }) => {
 		await openPopular(page, 'en', '&f=easter');
 		await openFiltersSheet(page, 'en');
 		await sheetChip(page, 'en', 'easter').click();
@@ -278,20 +291,22 @@ test.describe('Filters sheet (mobile): chips drive the URL', { tag: MOCK_DATA_TA
 		expect(await sheetPressedIds(page, 'es', FILTER_IDS)).toEqual(['vegetarian']);
 	});
 
-	test('sheet → quick chips: Quick and Summer pressed in the sheet press the bar chips', async ({
-		page
-	}) => {
-		await openPopular(page, 'ru');
-		await openFiltersSheet(page, 'ru');
-		await sheetChip(page, 'ru', 'summer').click();
-		await expectUrl(page, '/ru/?tab=popular&f=summer');
-		await sheetChip(page, 'ru', 'quick').click();
-		await expectUrl(page, '/ru/?tab=popular&f=quick&f=summer');
-		await showResults(page, 'ru').click();
-		await expectFiltersSheetClosed(page, 'ru');
-		expect(await pressedChips(page, 'ru', QUICK_IDS)).toEqual(['quick', 'summer']);
-		await expectDishes(page, ['gazpacho'], 'quick AND summer');
-	});
+	test(
+		'sheet → quick chips: Quick and Summer pressed in the sheet press the bar chips',
+		{ tag: MOCK_DATA_TAG },
+		async ({ page }) => {
+			await openPopular(page, 'ru');
+			await openFiltersSheet(page, 'ru');
+			await sheetChip(page, 'ru', 'summer').click();
+			await expectUrl(page, '/ru/?tab=popular&f=summer');
+			await sheetChip(page, 'ru', 'quick').click();
+			await expectUrl(page, '/ru/?tab=popular&f=quick&f=summer');
+			await showResults(page, 'ru').click();
+			await expectFiltersSheetClosed(page, 'ru');
+			expect(await pressedChips(page, 'ru', QUICK_IDS)).toEqual(['quick', 'summer']);
+			await expectDishes(page, ['gazpacho'], 'quick AND summer');
+		}
+	);
 
 	test('a sheet-only filter turned off in the sheet clears the bar count', async ({ page }) => {
 		await openPopular(page, 'en', '&f=pork');
@@ -304,18 +319,22 @@ test.describe('Filters sheet (mobile): chips drive the URL', { tag: MOCK_DATA_TA
 
 	for (const lang of LOCALES) {
 		const clearAll = POPULAR_COPY[lang].clearAll;
-		test(`${lang}: "${clearAll}" empties the filters, the sheet stays open`, async ({ page }) => {
-			await openPopular(page, lang, '&f=vegetarian&f=summer');
-			const entries = await historyLength(page);
-			await openFiltersSheet(page, lang);
-			await clearAllInSheet(page, lang).click();
-			await expectUrl(page, `/${lang}/?tab=popular`);
-			expect(await sheetPressedIds(page, lang, FILTER_IDS)).toEqual([]);
-			await expectFiltersSheetOpen(page, lang);
-			await expect.poll(() => focusIsIn(filtersSheet(page, lang))).toBe(true);
-			await expectDishes(page, DISH_KEYS, 'after Clear all');
-			expect(await historyLength(page), 'want the entry replaced').toBe(entries);
-		});
+		test(
+			`${lang}: "${clearAll}" empties the filters, the sheet stays open`,
+			{ tag: MOCK_DATA_TAG },
+			async ({ page }) => {
+				await openPopular(page, lang, '&f=vegetarian&f=summer');
+				const entries = await historyLength(page);
+				await openFiltersSheet(page, lang);
+				await clearAllInSheet(page, lang).click();
+				await expectUrl(page, `/${lang}/?tab=popular`);
+				expect(await sheetPressedIds(page, lang, FILTER_IDS)).toEqual([]);
+				await expectFiltersSheetOpen(page, lang);
+				await expect.poll(() => focusIsIn(filtersSheet(page, lang))).toBe(true);
+				await expectDishes(page, DISH_KEYS, 'after Clear all');
+				expect(await historyLength(page), 'want the entry replaced').toBe(entries);
+			}
+		);
 	}
 });
 

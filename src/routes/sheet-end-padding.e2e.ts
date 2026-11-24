@@ -62,7 +62,10 @@ async function expandSheet(sheet: Locator, lang: keyof typeof HANDLE_LABELS) {
 // The mock bundle pins Catalonia's rows; any other content lists as many
 // rows as its count says.
 async function expectEveryRow(sheet: Locator, rows: Locator) {
-	if (!ON_MOCK_DATA) return expectCountMatchesRows(sheet);
+	if (!ON_MOCK_DATA) {
+		await expectCountMatchesRows(sheet);
+		return;
+	}
 	await expect(rows, 'want every Catalonia row in the sheet').toHaveCount(CATALONIA.rowCount);
 }
 

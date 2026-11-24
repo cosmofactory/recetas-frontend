@@ -64,7 +64,9 @@ const below = (point: Point, dy: number): Point => ({ x: point.x, y: point.y + d
 // (a peek sheet shows less of its list on a short phone or with taller rows).
 async function dragStart(page: Page, target: Locator): Promise<Point> {
 	const from = centre(await boxOf(target, 'drag start'));
-	const height = page.viewportSize()?.height ?? 0;
+	const viewport = page.viewportSize();
+	expect(viewport, 'got no viewport size, want a fixed viewport to drag in').not.toBeNull();
+	const { height } = viewport!;
 	expect(from.y, `got the drag start at y ${from.y}, below the ${height}px screen`).toBeLessThan(
 		height
 	);
