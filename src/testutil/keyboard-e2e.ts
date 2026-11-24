@@ -52,8 +52,10 @@ export async function press(page: Page, key: string, step: string) {
 const isFocused = (target: Locator) =>
 	target.evaluate((el) => el === document.activeElement).catch(() => false);
 
-// The most Tab presses one step may take (the 14 map regions plus a header).
-const MAX_PRESSES = 40;
+// The most Tab presses one step may take: past the 17 map regions and the
+// 17 mobile region chips, then down a region's rows (the Betanzos tortilla
+// is demo's seventh Galicia row).
+const MAX_PRESSES = 60;
 
 // Presses `key` until `target` has focus, checking the focus after every press.
 export async function tabTo(page: Page, target: Locator, what: string, key = 'Tab') {

@@ -4,7 +4,7 @@ import {
 	expectHomeRestored,
 	expectUrl,
 	leaveScrolledHome,
-	LOWEST_DISH,
+	recipePathOf,
 	seeAllFromSheet
 } from '../testutil/home-flow-e2e';
 import { skipAgainstDeployment } from '../testutil/e2e-target';
@@ -229,8 +229,8 @@ test.describe('Variations page: back button', () => {
 	test('home → Variations → Recipe → Back → back button restores the home', async ({ page }) => {
 		const home = await leaveScrolledHome(page);
 		await variationCards(page).first().click();
-		await page.waitForURL((url) => /^\/en\/dishes\/arrozleche\/[a-z]+$/.test(url.pathname));
-		await backToVariations(page, `/en/dishes/${LOWEST_DISH}`);
+		await page.waitForURL((url) => recipePathOf(home.dish.key).test(url.pathname));
+		await backToVariations(page, `/en/dishes/${home.dish.key}`);
 		await backLink(page, 'en').click();
 		await expectHomeRestored(page, home);
 	});

@@ -305,7 +305,7 @@ export async function expectEmptyPanel(page: Page, lang: Locale) {
 }
 
 // The canonical region order; the 14-region grid had none.
-function regionOrder(): string[] {
+export function regionOrder(): string[] {
 	return (mapGrid as { regionOrder?: string[] }).regionOrder ?? [];
 }
 

@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page, type TestInfo } from '../testutil/e2e-test';
-import { MOCK_DATA_TAG } from '../testutil/e2e-target';
+import { MOCK_DATA_TAG, ON_MOCK_DATA } from '../testutil/e2e-target';
+import { servedDishName } from '../testutil/served-content-e2e';
 import { LOCALES } from '../testutil/e2e';
 import { expectNoVariationStandsOut } from '../testutil/equal-variations-e2e';
 import {
@@ -55,7 +56,8 @@ import {
 	expectSheetExpanded,
 	expectSheetHidden,
 	expectSheetPeek,
-	historyLength
+	historyLength,
+	regionOrder
 } from '../testutil/region-e2e';
 
 // FE-5 PR 2, the mobile Popular sheets end to end: the Filters sheet and the
@@ -162,6 +164,21 @@ async function expectTabStaysInside(page: Page, container: Locator) {
 		await page.keyboard.press('Tab');
 		expect(await focusIsIn(container), `got focus out of the sheet after ${i + 1} Tabs`).toBe(true);
 	}
+}
+
+// Each sheet row's place: its region key, or `esp` for a Spanish variation.
+function rowPlaces(hrefs: string[], dishKey: string): string[] {
+	const prefix = `/en/dishes/${dishKey}/`;
+	return hrefs
+		.map((href) => (href.startsWith(prefix) ? href.slice(prefix.length) : href))
+		.map((rest) => rest.split('/')[0]);
+}
+
+// `places` sorted into map region order, Spanish ones last (a stable sort).
+function inRegionOrder(places: string[]): string[] {
+	const order = regionOrder();
+	const rank = (place: string) => (order.includes(place) ? order.indexOf(place) : order.length);
+	return [...places].sort((a, b) => rank(a) - rank(b));
 }
 
 test.describe('Filters sheet (mobile): opening', () => {
@@ -556,13 +573,16 @@ test.describe('dish sheet (mobile): opening', () => {
 		await expect.poll(() => sheetRowHrefs(page)).toEqual(want);
 	});
 
+	// Desktop README -> Spanish variations: regional ones in region order,
+	// then the Spanish (esp) ones. The mock's paella has no Spanish ones.
 	test('paella: region order (cat, ara, val, …), not bundle or count order', async ({ page }) => {
 		await openPopular(page, 'en');
 		await tapCard(page, 'paella');
-		const want = VARIATION_REGIONS.paella.map((r) => `/en/dishes/paella/${r}`);
-		await expect.poll(() => sheetRowHrefs(page)).toEqual(want);
+		await expect.poll(() => sheetRowHrefs(page)).not.toHaveLength(0);
+		const places = rowPlaces(await sheetRowHrefs(page), 'paella');
+		expect(places).toEqual(inRegionOrder(places));
+		if (ON_MOCK_DATA) expect(places).toEqual([...VARIATION_REGIONS.paella]);
 	});
-
 	// FE-5 acceptance: "No variation is visually distinguished anywhere on this tab."
 	test('no variation stands out: every row looks the same, none is marked', async ({ page }) => {
 		await openPopular(page, 'en');
@@ -679,7 +699,7 @@ test.describe('dish sheet (mobile): closing', () => {
 
 	test('Escape closes it like the scrim (peek)', async ({ page }) => {
 		await openPopular(page, 'en', '&dish=paella');
-		await expectSheetPeek(page, 'Rice dishes');
+		await expectSheetPeek(page, await servedDishName(page, 'en', 'paella'));
 		await page.keyboard.press('Escape');
 		await expectUrl(page, '/en/?tab=popular');
 		await expectSheetHidden(page);

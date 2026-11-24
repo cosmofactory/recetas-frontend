@@ -65,6 +65,10 @@ async function expectUrl(page: Page, want: string) {
 	expect(pathAndQuery(page)).toBe(want);
 }
 
+// A dish sheet URL that keeps the vegetarian filter, for any dish key.
+const SHEET_HREF_WITH_VEGETARIAN = /^\/en\/\?tab=popular&f=vegetarian&dish=[a-z0-9-]+$/;
+const ONE_VARIATION_RECIPE_HREF = /^\/en\/dishes\/[a-z0-9-]+\/(esp\/[a-z0-9-]+|[a-z]+)$/;
+
 test.describe('Popular (mobile): the unfiltered list', () => {
 	for (const lang of LOCALES) {
 		test(
@@ -105,10 +109,14 @@ test.describe('Popular (mobile): the unfiltered list', () => {
 	test('each card links to its dish sheet URL, keeping the filters', async ({ page }) => {
 		skipOnDesktop(page);
 		await openPopular(page, 'en', '&f=vegetarian');
-		await expect(dishCards(page).first()).toHaveAttribute(
-			'href',
-			'/en/?tab=popular&f=vegetarian&dish=tortilla'
+		await expect(dishCards(page).first()).toBeVisible();
+		const hrefs = await dishCards(page).evaluateAll((cards) =>
+			cards.map((card) => card.getAttribute('href') ?? '')
 		);
+		// FE-11: a one-variation dish's card opens its recipe instead.
+		const sheetHrefs = hrefs.filter((href) => !ONE_VARIATION_RECIPE_HREF.test(href));
+		expect(sheetHrefs.length, 'want some cards that open a dish sheet').toBeGreaterThan(0);
+		for (const href of sheetHrefs) expect(href).toMatch(SHEET_HREF_WITH_VEGETARIAN);
 	});
 });
 

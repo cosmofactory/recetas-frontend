@@ -1,4 +1,5 @@
 import { expect, test, type Locator } from '../testutil/e2e-test';
+import { MOCK_DATA_TAG } from '../testutil/e2e-target';
 import { gotoHydrated } from '../testutil/home-e2e';
 import { skipOnDesktop } from '../testutil/popular-e2e';
 import { RECIPE_TEST_IDS } from '../testutil/recipe-copy';
@@ -90,9 +91,17 @@ test.describe('ru recipe: prepositions and number + unit (FE-9 FB-1)', () => {
 test.describe('ru search ignores the no-break spaces (FE-9 FB-1)', () => {
 	test.beforeEach(({ page }) => skipOnDesktop(page, 'the mobile search overlay'));
 
-	const FINDS = [
+	type Find = { how: string; query: string; group: 0 | 1 | 2; title: string; mockData?: boolean };
+	const FINDS: Find[] = [
 		{ how: 'plain spaces', query: 'кастилия и леон', group: REGIONS, title: 'Кастилия и Леон' },
-		{ how: 'plain spaces', query: 'блюда из риса', group: DISHES, title: 'Блюда из риса' },
+		// The mock bundle's paella name; demo's has no short word.
+		{
+			how: 'plain spaces',
+			query: 'блюда из риса',
+			group: DISHES,
+			title: 'Блюда из риса',
+			mockData: true
+		},
 		// Pasted from the page, which binds "и" with a no-break space.
 		{
 			how: 'a no-break space',
@@ -100,10 +109,11 @@ test.describe('ru search ignores the no-break spaces (FE-9 FB-1)', () => {
 			group: REGIONS,
 			title: 'Кастилия и Леон'
 		}
-	] as const;
+	];
 
-	for (const { how, query, group, title } of FINDS) {
-		test(`${show(query)} with ${how} finds ${title}`, MOBILE_TAGS, async ({ page }) => {
+	for (const { how, query, group, title, mockData } of FINDS) {
+		const tag = [...MOBILE_TAGS.tag, ...(mockData ? [MOCK_DATA_TAG] : [])];
+		test(`${show(query)} with ${how} finds ${title}`, { tag }, async ({ page }) => {
 			await gotoHydrated(page, '/ru/');
 			await searchFor(page, 'ru', query);
 			await expect(resultOption(resultGroup(page, 'ru', group), title)).toBeVisible();

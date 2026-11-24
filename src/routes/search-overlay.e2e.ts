@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '../testutil/e2e-test';
+import { ON_MOCK_DATA } from '../testutil/e2e-target';
 import { gotoHydrated, onlyVisible, pathAndQuery } from '../testutil/home-e2e';
 import { expectUrl, HOME_WITH_FILTERS } from '../testutil/home-flow-e2e';
 import { skipOnDesktop } from '../testutil/popular-e2e';
@@ -28,6 +29,7 @@ import {
 	searchInput,
 	VARIATIONS
 } from '../testutil/search-e2e';
+import { servedDishName } from '../testutil/served-content-e2e';
 import { installStorageSpy, recordedWrites } from '../testutil/storage-spy';
 import { backLink } from '../testutil/variations-e2e';
 
@@ -232,7 +234,6 @@ test.describe('search overlay in every locale', () => {
 	}
 
 	const FINDS: { lang: SearchLocale; query: string; group: 0 | 1 | 2; title: string }[] = [
-		{ lang: 'ru', query: 'paella', group: DISHES, title: 'Блюда из риса' },
 		{ lang: 'ru', query: 'андалусия', group: REGIONS, title: 'Андалусия' },
 		{ lang: 'es', query: 'andalucia', group: REGIONS, title: 'Andalucía' },
 		{ lang: 'en', query: 'betanzos', group: VARIATIONS, title: 'Betanzos-style runny' },
@@ -247,12 +248,22 @@ test.describe('search overlay in every locale', () => {
 		});
 	}
 
-	test('ru: the "Рис" chip fills the query and finds the rice dish', async ({ page }) => {
+	// The Spanish name matches in every locale (search semantics).
+	test('ru: "paella" finds the paella dish by its Spanish name', async ({ page }) => {
+		const title = await servedDishName(page, 'ru', 'paella');
+		await gotoHydrated(page, searchUrl('ru'));
+		await searchFor(page, 'ru', 'paella');
+		await expect(resultOption(resultGroup(page, 'ru', DISHES), title)).toBeVisible();
+	});
+
+	test('ru: the "Рис" chip fills the query and finds the rice dishes', async ({ page }) => {
 		await gotoHydrated(page, searchUrl('ru'));
 		await openSearch(page, 'ru');
 		await searchDialog(page, 'ru').getByRole('button', { name: 'Рис', exact: true }).click();
 		await expect(searchInput(page, 'ru')).toHaveValue('Рис');
-		await expect(resultOption(resultGroup(page, 'ru', DISHES), 'Блюда из риса')).toBeVisible();
+		const dishes = resultGroup(page, 'ru', DISHES);
+		await expect(dishes.getByRole('option').first()).toBeVisible();
+		if (ON_MOCK_DATA) await expect(resultOption(dishes, 'Блюда из риса')).toBeVisible();
 	});
 });
 

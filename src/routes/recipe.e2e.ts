@@ -4,7 +4,8 @@ import {
 	expectHomeRestored,
 	expectUrl,
 	leaveScrolledHome,
-	LOWEST_DISH
+	recipePathOf,
+	type HomeState
 } from '../testutil/home-flow-e2e';
 import {
 	computedStyle,
@@ -12,7 +13,7 @@ import {
 	gotoHydrated,
 	markDocument
 } from '../testutil/home-e2e';
-import { skipAgainstDeployment } from '../testutil/e2e-target';
+import { ON_MOCK_DATA, skipAgainstDeployment } from '../testutil/e2e-target';
 import { skipOnDesktop } from '../testutil/popular-e2e';
 import { historyLength } from '../testutil/region-e2e';
 import {
@@ -412,6 +413,16 @@ test.describe('Recipe page: another recipe starts fresh', () => {
 	});
 });
 
+// The bar shows the recipe's title, the same text as its h1 (D-FE9-6),
+// read from the page: on demo the paella dish has another name. The mock's
+// is pinned too.
+async function paellaValTitle(page: Page, lang: RecipeLocale): Promise<string> {
+	const heading = page.getByRole('heading', { level: 1 });
+	// toHaveText, not toBe: ru binds its short words with no-break spaces.
+	if (ON_MOCK_DATA) await expect(heading).toHaveText(PAELLA_VAL_TITLE[lang]);
+	return (await heading.textContent())?.trim() ?? '';
+}
+
 test.describe('Recipe page: sticky top bar on window scroll', () => {
 	test.beforeEach(skipMobileOnly);
 
@@ -425,15 +436,16 @@ test.describe('Recipe page: sticky top bar on window scroll', () => {
 			{ tag },
 			async ({ page }) => {
 				await gotoHydrated(page, url);
-				await expectBar(page, lang, PAELLA_VAL_TITLE[lang], false);
+				const title = await paellaValTitle(page, lang);
+				await expectBar(page, lang, title, false);
 				expect(await scrollWindowTo(page, RECIPE_THRESHOLD_PX)).toBe(RECIPE_THRESHOLD_PX);
-				await expectBar(page, lang, PAELLA_VAL_TITLE[lang], false);
+				await expectBar(page, lang, title, false);
 				expect(await scrollWindowTo(page, RECIPE_THRESHOLD_PX + 1)).toBe(RECIPE_THRESHOLD_PX + 1);
-				await expectBar(page, lang, PAELLA_VAL_TITLE[lang], true);
+				await expectBar(page, lang, title, true);
 				await scrollToEnd(page);
 				await expectBarStuckAtTop(page, lang);
 				await scrollWindowTo(page, 0);
-				await expectBar(page, lang, PAELLA_VAL_TITLE[lang], false);
+				await expectBar(page, lang, title, false);
 			}
 		);
 	}
@@ -514,11 +526,9 @@ test.describe('Recipe page: back button', () => {
 test.describe('Acceptance: home → Variations → Recipe → back → back', () => {
 	test.beforeEach(skipMobileOnly);
 
-	const recipeOfLowest = new RegExp(`^/en/dishes/${LOWEST_DISH}/[a-z]+$`);
-
-	async function intoRecipe(page: Page) {
+	async function intoRecipe(page: Page, home: HomeState) {
 		await variationCards(page).first().click();
-		await page.waitForURL((u) => recipeOfLowest.test(u.pathname));
+		await page.waitForURL((u) => recipePathOf(home.dish.key).test(u.pathname));
 		await waitForPagePushEnd(page);
 		await moreButton(page, 'en').click();
 		await ingredientRows(page).first().click();
@@ -529,9 +539,9 @@ test.describe('Acceptance: home → Variations → Recipe → back → back', ()
 		{ tag: '@cross-browser' },
 		async ({ page }) => {
 			const home = await leaveScrolledHome(page);
-			await intoRecipe(page);
+			await intoRecipe(page, home);
 			await backLink(page, 'en').click();
-			await expectUrl(page, variationsPath('en', LOWEST_DISH));
+			await expectUrl(page, variationsPath('en', home.dish.key));
 			await waitForPagePushEnd(page);
 			await backLink(page, 'en').click();
 			await expectHomeRestored(page, home);
@@ -540,9 +550,9 @@ test.describe('Acceptance: home → Variations → Recipe → back → back', ()
 
 	test('browser Back twice does the same', { tag: '@cross-browser' }, async ({ page }) => {
 		const home = await leaveScrolledHome(page);
-		await intoRecipe(page);
+		await intoRecipe(page, home);
 		await page.goBack();
-		await expectUrl(page, variationsPath('en', LOWEST_DISH));
+		await expectUrl(page, variationsPath('en', home.dish.key));
 		await page.goBack();
 		await expectHomeRestored(page, home);
 	});
@@ -581,7 +591,7 @@ test.describe('axe: WCAG 2.2 AA on the Recipe page', () => {
 		await gotoHydrated(page, PAELLA_EN);
 		await stepServingsTo(page, 'en', 4, SERVINGS_MAX);
 		await scrollToEnd(page);
-		await expectBar(page, 'en', PAELLA_VAL_TITLE.en, true);
+		await expectBar(page, 'en', await paellaValTitle(page, 'en'), true);
 		await expectNoViolations(page, `${PAELLA_EN} (scrolled, at ${SERVINGS_MAX})`);
 	});
 });
