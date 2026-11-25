@@ -89,6 +89,11 @@ const SLIDE_DURATION = '0.35s';
 const ENTER_OFFSET_PX = 24;
 const THUMB_PX = 40;
 const VIEWPORT = { width: 390, height: 844 };
+const SHORT_VIEWPORT_HEIGHT = 480;
+// Matches rows in every group of the fixture catalogue.
+const OVERFLOWING_QUERY = 'a';
+// From the field: the clear "×", Cancel, then the results.
+const MAX_TABS_TO_RESULTS = 3;
 
 const baseGetLocale = getLocale;
 afterEach(() => overwriteGetLocale(baseGetLocale));
@@ -580,6 +585,46 @@ describe('SearchOverlay keyboard', () => {
 		await userEvent.keyboard('{ArrowDown}');
 		await typeQuery(frame, 'galicia');
 		expect(activeOption(frame)).toBeNull();
+	});
+});
+
+// Nightly demo run 45513341270 (axe scrollable-region-focusable): results
+// that overflow scroll in the overlay's body, so a keyboard user must be
+// able to reach that scroller; the options themselves are never tabbable.
+describe('SearchOverlay overflowing results', () => {
+	useViewport(VIEWPORT.width, SHORT_VIEWPORT_HEIGHT);
+
+	const resultsRegion = () => page.getByRole('region', { name: 'Search results', exact: true });
+
+	it('puts the results in a region named "Search results" that Tab reaches', async () => {
+		const { frame } = await openWithResults(OVERFLOWING_QUERY);
+		await expect.element(resultsRegion()).toBeVisible();
+		const region = resultsRegion().element();
+		expect(region.contains(frame.querySelector('[role="listbox"]'))).toBe(true);
+		for (let i = 0; i < MAX_TABS_TO_RESULTS && document.activeElement !== region; i++) {
+			await userEvent.tab();
+		}
+		expect(document.activeElement, 'want Tab to reach the results').toBe(region);
+	});
+
+	it('scrolls the active option into view while focus stays in the field', async () => {
+		const { frame, input } = await openWithResults(OVERFLOWING_QUERY);
+		const region = resultsRegion().element();
+		expect(region.scrollHeight, 'want the results to overflow').toBeGreaterThan(
+			region.clientHeight
+		);
+		const last = options(frame).length;
+		await userEvent.keyboard('{ArrowDown}'.repeat(last));
+		const shown = region.getBoundingClientRect();
+		const active = activeOption(frame)!.getBoundingClientRect();
+		expect(active.top).toBeGreaterThanOrEqual(shown.top);
+		expect(active.bottom).toBeLessThanOrEqual(shown.bottom);
+		expect(document.activeElement).toBe(input);
+	});
+
+	it('shows no results region with the suggestions', async () => {
+		await renderSearch();
+		await expect.element(resultsRegion()).not.toBeInTheDocument();
 	});
 });
 

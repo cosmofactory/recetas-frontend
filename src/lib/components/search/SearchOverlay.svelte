@@ -35,6 +35,7 @@
 	let input: HTMLInputElement | undefined = $state();
 	const combobox = new SearchCombobox(() => index);
 	const fade = $derived(motionFor(prefersReducedMotion.current) === 'fade');
+	const showsResults = $derived(!combobox.blank && combobox.entries.length > 0);
 
 	sheetKeyboard({
 		sheet: () => dialog,
@@ -96,10 +97,16 @@
 		/>
 		<TextButton label={m.search_cancel()} onclick={onClose} />
 	</div>
-	<div class="body">
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex (overflowing results scroll here, and their options are never tabbable: the APG scrollable region) -->
+	<div
+		class="body"
+		role={showsResults ? 'region' : undefined}
+		aria-label={showsResults ? m.a11y_searchResults() : undefined}
+		tabindex={showsResults ? 0 : undefined}
+	>
 		{#if combobox.blank}
 			<SearchSuggestions onPick={fillQuery} />
-		{:else if combobox.entries.length > 0}
+		{:else if showsResults}
 			<SearchResults
 				id={listboxId}
 				results={combobox.results}

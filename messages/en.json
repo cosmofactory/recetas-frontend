@@ -111,6 +111,7 @@
 	"a11y_sheetHandle": "Expand or collapse",
 	"a11y_homeTabs": "Browse",
 	"a11y_clearSearch": "Clear search",
+	"a11y_searchResults": "Search results",
 	"devUi_title": "UI primitives (dev only)",
 	"devUi_iconButtons": "Icon buttons",
 	"devUi_chips": "Chips",
