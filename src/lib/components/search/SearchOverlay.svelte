@@ -2,6 +2,7 @@
 	import TextButton from '#lib/components/ui/TextButton.svelte';
 	import { m } from '#lib/paraglide/messages.js';
 	import { NO_ACTIVE_OPTION } from '#lib/search/active-option.ts';
+	import { keepInputFocus } from '#lib/search/keep-input-focus.ts';
 	import { SearchCombobox } from '#lib/search/search-combobox.svelte.ts';
 	import type { SearchEntry } from '#lib/search/search-index.ts';
 	import { afterOwnTransitions } from '#lib/ui/after-transitions.ts';
@@ -35,6 +36,7 @@
 	let input: HTMLInputElement | undefined = $state();
 	const combobox = new SearchCombobox(() => index);
 	const fade = $derived(motionFor(prefersReducedMotion.current) === 'fade');
+	const showsResults = $derived(!combobox.blank && combobox.entries.length > 0);
 
 	sheetKeyboard({
 		sheet: () => dialog,
@@ -96,10 +98,17 @@
 		/>
 		<TextButton label={m.search_cancel()} onclick={onClose} />
 	</div>
-	<div class="body">
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex (overflowing results scroll here and their options are never tabbable, so the scroller is a named Tab stop; mousedown only keeps focus in the input) -->
+	<div
+		class="body"
+		role={showsResults ? 'region' : undefined}
+		aria-label={showsResults ? m.a11y_searchResults() : undefined}
+		tabindex={showsResults ? 0 : undefined}
+		onmousedown={keepInputFocus}
+	>
 		{#if combobox.blank}
 			<SearchSuggestions onPick={fillQuery} />
-		{:else if combobox.entries.length > 0}
+		{:else if showsResults}
 			<SearchResults
 				id={listboxId}
 				results={combobox.results}

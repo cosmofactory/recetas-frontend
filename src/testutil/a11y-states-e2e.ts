@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { focusDesktopSearch, typeInDesktopSearch, searchDropdown } from './desktop-search-e2e';
 import { LOCALES, type Locale } from './e2e';
 import { MOCK_DATA_TAG } from './e2e-target';
@@ -60,6 +60,10 @@ const TORTILLA: Record<Locale, string> = {
 // A query every locale finds (the Spanish name is searched too) and one nothing matches.
 export const FINDS_QUERY = 'tortilla';
 export const NO_MATCH_QUERY = 'zzzz';
+// A query whose results overflow the overlay body and the dropdown at every
+// project size, in any catalogue (nightly demo run 45513341270: a scroller
+// must be reachable by keyboard, axe scrollable-region-focusable).
+const OVERFLOWING_QUERY = 'a';
 
 async function regionShown(page: Page, lang: Locale) {
 	if (isDesktopPage(page)) return expect(regionPanel(page, GALICIA[lang])).toBeVisible();
@@ -75,6 +79,34 @@ async function regionExpanded(page: Page, lang: Locale) {
 async function overlayWithResults(page: Page, lang: Locale) {
 	await searchFor(page, lang, FINDS_QUERY);
 	await expect(resultOption(resultGroup(page, lang, DISHES), TORTILLA[lang])).toBeVisible();
+}
+
+// Whether the nearest scrolling ancestor of `inner` has more content than it shows.
+function scrollerOverflows(inner: Locator): Promise<boolean> {
+	return inner.evaluate((element) => {
+		let scroller = element.parentElement;
+		while (scroller && getComputedStyle(scroller).overflowY !== 'auto') {
+			scroller = scroller.parentElement;
+		}
+		return scroller !== null && scroller.scrollHeight > scroller.clientHeight;
+	});
+}
+
+async function expectOverflowingResults(listbox: Locator) {
+	await expect(listbox.getByRole('option').first()).toBeVisible();
+	await expect
+		.poll(() => scrollerOverflows(listbox), { message: 'want the results to overflow' })
+		.toBe(true);
+}
+
+async function overlayOverflowing(page: Page, lang: Locale) {
+	await searchFor(page, lang, OVERFLOWING_QUERY);
+	await expectOverflowingResults(searchDialog(page, lang).getByRole('listbox'));
+}
+
+async function dropdownOverflowing(page: Page, lang: Locale) {
+	await typeInDesktopSearch(page, lang, OVERFLOWING_QUERY);
+	await expectOverflowingResults(searchDropdown(page).getByRole('listbox'));
 }
 
 async function overlayWithNoMatch(page: Page, lang: Locale) {
@@ -156,6 +188,13 @@ export const UI_STATES: UiState[] = [
 		layouts: MOBILE,
 		enter: (page, lang) => withActiveOption(page, overlayWithResults, lang)
 	},
+	{
+		name: 'search overlay, results overflowing',
+		path: '/',
+		layouts: MOBILE,
+		enter: overlayOverflowing,
+		crossBrowser: true
+	},
 	{ name: 'search overlay, no match', path: '/', layouts: MOBILE, enter: overlayWithNoMatch },
 	{ name: 'search dropdown, suggestions', path: '/', layouts: DESKTOP, enter: focusDesktopSearch },
 	{
@@ -170,6 +209,13 @@ export const UI_STATES: UiState[] = [
 		path: '/',
 		layouts: DESKTOP,
 		enter: (page, lang) => withActiveOption(page, dropdownWithResults, lang)
+	},
+	{
+		name: 'search dropdown, results overflowing',
+		path: '/',
+		layouts: DESKTOP,
+		enter: dropdownOverflowing,
+		crossBrowser: true
 	},
 	{ name: 'search dropdown, no match', path: '/', layouts: DESKTOP, enter: dropdownWithNoMatch },
 	{ name: 'language menu open', path: '/', layouts: BOTH, enter: openMenu, crossBrowser: true },

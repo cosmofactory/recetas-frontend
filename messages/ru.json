@@ -117,6 +117,7 @@
 	"a11y_sheetHandle": "Развернуть или свернуть",
 	"a11y_homeTabs": "Обзор",
 	"a11y_clearSearch": "Очистить поиск",
+	"a11y_searchResults": "Результаты поиска",
 	"devUi_title": "Элементы интерфейса (только для разработки)",
 	"devUi_iconButtons": "Кнопки-иконки",
 	"devUi_chips": "Чипы",

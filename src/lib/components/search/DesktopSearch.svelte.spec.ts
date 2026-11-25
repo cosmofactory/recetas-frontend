@@ -8,6 +8,7 @@ import {
 	buttonNamed,
 	dropdown,
 	dropdownOption,
+	dropdownOptions,
 	dropdownShown,
 	dropdownTitles,
 	fieldBox,
@@ -94,11 +95,17 @@ const DROPDOWN_RADIUS = '18px';
 const FADE_DURATION = '0.18s';
 const SLIDE_DURATION = '0.22s';
 const DESKTOP_VIEWPORT = { width: 1280, height: 800 };
+// Matches rows in every group of the fixture catalogue.
+const OVERFLOWING_QUERY = 'a';
 // Narrower than 440 + 48, so min() picks 100vw − 48px.
 const NARROW_VIEWPORT = { width: 470, height: 800 };
 
 const baseGetLocale = getLocale;
 afterEach(() => overwriteGetLocale(baseGetLocale));
+
+function activeOptionIn(root: HTMLElement): HTMLElement | null {
+	return document.getElementById(fieldInput(root).getAttribute('aria-activedescendant') ?? '');
+}
 
 async function openWithQuery(query: string) {
 	const rendered = await renderDesktopSearch();
@@ -489,15 +496,53 @@ describe('DesktopSearch closing', () => {
 		expect(dropdownShown(root)).toBe(true);
 	});
 
-	it('Tab past the search asks to close; the clear button on the way does not', async () => {
+	it('Tab past the search asks to close; the clear button and the results on the way do not', async () => {
 		const { root, outside, copy, onClose } = await openWithQuery('tortilla');
 		await userEvent.tab();
 		expect(document.activeElement).toBe(buttonNamed(root, copy.clear));
 		expect(onClose, 'got the clear button closing it').not.toHaveBeenCalled();
 		await userEvent.tab();
+		expect(document.activeElement).toBe(dropdown(root));
+		expect(onClose, 'got the results region closing it').not.toHaveBeenCalled();
+		await userEvent.tab();
 		expect(document.activeElement).toBe(outside);
 		expect(onClose).toHaveBeenCalled();
 		expect(dropdownShown(root)).toBe(false);
+	});
+});
+
+// Nightly demo run 45513341270 (axe scrollable-region-focusable): results
+// that overflow scroll in the dropdown, so a keyboard user must be able to
+// reach it; the options themselves are never tabbable.
+describe('DesktopSearch results region', () => {
+	useViewport(DESKTOP_VIEWPORT.width, DESKTOP_VIEWPORT.height);
+
+	it('makes the dropdown a tabbable region named "Search results" while results show', async () => {
+		const { root } = await openWithQuery(OVERFLOWING_QUERY);
+		const region = dropdown(root)!;
+		expect(region.getAttribute('role')).toBe('region');
+		expect(region.getAttribute('aria-label')).toBe('Search results');
+		expect(region.tabIndex).toBe(0);
+		expect(region.scrollHeight, 'want the results to overflow').toBeGreaterThan(
+			region.clientHeight
+		);
+	});
+
+	it('scrolls the active option into view while focus stays in the field', async () => {
+		const { root, input } = await openWithQuery(OVERFLOWING_QUERY);
+		await userEvent.keyboard('{ArrowDown}'.repeat(dropdownOptions(root).length));
+		const shown = dropdown(root)!.getBoundingClientRect();
+		const active = activeOptionIn(root)!.getBoundingClientRect();
+		expect(active.top).toBeGreaterThanOrEqual(shown.top);
+		expect(active.bottom).toBeLessThanOrEqual(shown.bottom);
+		expect(document.activeElement).toBe(input);
+	});
+
+	it('is no region and no Tab stop with the suggestions', async () => {
+		const { root } = await renderDesktopSearch();
+		await typeInField(root, '');
+		expect(dropdown(root)!.hasAttribute('role')).toBe(false);
+		expect(dropdown(root)!.hasAttribute('tabindex')).toBe(false);
 	});
 });
 
