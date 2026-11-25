@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { m } from '#lib/paraglide/messages.js';
 	import { NO_ACTIVE_OPTION } from '#lib/search/active-option.ts';
+	import { keepInputFocus } from '#lib/search/keep-input-focus.ts';
 	import { SearchCombobox } from '#lib/search/search-combobox.svelte.ts';
 	import type { SearchEntry } from '#lib/search/search-index.ts';
 	import { pushEscapeLayer } from '#lib/ui/escape-layers.ts';
@@ -39,6 +41,7 @@
 	const combobox = new SearchCombobox(() => index);
 	const fade = $derived(motionFor(prefersReducedMotion.current) === 'fade');
 	const expanded = $derived(open && combobox.entries.length > 0);
+	const showsResults = $derived(!combobox.blank && combobox.entries.length > 0);
 
 	onMount(() => {
 		hydrated = true;
@@ -94,9 +97,6 @@
 	function onfocusout(event: FocusEvent) {
 		if (open && search && focusLeft(event, search)) onClose();
 	}
-
-	// A press anywhere in the dropdown keeps focus in the combobox input.
-	const keepFocus = (event: MouseEvent) => event.preventDefault();
 </script>
 
 <div bind:this={search} class="desktop-search" {onfocusout}>
@@ -114,18 +114,21 @@
 		onFocus={requestOpen}
 		onClick={requestOpen}
 	/>
-	<!-- svelte-ignore a11y_no_static_element_interactions (mousedown only keeps focus in the input) -->
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex (overflowing results scroll here and their options are never tabbable, so the scroller is a named Tab stop; mousedown only keeps focus in the input) -->
 	<div
 		class="dropdown"
 		class:open
 		class:fade
 		data-testid="search-dropdown"
 		inert={!open}
-		onmousedown={keepFocus}
+		role={showsResults ? 'region' : undefined}
+		aria-label={showsResults ? m.a11y_searchResults() : undefined}
+		tabindex={showsResults ? 0 : undefined}
+		onmousedown={keepInputFocus}
 	>
 		{#if combobox.blank}
 			<SearchSuggestions onPick={fillQuery} />
-		{:else if combobox.entries.length > 0}
+		{:else if showsResults}
 			<SearchResults
 				id={listboxId}
 				results={combobox.results}

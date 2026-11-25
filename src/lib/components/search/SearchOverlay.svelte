@@ -2,6 +2,7 @@
 	import TextButton from '#lib/components/ui/TextButton.svelte';
 	import { m } from '#lib/paraglide/messages.js';
 	import { NO_ACTIVE_OPTION } from '#lib/search/active-option.ts';
+	import { keepInputFocus } from '#lib/search/keep-input-focus.ts';
 	import { SearchCombobox } from '#lib/search/search-combobox.svelte.ts';
 	import type { SearchEntry } from '#lib/search/search-index.ts';
 	import { afterOwnTransitions } from '#lib/ui/after-transitions.ts';
@@ -97,12 +98,13 @@
 		/>
 		<TextButton label={m.search_cancel()} onclick={onClose} />
 	</div>
-	<!-- svelte-ignore a11y_no_noninteractive_tabindex (overflowing results scroll here, and their options are never tabbable: the APG scrollable region) -->
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex (overflowing results scroll here and their options are never tabbable, so the scroller is a named Tab stop; mousedown only keeps focus in the input) -->
 	<div
 		class="body"
 		role={showsResults ? 'region' : undefined}
 		aria-label={showsResults ? m.a11y_searchResults() : undefined}
 		tabindex={showsResults ? 0 : undefined}
+		onmousedown={keepInputFocus}
 	>
 		{#if combobox.blank}
 			<SearchSuggestions onPick={fillQuery} />

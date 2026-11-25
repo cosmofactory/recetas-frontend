@@ -622,6 +622,22 @@ describe('SearchOverlay overflowing results', () => {
 		expect(document.activeElement).toBe(input);
 	});
 
+	it('names the listbox "Search results" too, not the dialog\'s plain "Search"', async () => {
+		await openWithResults(OVERFLOWING_QUERY);
+		await expect
+			.element(page.getByRole('listbox', { name: 'Search results', exact: true }))
+			.toBeInTheDocument();
+	});
+
+	it("keeps focus in the field when the results' padding is pressed", async () => {
+		const { input } = await openWithResults(OVERFLOWING_QUERY);
+		const region = resultsRegion().element();
+		const { left, top } = region.getBoundingClientRect();
+		await userEvent.click(region, { position: { x: 2, y: 2 } });
+		expect(document.elementFromPoint(left + 2, top + 2)).toBe(region);
+		expect(document.activeElement).toBe(input);
+	});
+
 	it('shows no results region with the suggestions', async () => {
 		await renderSearch();
 		await expect.element(resultsRegion()).not.toBeInTheDocument();

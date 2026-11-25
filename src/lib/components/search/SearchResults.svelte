@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { typeset } from '#lib/i18n/typeset.ts';
 	import { m } from '#lib/paraglide/messages.js';
+	import { keepInputFocus } from '#lib/search/keep-input-focus.ts';
 	import type { SearchGroupKey } from '#lib/search/search-index.ts';
 	import type { SearchGroup } from '#lib/search/search.ts';
 	import SearchResultRow from './SearchResultRow.svelte';
@@ -28,12 +29,15 @@
 	const offsets = $derived(
 		results.map((_, i) => results.slice(0, i).reduce((sum, r) => sum + r.entries.length, 0))
 	);
-
-	// A press on an option must not take focus from the combobox input.
-	const keepFocus = (event: MouseEvent) => event.preventDefault();
 </script>
 
-<div {id} role="listbox" aria-label={m.a11y_search()} tabindex="-1" onmousedown={keepFocus}>
+<div
+	{id}
+	role="listbox"
+	aria-label={m.a11y_searchResults()}
+	tabindex="-1"
+	onmousedown={keepInputFocus}
+>
 	{#each results as result, g (result.group)}
 		<div class="group" role="group" aria-labelledby="{id}-{result.group}">
 			<div class="heading" role="presentation" id="{id}-{result.group}">

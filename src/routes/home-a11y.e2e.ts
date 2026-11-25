@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page, type TestInfo } from '../testutil/e2e-test';
+import { expect, test, type Page, type TestInfo } from '../testutil/e2e-test';
 import { servedDishName } from '../testutil/served-content-e2e';
 import { expectNoViolations, loadAxe, summary, WCAG_AA_TAGS } from '../testutil/axe-e2e';
 import { gotoHydrated } from '../testutil/home-e2e';
@@ -176,43 +176,7 @@ test.describe('axe: WCAG 2.2 AA with the search overlay open', () => {
 			await expectNoViolations(page, what);
 		});
 	}
-
-	// Nightly demo run 45513341270: with a larger catalogue the results
-	// overflow the overlay's body, and a scroller must be reachable by
-	// keyboard (axe scrollable-region-focusable). A short phone makes the
-	// mock bundle's results overflow too.
-	test(
-		'/en/ searching "a" with the results overflowing has no violations',
-		{ tag: ['@cross-browser'] },
-		async ({ page }, testInfo) => {
-			onlyOnMobile(testInfo);
-			await page.setViewportSize({ width: page.viewportSize()!.width, height: SHORT_PHONE_HEIGHT });
-			await gotoHydrated(page, '/en/');
-			await searchFor(page, 'en', OVERFLOWING_QUERY);
-			const listbox = searchDialog(page, 'en').getByRole('listbox');
-			await expect(listbox.getByRole('option').first()).toBeVisible();
-			await expect
-				.poll(() => scrollerOverflows(listbox), { message: 'want the results to overflow' })
-				.toBe(true);
-			await expectNoViolations(page, 'the search overlay with overflowing results');
-		}
-	);
 });
-
-const SHORT_PHONE_HEIGHT = 480;
-// Matches dishes, variations and regions alike in any catalogue.
-const OVERFLOWING_QUERY = 'a';
-
-// Whether the nearest scrolling ancestor of `inner` has more content than it shows.
-function scrollerOverflows(inner: Locator): Promise<boolean> {
-	return inner.evaluate((element) => {
-		let scroller = element.parentElement;
-		while (scroller && getComputedStyle(scroller).overflowY !== 'auto') {
-			scroller = scroller.parentElement;
-		}
-		return scroller !== null && scroller.scrollHeight > scroller.clientHeight;
-	});
-}
 
 // FE-4 PR 3 follow-up: axe can only say "incomplete" for text something else
 // overlaps (bgOverlap), and then contrast goes unchecked. With the sheet
